@@ -123,13 +123,14 @@ class RtWeather(Base):
 # 환경 통합 테이블
 class EnvMaster(Base):
     __tablename__ = 'env_master_2024'
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="고유ID")
     measure_date: Mapped[datetime] = mapped_column(DateTime, comment="측정일시")
     region_name: Mapped[str] = mapped_column(String(50), comment="지역명")
-    pm10: Mapped[float | int | None] = mapped_column(Float, comment="미세먼지(PM10)")
-    temperature: Mapped[float | int | None] = mapped_column(Float, comment="기온(℃)")
-    precipitation: Mapped[float | int | None] = mapped_column(Float, comment="강수량(mm)")
-    snow: Mapped[float | int | None] = mapped_column(Float, comment="적설량(cm)")
+    pm10: Mapped[float | None] = mapped_column(Float, comment="미세먼지(PM10)")
+    temperature: Mapped[float | None] = mapped_column(Float, comment="기온(℃)")
+    precipitation: Mapped[float | None] = mapped_column(Float, comment="강수량(mm)")
+    snowfall: Mapped[float | None] = mapped_column(Float, comment="적설량(cm)")
 
 
 # ==========================================
