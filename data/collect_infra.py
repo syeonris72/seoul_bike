@@ -18,8 +18,8 @@ from database.db_connection import engine
 # ==========================================
 # 데이터 파일 경로 설정
 # ==========================================
-RIVER_PATH = os.path.join(BASE_DIR, "infra_river_SHP", "seoul_rivers_filtered.shp")
-BUSINESS_PATH = os.path.join(BASE_DIR, "data", "infra_business.csv")
+RIVER_PATH = os.path.join(BASE_DIR, "seoul_bike/data/infra_river_SHP/seoul_rivers_filtered.shp")
+BUSINESS_PATH = os.path.join(BASE_DIR, "seoul_bike/data/infra_business.csv")
 
 
 # ==========================================

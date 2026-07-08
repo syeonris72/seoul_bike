@@ -69,6 +69,7 @@ class HourlyAir(Base):
     measure_date: Mapped[datetime] = mapped_column(DateTime, comment="측정일시")
     region_name: Mapped[str] = mapped_column(String(50), comment="지역명")
     pm10: Mapped[float | None] = mapped_column(Float, comment="미세먼지(PM10)")
+    pm25: Mapped[float | None] = mapped_column(Float, comment="초미세먼지(PM2.5)")
 
 
 # 실시간 미세먼지 테이블
