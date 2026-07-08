@@ -216,16 +216,22 @@ class PopLiving2024(Base):
 # 인구 통합 테이블
 class PopMaster(Base):
     __tablename__ = 'pop_master_2024'
-    datetime = Column(DateTime, primary_key=True)
-    district_name = Column(String(50), primary_key=True)
-    flow_total = Column(Float)
-    flow_10s = Column(Float)
-    flow_20s = Column(Float)
-    flow_30s = Column(Float)
-    living_total = Column(Float)
-    living_10s = Column(Float)
-    living_20s = Column(Float)
-    living_30s = Column(Float)
+    datetime = Column(DateTime, primary_key=True, comment="기준일시")
+    district_name = Column(String(50), primary_key=True, comment="자치구명")
+    flwpop_tot = Column(Float, comment="총유동인구")
+    flwpop_10s = Column(Float, comment="10대 유동인구")
+    flwpop_20s = Column(Float, comment="20대 유동인구")
+    flwpop_30s = Column(Float, comment="30대 유동인구")
+    flwpop_40s = Column(Float, comment="40대 유동인구")
+    flwpop_50s = Column(Float, comment="50대 유동인구")
+    flwpop_60up = Column(Float, comment="60대 이상 유동인구")
+    lvgpop_tot = Column(Float, comment="총생활인구")
+    lvgpop_10s = Column(Float, comment="10대 생활인구")
+    lvgpop_20s = Column(Float, comment="20대 생활인구")
+    lvgpop_30s = Column(Float, comment="30대 생활인구")
+    lvgpop_40s = Column(Float, comment="40대 생활인구")
+    lvgpop_50s = Column(Float, comment="50대 생활인구")
+    lvgpop_60up = Column(Float, comment="60대 이상 생활인구")
 
 
 # ==========================================
