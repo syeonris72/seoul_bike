@@ -32,7 +32,7 @@ def collect_rt_weather():
         now -= timedelta(hours=1)
 
     with get_session() as db:
-        for dist, (nx, ny) in RT_WEATHER_GRIDS.items():
+        for dist, (nx, ny) in DISTRICT_GRID.items():
             params = {
                 'serviceKey': key,
                 'pageNo': '1',
