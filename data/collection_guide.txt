@@ -1,0 +1,22 @@
+[데이터 수집 및 구축 가이드]
+
+
+1. 필수 실행 (초기 세팅)
+
+- collect_base.py: 대여소 마스터, 공휴일 정보 세팅
+
+
+2. 데이터 수집 (순서 무관)
+
+- collect_infra.py: 공원, 학교, 대학, 상권 정보 세팅
+
+- collect_weather.py: 과거 기상청 데이터 세팅
+
+- collect_pop.py: 유동인구, 생활인구 세팅
+
+- rent_history.py: 대여 이력 세팅 (데이터 용량이 크므로 작업 시간 확보 필요)
+
+- collect_rt.py: 실시간 데이터
+
+
+* [참고] common_utils.py는 공통 모듈이므로 직접 실행 X
