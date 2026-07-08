@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Integer, String, Float, Numeric, DateTime, Date, Text, func
+from sqlalchemy import Column, Integer, String, Float, Numeric, DateTime, Date, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from database.orm import Base
 
@@ -120,6 +120,18 @@ class RtWeather(Base):
     humidity: Mapped[float | None] = mapped_column(Float, comment="습도(%)")
 
 
+# 환경 통합 테이블
+class EnvMaster(Base):
+    __tablename__ = 'env_master_2024'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="고유ID")
+    measure_date: Mapped[datetime] = mapped_column(DateTime, comment="측정일시")
+    region_name: Mapped[str] = mapped_column(String(50), comment="지역명")
+    pm10: Mapped[float | int | None] = mapped_column(Float, comment="미세먼지(PM10)")
+    temperature: Mapped[float | int | None] = mapped_column(Float, comment="기온(℃)")
+    precipitation: Mapped[float | int | None] = mapped_column(Float, comment="강수량(mm)")
+    snow: Mapped[float | int | None] = mapped_column(Float, comment="적설량(cm)")
+
+
 # ==========================================
 # 인구 데이터
 # ==========================================
@@ -199,6 +211,21 @@ class PopLiving2024(Base):
     female_f60t64_lvpop_co: Mapped[float | None] = mapped_column(Float, comment="여자60세~64세")
     female_f65t69_lvpop_co: Mapped[float | None] = mapped_column(Float, comment="여자65세~69세")
     female_f70t74_lvpop_co: Mapped[float | None] = mapped_column(Float, comment="여자70세이상")
+
+
+# 인구 통합 테이블
+class PopMaster(Base):
+    __tablename__ = 'pop_master_2024'
+    datetime = Column(DateTime, primary_key=True)
+    district_name = Column(String(50), primary_key=True)
+    flow_total = Column(Float)
+    flow_10s = Column(Float)
+    flow_20s = Column(Float)
+    flow_30s = Column(Float)
+    living_total = Column(Float)
+    living_10s = Column(Float)
+    living_20s = Column(Float)
+    living_30s = Column(Float)
 
 
 # ==========================================
