@@ -1,7 +1,10 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Float, Numeric, DateTime, Date, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, Integer, String, Float, Numeric, DateTime, Date, Text, func, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship, declarative_base
 from database.orm import Base
+from geoalchemy2 import Geometry
+from typing import Optional
+
 
 # ==========================================
 # 자전거 데이터
@@ -333,6 +336,23 @@ class InfraSubway(Base):
     route: Mapped[str | None] = mapped_column(String(50), comment="호선")
     lat: Mapped[str | None] = mapped_column(String(50), comment="위도")
     lot: Mapped[str | None] = mapped_column(String(50), comment="경도")
+
+
+# 인프라 통합 테이블
+class InfraMaster(Base):
+    __tablename__ = 'infra_master'
+    station_id: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey('station_loc.station_id'),
+        primary_key=True
+    )
+    subway_cnt_300m: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    biz_cnt_300m: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    edu_cnt_500m: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    park_cnt_500m: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    river_cnt_1km: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    dist_subway: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    dist_river: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
 
 # ==========================================
