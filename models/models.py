@@ -9,25 +9,35 @@ from database.orm import Base
 
 # 월별 대여 이력 테이블(2024)
 class RentHistory(Base):
-    __tablename__ = "rent_history"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="고유ID")
-    bike_id: Mapped[str | None] = mapped_column(String(50), index=True, comment="자전거ID")
-    rent_dt: Mapped[datetime | None] = mapped_column(DateTime, index=True, comment="대여일시")
-    rent_id: Mapped[str | None] = mapped_column(String(50), comment="대여소번호")
-    rent_nm: Mapped[str | None] = mapped_column(String(255), comment="대여소명")
-    rent_hold: Mapped[str | None] = mapped_column(String(50), comment="대여거치대")
-    rtn_dt: Mapped[datetime | None] = mapped_column(DateTime, comment="반납일시")
-    rtn_id: Mapped[str | None] = mapped_column(String(50), comment="반납대여소번호")
-    rtn_nm: Mapped[str | None] = mapped_column(String(255), comment="반납대여소명")
-    rtn_hold: Mapped[str | None] = mapped_column(String(50), comment="반납거치대")
-    use_min: Mapped[int | None] = mapped_column(Integer, comment="사용(분)")
-    use_dst: Mapped[float | None] = mapped_column(Float, comment="이용거리(M)")
-    usr_cls_cd: Mapped[str | None] = mapped_column(String(50), comment="사용자종류")
-    sex_cd: Mapped[str | None] = mapped_column(String(10), comment="성별")
-    birth_year: Mapped[str | None] = mapped_column(String(4), comment="생년")
-    rent_station_id: Mapped[str | None] = mapped_column(String(50), comment="대여대여소ID")
-    return_station_id: Mapped[str | None] = mapped_column(String(50), comment="반납대여소ID")
-    bike_se_cd: Mapped[str | None] = mapped_column(String(50), comment="자전거구분")
+    __tablename__ = "rent_history_2024"
+    datetime_hr = Column(DateTime, primary_key=True, comment="기준 시간 (1시간 단위)")
+    station_id = Column(String(50), primary_key=True, comment="대여소 ID")
+    general_rent_cnt = Column(Integer, default=0, comment="일반자전거 대여 건수")
+    sprout_rent_cnt = Column(Integer, default=0, comment="새싹자전거 대여 건수")
+    general_rtn_cnt = Column(Integer, default=0, comment="일반자전거 반납 건수")
+    sprout_rtn_cnt = Column(Integer, default=0, comment="새싹자전거 반납 건수")
+    total_use_min = Column(Integer, default=0, comment="총 사용 시간(분)")
+    avg_use_min = Column(Float, default=0.0, comment="평균 사용 시간(분)")
+    rent_male_cnt = Column(Integer, default=0, comment="대여 남성 건수")
+    rent_female_cnt = Column(Integer, default=0, comment="대여 여성 건수")
+    rent_gender_unk_cnt = Column(Integer, default=0, comment="대여 성별 미상 건수")
+    rtn_male_cnt = Column(Integer, default=0, comment="반납 남성 건수")
+    rtn_female_cnt = Column(Integer, default=0, comment="반납 여성 건수")
+    rtn_gender_unk_cnt = Column(Integer, default=0, comment="반납 성별 미상 건수")
+    rent_age_10_cnt = Column(Integer, default=0, comment="대여 10대(이하) 건수")
+    rent_age_20_cnt = Column(Integer, default=0, comment="대여 20대 건수")
+    rent_age_30_cnt = Column(Integer, default=0, comment="대여 30대 건수")
+    rent_age_40_cnt = Column(Integer, default=0, comment="대여 40대 건수")
+    rent_age_50_cnt = Column(Integer, default=0, comment="대여 50대 건수")
+    rent_age_60_cnt = Column(Integer, default=0, comment="대여 60대 이상 건수")
+    rent_age_unk_cnt = Column(Integer, default=0, comment="대여 연령 미상 건수")
+    rtn_age_10_cnt = Column(Integer, default=0, comment="반납 10대(이하) 건수")
+    rtn_age_20_cnt = Column(Integer, default=0, comment="반납 20대 건수")
+    rtn_age_30_cnt = Column(Integer, default=0, comment="반납 30대 건수")
+    rtn_age_40_cnt = Column(Integer, default=0, comment="반납 40대 건수")
+    rtn_age_50_cnt = Column(Integer, default=0, comment="반납 50대 건수")
+    rtn_age_60_cnt = Column(Integer, default=0, comment="반납 60대 이상 건수")
+    rtn_age_unk_cnt = Column(Integer, default=0, comment="반납 연령 미상 건수")
 
 
 # 대여소 위치 테이블
@@ -304,7 +314,7 @@ class InfraBusiness(Base):
     base_date: Mapped[str | None] = mapped_column(String(50), comment="데이터기준일")
 
 
-# 서울하천 데이터
+# 하천 공간 테이블
 class InfraRiver(Base):
     __tablename__ = "infra_river"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="고유ID")
@@ -312,6 +322,17 @@ class InfraRiver(Base):
     river_class: Mapped[str] = mapped_column(String(50), nullable=True, comment="하천분류(SCLS)")
     manage_code: Mapped[str] = mapped_column(String(50), nullable=True, comment="관리코드(FMTA)")
     geom_wkt: Mapped[str] = mapped_column(Text, nullable=True, comment="지도공간데이터(WKT)")
+
+
+# 지하철 역 출입구 위치 테이블
+class InfraSubway(Base):
+    __tablename__ = "infra_subway"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="고유ID")
+    bldn_id: Mapped[str | None] = mapped_column(String(50), comment="역사_ID")
+    bldn_nm: Mapped[str | None] = mapped_column(String(100), comment="역사명")
+    route: Mapped[str | None] = mapped_column(String(50), comment="호선")
+    lat: Mapped[str | None] = mapped_column(String(50), comment="위도")
+    lot: Mapped[str | None] = mapped_column(String(50), comment="경도")
 
 
 # ==========================================

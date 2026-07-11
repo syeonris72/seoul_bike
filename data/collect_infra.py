@@ -3,6 +3,12 @@ import sys
 import geopandas as gpd
 from sqlalchemy.dialects.mysql import LONGTEXT
 import csv
+import requests
+import pandas as pd
+import traceback
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ==========================================
 # 모듈 임포트 및 초기 환경 설정
@@ -213,6 +219,85 @@ def collect_river():
 
 
 # ==========================================
+# 지하철 역 출입구 위치 데이터
+# ==========================================
+def collect_subway():
+    try:
+        print("========== 지하철 데이터 수집 시작 ==========")
+        key = os.environ.get("INFRA_SUBWAY_KEY")
+
+        if not key:
+            print("에러: .env 파일에서 'INFRA_SUBWAY_KEY'를 찾을 수 없습니다.")
+            return
+
+        start_idx = 1
+        end_idx = 1000
+        all_data = []
+
+        while True:
+            # API 요청 URL 구성 (JSON 포맷)
+            url = f"http://openapi.seoul.go.kr:8088/{key}/json/subwayStationMaster/{start_idx}/{end_idx}/"
+            response = requests.get(url)
+            data = response.json()
+
+            # 정상 응답 확인
+            if "subwayStationMaster" in data:
+                rows = data["subwayStationMaster"]["row"]
+                all_data.extend(rows)
+
+                total_count = data["subwayStationMaster"]["list_total_count"]
+
+                # 수집된 데이터 인덱스가 총 데이터 건수보다 크거나 같으면 루프 종료
+                if end_idx >= total_count:
+                    break
+
+                # 다음 페이지 조회를 위해 인덱스 1000 증가
+                start_idx += 1000
+                end_idx += 1000
+            else:
+                print(f"API 응답 에러 또는 데이터 없음: {data}")
+                break
+
+        if not all_data:
+            print("수집된 데이터가 없습니다.")
+            return
+
+        # 리스트를 Pandas DataFrame으로 변환
+        df = pd.DataFrame(all_data)
+
+        # DB 모델(InfraSubway)의 컬럼명과 일치하도록 소문자로 매핑
+        df.rename(columns={
+            'BLDN_ID': 'bldn_id',
+            'BLDN_NM': 'bldn_nm',
+            'ROUTE': 'route',
+            'LAT': 'lat',
+            'LOT': 'lot'
+        }, inplace=True)
+
+        # DB에 적재할 필수 컬럼만 선택
+        df_to_save = df[['bldn_id', 'bldn_nm', 'route', 'lat', 'lot']]
+
+        # 데이터 저장 오류 방지를 위해 텍스트(object)를 확실한 문자열(str)로 변환
+        for col in df_to_save.columns:
+            if df_to_save[col].dtype == 'object':
+                df_to_save[col] = df_to_save[col].astype(str)
+
+        # MySQL 저장
+        df_to_save.to_sql(
+            name='infra_subway',
+            con=engine,  # 상단에서 정의된 sqlalchemy engine 객체
+            if_exists='replace',  # 실행 시마다 최신 데이터로 덮어쓰기
+            index=False
+        )
+        print(f"총 {len(df_to_save)}건의 지하철 역 위치 데이터 저장 완료")
+        print("========== 지하철 데이터 수집 종료 ==========")
+
+    except Exception as e:
+        print(f"\n지하철 데이터 에러 발생: {e}")
+        traceback.print_exc()
+
+
+# ==========================================
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
@@ -222,4 +307,5 @@ if __name__ == "__main__":
     collect_univ()  # 대학교 데이터 적재
     collect_business()  # 직장 데이터 적재
     collect_river()  # 하천 SHP 데이터 적재
+    collect_subway() # 지하철 데이터 적재
     print("========== 인프라 데이터 수집 종료 ==========")
