@@ -163,7 +163,7 @@ def collect_pop_living():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db()  # DB 연결 및 초기화
+    init_db(engine, models=[PopFlow2024, PopLiving2024]) # DB 연결 및 초기화
     collect_pop_flow()  # 유동인구 데이터 적재
     collect_pop_living()  # 생활인구 데이터 적재
     print("\n========== 인구 데이터 수집 종료 ==========")

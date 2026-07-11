@@ -7,6 +7,7 @@ import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv
 
+
 # ==========================================
 # 모듈 임포트 및 초기 환경 설정
 # ==========================================
@@ -18,7 +19,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'), override=True)
 
 from database.db_connection import SessionLocal
 from models.models import HourlyTemp, HourlyAir, HourlySnow, HourlyPrecip
-from common_utils import init_db
+from common_utils import init_db, get_session, engine, os, TARGET_DISTRICTS
 
 # API 키 및 자치구 설정
 key = os.getenv("WEATHER_HUB_KEY")
@@ -347,7 +348,7 @@ def collect_snow():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db() # DB 연결 및 초기화
+    init_db(engine, models=[HourlyTemp, HourlyAir, HourlySnow, HourlyPrecip]) # DB 연결 및 초기화
     collect_temp() # 기온 데이터 적재
     collect_precip() # 강수량 데이터 적재
     collect_air() # 미세먼지 데이터 적재

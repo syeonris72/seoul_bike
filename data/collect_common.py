@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import holidays as kr_holidays_lib
 from sqlalchemy import select
-from common_utils import init_db, get_session, os, TARGET_DISTRICTS
+from common_utils import init_db, get_session, engine, os, TARGET_DISTRICTS
 from models.models import StationLoc, KoreaHolidays
 
 # ==========================================
@@ -118,6 +118,6 @@ def collect_holidays():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db()  # DB 초기화
+    init_db(engine, models=[StationLoc, KoreaHolidays])  # DB 초기화
     collect_station_loc()  # 따릉이 대여소 위치 적재
     collect_holidays()  # 공휴일 데이터 적재

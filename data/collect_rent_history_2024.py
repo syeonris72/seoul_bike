@@ -176,5 +176,5 @@ def load_monthly_data(target_month: int):
 
 
 if __name__ == "__main__":
-    init_db()
+    init_db(engine, models=[RentHistory]) # DB 연결 및 초기화
     load_monthly_data(int(input("\n수집할 월을 입력하세요 (1~12): ")))

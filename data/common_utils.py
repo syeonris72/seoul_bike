@@ -2,6 +2,7 @@ import os
 import sys
 import requests
 from dotenv import load_dotenv
+from sqlalchemy import MetaData
 
 # ==========================================
 # 프로젝트 경로 및 환경변수 설정
@@ -31,10 +32,21 @@ TARGET_DISTRICTS = ["영등포구", "마포구", "송파구", "강서구"]
 # ==========================================
 # 데이터베이스 유틸리티 함수
 # ==========================================
-def init_db():
-    """데이터베이스 테이블 생성 및 초기화"""
-    Base.metadata.create_all(bind=engine)
-
+def init_db(engine, models=None):
+    """
+    지정된 모델 리스트만 테이블 생성.
+    models가 None이면 기존처럼 전체 생성.
+    """
+    if models:
+        # 특정 테이블만 생성 (테이블 리스트를 인자로 받음)
+        for model in models:
+            # checkfirst=True는 테이블이 이미 있으면 건너뜁니다.
+            model.__table__.create(engine, checkfirst=True)
+            print(f"테이블 생성 완료: {model.__tablename__}")
+    else:
+        # 전체 생성
+        Base.metadata.create_all(bind=engine)
+        print("모든 테이블 생성 완료")
 
 def get_session():
     """데이터베이스 세션 객체 반환"""

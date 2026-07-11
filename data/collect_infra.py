@@ -13,7 +13,7 @@ load_dotenv()
 # ==========================================
 # 모듈 임포트 및 초기 환경 설정
 # ==========================================
-from common_utils import init_db, get_session, fetch_api_json, os, BASE_DIR, TARGET_DISTRICTS
+from common_utils import init_db, get_session, fetch_api_json, os, BASE_DIR, TARGET_DISTRICTS, engine
 from models.models import InfraPark, InfraSchool, InfraUniv, InfraBusiness
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -301,7 +301,7 @@ def collect_subway():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db()  # DB 연결 및 초기화
+    init_db(engine, models=[InfraPark, InfraSchool, InfraUniv, InfraBusiness]) # DB 연결 및 초기화
     collect_park()  # 공원 데이터 적재
     collect_school()  # 학교 데이터 적재
     collect_univ()  # 대학교 데이터 적재

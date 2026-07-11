@@ -5,7 +5,7 @@ from urllib.parse import unquote
 # ==========================================
 # 모듈 임포트 및 초기 환경 설정
 # ==========================================
-from common_utils import init_db, get_session, fetch_api_json, os, TARGET_DISTRICTS
+from common_utils import init_db, get_session, fetch_api_json, os, TARGET_DISTRICTS, engine
 from models.models import RtWeather, RtAir, RtBikeStatus, StationLoc
 
 # ==========================================
@@ -152,7 +152,7 @@ def collect_rt_bike():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db()  # DB 연결 및 초기화
+    init_db(engine, models=[RtWeather, RtAir, RtBikeStatus, StationLoc]) # DB 연결 및 초기화
     collect_rt_weather()  # 실시간 날씨 데이터 적재
     collect_rt_air()  # 실시간 미세먼지 데이터 적재
     collect_rt_bike()  # 실시간 자전거 상태 데이터 적재
