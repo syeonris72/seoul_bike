@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Float, Numeric, DateTime, Date, Text, func, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Numeric, DateTime, Date, Text, Boolean, func, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declarative_base
 from database.orm import Base
 from geoalchemy2 import Geometry
@@ -69,6 +69,69 @@ class RtBikeStatus(Base):
     lat: Mapped[float | None] = mapped_column(Numeric(10, 7), comment="위도")
     lon: Mapped[float | None] = mapped_column(Numeric(10, 7), comment="경도")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="데이터수집일시")
+
+
+class DemandPredictMaster(Base):
+    __tablename__ = "demand_predict_master_2024"
+    datetime_hr: Mapped[datetime] = mapped_column(DateTime, primary_key=True, comment="기준 시간 (1시간 단위)")
+    station_id: Mapped[str] = mapped_column(String(50), primary_key=True, comment="대여소 ID")
+    general_rent_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="일반자전거 대여 건수")
+    sprout_rent_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="새싹자전거 대여 건수")
+    general_rtn_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="일반자전거 반납 건수")
+    sprout_rtn_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="새싹자전거 반납 건수")
+    total_use_min: Mapped[int | None] = mapped_column(Integer, default=0, comment="총 사용 시간(분)")
+    avg_use_min: Mapped[float | None] = mapped_column(Float, default=0.0, comment="평균 사용 시간(분)")
+    rent_male_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 남성 건수")
+    rent_female_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 여성 건수")
+    rent_gender_unk_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 성별 미상 건수")
+    rent_age_10_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 10대(이하) 건수")
+    rent_age_20_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 20대 건수")
+    rent_age_30_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 30대 건수")
+    rent_age_40_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 40대 건수")
+    rent_age_50_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 50대 건수")
+    rent_age_60_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 60대 이상 건수")
+    rent_age_unk_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="대여 연령 미상 건수")
+    rtn_male_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 남성 건수")
+    rtn_female_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 여성 건수")
+    rtn_gender_unk_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 성별 미상 건수")
+    rtn_age_10_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 10대(이하) 건수")
+    rtn_age_20_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 20대 건수")
+    rtn_age_30_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 30대 건수")
+    rtn_age_40_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 40대 건수")
+    rtn_age_50_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 50대 건수")
+    rtn_age_60_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 60대 이상 건수")
+    rtn_age_unk_cnt: Mapped[int | None] = mapped_column(Integer, default=0, comment="반납 연령 미상 건수")
+    district: Mapped[str | None] = mapped_column(String(50), index=True, comment="자치구")
+    lat: Mapped[float | None] = mapped_column(Numeric(10, 7), comment="위도")
+    lon: Mapped[float | None] = mapped_column(Numeric(10, 7), comment="경도")
+    subway_cnt_300m: Mapped[int | None] = mapped_column(Integer, default=0, comment="300m 내 지하철역 수")
+    biz_cnt_300m: Mapped[int | None] = mapped_column(Integer, default=0, comment="300m 내 직장 수")
+    edu_cnt_500m: Mapped[int | None] = mapped_column(Integer, default=0, comment="500m 내 교육시설 수")
+    park_cnt_500m: Mapped[int | None] = mapped_column(Integer, default=0, comment="500m 내 공원 수")
+    river_cnt_1km: Mapped[int | None] = mapped_column(Integer, default=0, comment="1km 내 하천 수")
+    dist_subway: Mapped[float | None] = mapped_column(Float, comment="가장 가까운 지하철역까지 거리(m)")
+    dist_river: Mapped[float | None] = mapped_column(Float, comment="가장 가까운 하천까지 거리(m)")
+    temperature: Mapped[float | None] = mapped_column(Float, comment="기온(℃)")
+    precipitation: Mapped[float | None] = mapped_column(Float, comment="강수량(mm)")
+    snowfall: Mapped[float | None] = mapped_column(Float, comment="적설량(cm)")
+    pm10: Mapped[float | None] = mapped_column(Float, comment="미세먼지(PM10)")
+    flwpop_tot: Mapped[float | None] = mapped_column(Float, comment="총유동인구")
+    flwpop_10s: Mapped[float | None] = mapped_column(Float, comment="10대 유동인구")
+    flwpop_20s: Mapped[float | None] = mapped_column(Float, comment="20대 유동인구")
+    flwpop_30s: Mapped[float | None] = mapped_column(Float, comment="30대 유동인구")
+    flwpop_40s: Mapped[float | None] = mapped_column(Float, comment="40대 유동인구")
+    flwpop_50s: Mapped[float | None] = mapped_column(Float, comment="50대 유동인구")
+    flwpop_60up: Mapped[float | None] = mapped_column(Float, comment="60대 이상 유동인구")
+    lvgpop_tot: Mapped[float | None] = mapped_column(Float, comment="총생활인구")
+    lvgpop_10s: Mapped[float | None] = mapped_column(Float, comment="10대 생활인구")
+    lvgpop_20s: Mapped[float | None] = mapped_column(Float, comment="20대 생활인구")
+    lvgpop_30s: Mapped[float | None] = mapped_column(Float, comment="30대 생활인구")
+    lvgpop_40s: Mapped[float | None] = mapped_column(Float, comment="40대 생활인구")
+    lvgpop_50s: Mapped[float | None] = mapped_column(Float, comment="50대 생활인구")
+    lvgpop_60up: Mapped[float | None] = mapped_column(Float, comment="60대 이상 생활인구")
+    is_holiday: Mapped[bool | None] = mapped_column(Boolean, default=False, comment="공휴일 여부")
+    day_of_week: Mapped[int | None] = mapped_column(Integer, comment="요일(0=월요일, 6=일요일)")
+    is_weekend: Mapped[bool | None] = mapped_column(Boolean, default=False, comment="주말 여부")
 
 
 # ==========================================
