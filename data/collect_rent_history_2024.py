@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 # ==========================================
 # 모듈 임포트 및 초기 환경 설정
 # ==========================================
-from common_utils import init_db, get_session, fetch_api_json, os, engine, TARGET_DISTRICTS
-from models.models import RentHistory, StationLoc
+from common_utils import verify_db, get_session, fetch_api_json, os, engine, TARGET_DISTRICTS
+from models.models import StationLoc
 
 
 # ==========================================
@@ -176,5 +176,5 @@ def load_monthly_data(target_month: int):
 
 
 if __name__ == "__main__":
-    init_db(engine, models=[RentHistory]) # DB 연결 및 초기화
+    verify_db(engine) # DB 연결
     load_monthly_data(int(input("\n수집할 월을 입력하세요 (1~12): ")))

@@ -2,7 +2,7 @@ import os
 import sys
 import requests
 from dotenv import load_dotenv
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, text
 
 # ==========================================
 # 프로젝트 경로 및 환경변수 설정
@@ -68,3 +68,15 @@ def fetch_api_json(url, params=None):
     except Exception as e:
         print(f"API 에러 발생: {e}")
         return None
+
+
+def verify_db(engine):
+    """
+    테이블 생성(초기화) 없이 DB 연결 상태만 확인합니다.
+    """
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("DB 연결 확인 성공: 테이블 생성은 건너뜁니다.")
+    except Exception as e:
+        print(f"DB 연결 실패: {e}")
