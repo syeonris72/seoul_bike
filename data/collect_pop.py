@@ -8,7 +8,7 @@ from sqlalchemy import text
 # 모듈 임포트 및 초기 환경 설정
 # ==========================================
 from common_utils import init_db, SessionLocal, fetch_api_json, os, engine, TARGET_DISTRICTS
-from models.models import PopFlow2024, PopLiving2024
+from models.models import PopFlow2024, PopLiving2024, PopMaster
 from database.orm import Base
 
 # 자치구 코드
@@ -163,7 +163,7 @@ def collect_pop_living():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db(engine, models=[PopFlow2024, PopLiving2024]) # DB 연결 및 초기화
+    init_db(engine, models=[PopFlow2024, PopLiving2024, PopMaster]) # DB 연결 및 초기화
     collect_pop_flow()  # 유동인구 데이터 적재
     collect_pop_living()  # 생활인구 데이터 적재
     print("\n========== 인구 데이터 수집 종료 ==========")
