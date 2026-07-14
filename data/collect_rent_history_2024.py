@@ -3,22 +3,31 @@ import calendar
 import pandas as pd
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine
+from sqlalchemy.dialects.mysql import insert
 
-# ==========================================
-# 모듈 임포트 및 초기 환경 설정
-# ==========================================
+# 모듈 임포트 및 환경 설정
 from common_utils import verify_db, get_session, fetch_api_json, os, engine, TARGET_DISTRICTS
 from models.models import StationLoc
 
 # ==========================================
-# 대여 이력 데이터 수집 및 전처리 파이프라인
+# MySQL 전용 중복 무시 삽입 함수
+# ==========================================
+def mysql_insert_ignore(table, conn, keys, data_iter):
+    data = [dict(zip(keys, row)) for row in data_iter]
+    stmt = insert(table.table).values(data)
+    ignore_stmt = stmt.prefix_with("IGNORE")
+    conn.execute(ignore_stmt)
+
+
+# ==========================================
+# 데이터 수집 및 전처리 파이프라인
 # ==========================================
 def load_monthly_data(target_month: int):
-    print(f"\n========== {target_month}월 데이터 수집 및 요약 적재 시작 ==========")
+    print(f"\n{target_month}월 데이터 수집 및 요약 적재 시작")
     db = get_session()
     key = os.getenv("RENT_HISTORY_2024_KEY")
 
-    # 대상 지역에 속하는 대여소 ID 목록 추출
+    # 대상 지역 대여소 ID 목록 추출
     target_stations = db.query(StationLoc.station_id).filter(StationLoc.district.in_(TARGET_DISTRICTS)).all()
     valid_ids = {s[0] for s in target_stations}
 
@@ -30,8 +39,6 @@ def load_monthly_data(target_month: int):
         while current <= end_date:
             date_str = current.strftime("%Y-%m-%d")
             daily_raw_data = []
-
-            print(f"[{date_str}] API 데이터 수집 중")
 
             for hour in range(24):
                 start_idx = 1
@@ -64,7 +71,7 @@ def load_monthly_data(target_month: int):
                     start_idx += 1000
                     time.sleep(0.05)
 
-            # Pandas 1시간 단위 그룹화 및 집계
+            # 데이터프레임 집계
             if daily_raw_data:
                 df = pd.DataFrame(daily_raw_data)
                 df['RENT_DT'] = pd.to_datetime(df['RENT_DT'], errors='coerce')
@@ -73,7 +80,7 @@ def load_monthly_data(target_month: int):
                 df['SEX_CD'] = df['SEX_CD'].astype(str).str.upper().str.strip()
                 df['AGE'] = 2024 - pd.to_numeric(df['BIRTH_YEAR'], errors='coerce')
 
-                # 집계용 파생 변수
+                # 집계용 파생 변수 생성
                 df['male'] = (df['SEX_CD'] == 'M').astype(int)
                 df['female'] = (df['SEX_CD'] == 'F').astype(int)
                 df['gender_unk'] = (~df['SEX_CD'].isin(['M', 'F'])).astype(int)
@@ -131,30 +138,35 @@ def load_monthly_data(target_month: int):
                     rtn_age_unk_cnt=('age_unk', 'sum')
                 ).reset_index().rename(columns={'RETURN_STATION_ID': 'station_id'})
 
-                # 병합 및 데이터 타입 정리
                 final_df = pd.merge(rent_agg, rtn_agg, on=['datetime_hr', 'station_id'], how='outer').fillna(0)
                 int_cols = [col for col in final_df.columns if col.endswith('_cnt') or col == 'total_use_min']
                 final_df[int_cols] = final_df[int_cols].astype(int)
                 final_df['avg_use_min'] = final_df['avg_use_min'].round(2)
 
-                # DB 적재
+                # 데이터 적재
                 try:
-                    final_df.to_sql(name='rent_history_2024', con=engine, if_exists='append', index=False)
-                    print(f"데이터베이스 적재 성공: {len(final_df)}행 추가")
+                    final_df.to_sql(
+                        name='rent_history_2024',
+                        con=engine,
+                        if_exists='append',
+                        index=False,
+                        method=mysql_insert_ignore
+                    )
                 except Exception as e:
-                    print(f"데이터베이스 적재 실패: {e}")
-
-            else:
-                print("수집된 데이터가 없습니다.")
+                    print(f"적재 실패: {e}")
 
             current += timedelta(days=1)
 
     except Exception as e:
-        print(f"프로세스 실행 중 시스템 에러 발생: {e}")
+        print(f"시스템 에러 발생: {e}")
     finally:
         db.close()
-        print(f"========== {target_month}월 데이터 수집 및 요약 적재 프로세스 종료 ==========")
+        print(f"{target_month}월 프로세스 종료")
 
+
+# ==========================================
+# 메인 실행 블록
+# ==========================================
 if __name__ == "__main__":
     verify_db(engine)
-    load_monthly_data(int(input("\n수집할 월을 입력하세요 (1~12): ")))
+    load_monthly_data(int(input("수집할 월 입력: ")))
