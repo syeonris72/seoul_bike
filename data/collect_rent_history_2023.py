@@ -7,7 +7,9 @@ from sqlalchemy.dialects.mysql import insert
 
 # 모듈 임포트 및 환경 설정
 from common_utils import verify_db, get_session, fetch_api_json, os, engine, TARGET_DISTRICTS
-from models.models import StationLoc
+from data.common_utils import init_db
+from models.models import StationLoc, RentHistory2023
+
 
 # ==========================================
 # MySQL 전용 중복 무시 삽입 함수
@@ -20,10 +22,10 @@ def mysql_insert_ignore(table, conn, keys, data_iter):
 
 
 # ==========================================
-# 데이터 수집 및 전처리 파이프라인
+# 💡 2023년 12월 마지막 주 (Lag 패딩용) 데이터 수집
 # ==========================================
-def load_monthly_data(target_month: int):
-    print(f"\n{target_month}월 데이터 수집 및 요약 적재 시작")
+def load_dec_2023_padding_data():
+    print("\n========== [Lag 변수 패딩용] 2023년 12월 마지막 주 데이터 수집 시작 ==========")
     db = get_session()
     key = os.getenv("RENT_HISTORY_KEY")
 
@@ -31,16 +33,18 @@ def load_monthly_data(target_month: int):
     target_stations = db.query(StationLoc.station_id).filter(StationLoc.district.in_(TARGET_DISTRICTS)).all()
     valid_ids = {s[0] for s in target_stations}
 
-    start_date = datetime(2024, target_month, 1)
-    end_date = datetime(2024, target_month, calendar.monthrange(2024, target_month)[1])
+    # 💡 수집 기간 고정: 2023년 12월 25일 ~ 2023년 12월 31일 (딱 7일치)
+    start_date = datetime(2023, 12, 25)
+    end_date = datetime(2023, 12, 31)
     current = start_date
 
     try:
         while current <= end_date:
             date_str = current.strftime("%Y-%m-%d")
+            print(f"데이터 수집 중... 날짜: {date_str}")
             daily_raw_data = []
 
-            for hour in range(24):
+            for hour in range(24):  # 0~23시 수정 (기존 코드의 23은 22시까지만 수집되는 버그 방지)
                 start_idx = 1
                 while True:
                     url = f"http://openapi.seoul.go.kr:8088/{key}/json/tbCycleRentData/{start_idx}/{start_idx + 999}/{date_str}/{hour}"
@@ -57,10 +61,10 @@ def load_monthly_data(target_month: int):
                         rt_nm = item.get("RTN_NM", "")
 
                         is_target = (
-                            (r_station_id in valid_ids) or
-                            (rt_station_id in valid_ids) or
-                            ("여의" in r_nm) or ("마곡" in r_nm) or
-                            ("여의" in rt_nm) or ("마곡" in rt_nm)
+                                (r_station_id in valid_ids) or
+                                (rt_station_id in valid_ids) or
+                                ("여의" in r_nm) or ("마곡" in r_nm) or
+                                ("여의" in rt_nm) or ("마곡" in rt_nm)
                         )
 
                         if is_target:
@@ -78,6 +82,8 @@ def load_monthly_data(target_month: int):
                 df['RTN_DT'] = pd.to_datetime(df['RTN_DT'], errors='coerce')
                 df['USE_MIN'] = pd.to_numeric(df['USE_MIN'], errors='coerce').fillna(0)
                 df['SEX_CD'] = df['SEX_CD'].astype(str).str.upper().str.strip()
+
+                # 💡 나이는 2024년 데이터와 병합하기 위해 똑같이 2024년 기준으로 계산
                 df['AGE'] = 2024 - pd.to_numeric(df['BIRTH_YEAR'], errors='coerce')
 
                 # 집계용 파생 변수 생성
@@ -95,7 +101,8 @@ def load_monthly_data(target_month: int):
                 # 대여 기준 집계
                 df_rent = df.dropna(subset=['RENT_DT', 'RENT_STATION_ID']).copy()
                 df_rent['datetime_hr'] = df_rent['RENT_DT'].dt.floor('h')
-                df_rent = df_rent[df_rent['RENT_STATION_ID'].isin(valid_ids) | df_rent['RENT_NM'].str.contains('여의|마곡', na=False)]
+                df_rent = df_rent[
+                    df_rent['RENT_STATION_ID'].isin(valid_ids) | df_rent['RENT_NM'].str.contains('여의|마곡', na=False)]
                 df_rent['general_rent_cnt'] = (df_rent['BIKE_SE_CD'] == '일반자전거').astype(int)
                 df_rent['sprout_rent_cnt'] = (df_rent['BIKE_SE_CD'] == '새싹자전거').astype(int)
 
@@ -119,7 +126,8 @@ def load_monthly_data(target_month: int):
                 # 반납 기준 집계
                 df_rtn = df.dropna(subset=['RTN_DT', 'RETURN_STATION_ID']).copy()
                 df_rtn['datetime_hr'] = df_rtn['RTN_DT'].dt.floor('h')
-                df_rtn = df_rtn[df_rtn['RETURN_STATION_ID'].isin(valid_ids) | df_rtn['RTN_NM'].str.contains('여의|마곡', na=False)]
+                df_rtn = df_rtn[
+                    df_rtn['RETURN_STATION_ID'].isin(valid_ids) | df_rtn['RTN_NM'].str.contains('여의|마곡', na=False)]
                 df_rtn['general_rtn_cnt'] = (df_rtn['BIKE_SE_CD'] == '일반자전거').astype(int)
                 df_rtn['sprout_rtn_cnt'] = (df_rtn['BIKE_SE_CD'] == '새싹자전거').astype(int)
 
@@ -143,10 +151,9 @@ def load_monthly_data(target_month: int):
                 final_df[int_cols] = final_df[int_cols].astype(int)
                 final_df['avg_use_min'] = final_df['avg_use_min'].round(2)
 
-                # 데이터 적재
                 try:
                     final_df.to_sql(
-                        name='rent_history_2024',
+                        name='rent_history_2023',
                         con=engine,
                         if_exists='append',
                         index=False,
@@ -161,12 +168,13 @@ def load_monthly_data(target_month: int):
         print(f"시스템 에러 발생: {e}")
     finally:
         db.close()
-        print(f"{target_month}월 프로세스 종료")
+        print("2023년 12월 마지막 주 수집 프로세스 종료")
 
 
 # ==========================================
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    verify_db(engine)
-    load_monthly_data(int(input("수집할 월 입력: ")))
+    init_db(RentHistory2023)
+    # 별도 입력 없이 바로 실행되도록 수정
+    load_dec_2023_padding_data()

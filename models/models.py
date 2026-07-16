@@ -11,8 +11,41 @@ from typing import Optional
 # ==========================================
 
 # 월별 대여 이력 테이블(2024)
-class RentHistory(Base):
+class RentHistory2024(Base):
     __tablename__ = "rent_history_2024"
+    datetime_hr = Column(DateTime, primary_key=True, comment="기준 시간 (1시간 단위)")
+    station_id = Column(String(50), primary_key=True, comment="대여소 ID")
+    general_rent_cnt = Column(Integer, default=0, comment="일반자전거 대여 건수")
+    sprout_rent_cnt = Column(Integer, default=0, comment="새싹자전거 대여 건수")
+    general_rtn_cnt = Column(Integer, default=0, comment="일반자전거 반납 건수")
+    sprout_rtn_cnt = Column(Integer, default=0, comment="새싹자전거 반납 건수")
+    total_use_min = Column(Integer, default=0, comment="총 사용 시간(분)")
+    avg_use_min = Column(Float, default=0.0, comment="평균 사용 시간(분)")
+    rent_male_cnt = Column(Integer, default=0, comment="대여 남성 건수")
+    rent_female_cnt = Column(Integer, default=0, comment="대여 여성 건수")
+    rent_gender_unk_cnt = Column(Integer, default=0, comment="대여 성별 미상 건수")
+    rtn_male_cnt = Column(Integer, default=0, comment="반납 남성 건수")
+    rtn_female_cnt = Column(Integer, default=0, comment="반납 여성 건수")
+    rtn_gender_unk_cnt = Column(Integer, default=0, comment="반납 성별 미상 건수")
+    rent_age_10_cnt = Column(Integer, default=0, comment="대여 10대(이하) 건수")
+    rent_age_20_cnt = Column(Integer, default=0, comment="대여 20대 건수")
+    rent_age_30_cnt = Column(Integer, default=0, comment="대여 30대 건수")
+    rent_age_40_cnt = Column(Integer, default=0, comment="대여 40대 건수")
+    rent_age_50_cnt = Column(Integer, default=0, comment="대여 50대 건수")
+    rent_age_60_cnt = Column(Integer, default=0, comment="대여 60대 이상 건수")
+    rent_age_unk_cnt = Column(Integer, default=0, comment="대여 연령 미상 건수")
+    rtn_age_10_cnt = Column(Integer, default=0, comment="반납 10대(이하) 건수")
+    rtn_age_20_cnt = Column(Integer, default=0, comment="반납 20대 건수")
+    rtn_age_30_cnt = Column(Integer, default=0, comment="반납 30대 건수")
+    rtn_age_40_cnt = Column(Integer, default=0, comment="반납 40대 건수")
+    rtn_age_50_cnt = Column(Integer, default=0, comment="반납 50대 건수")
+    rtn_age_60_cnt = Column(Integer, default=0, comment="반납 60대 이상 건수")
+    rtn_age_unk_cnt = Column(Integer, default=0, comment="반납 연령 미상 건수")
+
+
+# 월별 대여 이력 테이블(2023)
+class RentHistory2023(Base):
+    __tablename__ = "rent_history_2023"
     datetime_hr = Column(DateTime, primary_key=True, comment="기준 시간 (1시간 단위)")
     station_id = Column(String(50), primary_key=True, comment="대여소 ID")
     general_rent_cnt = Column(Integer, default=0, comment="일반자전거 대여 건수")
@@ -71,6 +104,7 @@ class RtBikeStatus(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="데이터수집일시")
 
 
+# 수요 예측용 마스터 테이블
 class DemandPredictMaster(Base):
     __tablename__ = "demand_predict_master_2024"
     datetime_hr: Mapped[datetime] = mapped_column(DateTime, primary_key=True, comment="기준 시간 (1시간 단위)")
