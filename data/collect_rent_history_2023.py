@@ -175,6 +175,6 @@ def load_dec_2023_padding_data():
 # 메인 실행 블록
 # ==========================================
 if __name__ == "__main__":
-    init_db(RentHistory2023)
+    init_db(engine, models=[RentHistory2023])
     # 별도 입력 없이 바로 실행되도록 수정
     load_dec_2023_padding_data()
