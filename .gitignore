@@ -13,6 +13,7 @@ __pycache__/
 # 대용량 데이터 및 공간정보(SHP) 파일
 # (data 폴더 안의 파이썬 코드들(.py)은 이 설정에 영향을 받지 않고 정상 업로드됩니다.)
 data/infra_river_SHP/
+data/rent_history/
 data/*.csv
 
 # 머신러닝 모델 파일 (대용량), 배포할 때는 필요함
