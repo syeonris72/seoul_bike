@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 프로필 - 따릉이 재배치 기사</title>
+  <!-- Bootstrap 5.3.3 CSS CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <!-- 드라이버 프로필 전용 CSS -->
+  <link rel="stylesheet" href="css/driver_profile.css" />
+</head>
+<body>
+
+  <div class="profile-wrap">
+    <!-- 상단 뒤로가기 -->
+    <a href="driver_dashboard.html" class="profile-back mb-3"><i class="bi bi-arrow-left"></i> 내 작업으로 돌아가기</a>
+
+    <!-- 프로필 상단 카드 (배너 및 아바타) -->
+    <div class="profile-top-card">
+      <div class="profile-banner"></div>
+      <div class="profile-main-info">
+        <div class="profile-avatar-box driver" id="profileAvatarInitial">김</div>
+      </div>
+      <div class="profile-name-area">
+        <h4 class="fw-bold mb-1" id="profileNameDisplay">김따릉</h4>
+        <span class="badge bg-warning-subtle text-warning-emphasis fw-semibold px-2 py-1">재배치 기사</span>
+        <div class="text-muted small mt-1 font-monospace" id="profileIdDisplay">DRV-2024-0090</div>
+      </div>
+    </div>
+
+    <!-- 기본 정보 카드 -->
+    <div class="profile-card">
+      <h6 class="fw-bold mb-3">기본 정보</h6>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">이름</label>
+        <div class="profile-info-box" id="infoName">김따릉</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">연락처</label>
+        <div class="profile-info-box" id="infoPhone">010-9876-5432</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">이메일</label>
+        <div class="profile-info-box" id="infoEmail">driver_kim@seoul.go.kr</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">사번</label>
+        <div class="profile-info-box" id="infoEmpId">DRV-2024-0090</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">담당 구역</label>
+        <div class="profile-info-box" id="infoDistrict">마포구</div>
+      </div>
+
+      <div class="mb-0">
+        <label class="form-label text-muted small fw-semibold">입사일</label>
+        <div class="profile-info-box" id="infoJoinedDate">2026-07-05</div>
+      </div>
+    </div>
+
+    <!-- 활동 현황 카드 -->
+    <div class="profile-card">
+      <h6 class="fw-bold mb-3">작업 활동 현황</h6>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">오늘 완료</div>
+            <div class="activity-value">재배치 지시서 5건</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">총 누적 수거/배치</div>
+            <div class="activity-value">자전거 420대</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">주요 활동 구역</div>
+            <div class="activity-value" id="activityDistrict">마포구</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">현재 상태</div>
+            <div class="activity-value text-success">업무 대기 중</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5.3.3 JS Bundle CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <!-- 공통 헤더 JS -->
+  <script src="js/header.js"></script>
+  <script src="js/mock_data.js"></script>
+  <!-- 드라이버 프로필 전용 JS -->
+  <script src="js/driver_profile.js"></script>
+</body>
+</html>

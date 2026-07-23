@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>따릉이 - 대여/반납 이력</title>
+
+<!-- 공통 헤더 렌더링을 위한 Bootstrap 및 헤더 CSS 필수 추가 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="css/header.css">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<!-- 대여/반납 이력 전용 CSS -->
+<link rel="stylesheet" href="css/user_rental.css">
+</head>
+<body>
+
+  <!-- 공통 헤더(관리자 템플릿)가 삽입되는 공간 -->
+  <div id="app-header"></div>
+
+  <main class="page">
+    <div class="page-head">
+      <h1>대여/반납 이력</h1>
+      <p>최근 대여하고 반납한 내역을 확인할 수 있어요.</p>
+    </div>
+
+    <div class="month-tabs">
+      <button type="button" class="active" data-month="7">7월</button>
+      <button type="button" data-month="6">6월</button>
+      <button type="button" data-month="5">5월</button>
+    </div>
+
+    <div class="summary-card">
+      <div class="item"><b id="summaryCount">0회</b><span>이용횟수</span></div>
+      <div class="item"><b id="summaryTime">0분</b><span>이용시간</span></div>
+      <div class="item"><b id="summaryDist">0.0km</b><span>이용거리</span></div>
+      <div class="item"><b id="summaryCarbon">0.0kg</b><span>탄소저감</span></div>
+    </div>
+
+    <div class="history-list" id="historyList">
+      <!-- 자바스크립트로 동적 렌더링 -->
+    </div>
+  </main>
+
+  <!-- 공통 헤더 JS (Bootstrap 포함) 추가 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="js/header.js"></script>
+  <script>
+    // JS에서 유저 헤더를 렌더링 하도록 실행 명령 추가
+    window.onload = function() {
+        var raw = localStorage.getItem('loggedInUser');
+        var currentUser = raw ? JSON.parse(raw) : { name: '이용자' };
+
+        if(typeof renderHeader === 'function') {
+            renderHeader('rental', { role: 'user', name: currentUser.name });
+        }
+    };
+  </script>
+
+  <!-- 🔥 누락되었던 mock_data.js 추가 (반드시 user_rental.js보다 먼저 와야 함) 🔥 -->
+  <script src="js/mock_data.js"></script>
+
+  <!-- 대여/반납 이력 전용 JS -->
+  <script src="js/user_rental.js"></script>
+</body>
+</html>

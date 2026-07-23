@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 프로필 - 따릉이 관제</title>
+  <!-- Bootstrap 5.3.3 CSS CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <!-- 프로필 전용 CSS -->
+  <link rel="stylesheet" href="css/admin_profile.css" />
+</head>
+<body>
+  <div class="profile-wrap">
+    <a href="admin_dashboard.html" class="profile-back mb-3"><i class="bi bi-arrow-left"></i> 대시보드로 돌아가기</a>
+
+    <div class="profile-top-card">
+      <div class="profile-banner"></div>
+      <div class="profile-main-info">
+        <div class="profile-avatar-box" id="profileAvatarInitial">김</div>
+      </div>
+      <div class="profile-name-area mt-2">
+        <h4 class="fw-bold mb-1" id="profileNameDisplay">김관제</h4>
+        <span class="badge bg-success-subtle text-success fw-semibold px-2 py-1" id="profileRoleBadge">중앙 본부 관리자</span>
+        <div class="text-muted small mt-1 font-monospace" id="profileIdDisplay">EMP-2024-0001</div>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <h6 class="fw-bold mb-3">기본 정보</h6>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">이름</label>
+        <div class="profile-info-box" id="infoName">김관제</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">연락처</label>
+        <div class="profile-info-box" id="infoPhone">02-120-1234</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">이메일</label>
+        <div class="profile-info-box" id="infoEmail">control@seoul.go.kr</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">사번</label>
+        <div class="profile-info-box" id="infoEmpId">EMP-2024-0001</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">역할</label>
+        <div class="profile-info-box" id="infoRole">중앙 본부 관리자</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">담당 구역</label>
+        <div class="profile-info-box" id="infoDistrict">서울시 전체</div>
+      </div>
+      <div class="mb-0">
+        <label class="form-label text-muted small fw-semibold">입사일</label>
+        <div class="profile-info-box" id="infoJoinedDate">2021-03-15</div>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <h6 class="fw-bold mb-3">활동 현황</h6>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">오늘 완료</div>
+            <div class="activity-value">지시서 12건 처리</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">총 누적</div>
+            <div class="activity-value">지시서 1,284건 발송</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">입사일</div>
+            <div class="activity-value" id="activityJoinedDate">2021-03-15</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">담당 구역</div>
+            <div class="activity-value" id="activityDistrict">서울시 전체</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="js/mock_data.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/admin_profile.js"></script>
+</body>
+</html>

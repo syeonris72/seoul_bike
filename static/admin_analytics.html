@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 분석 - 따릉이 관제 (마포구)</title>
+    <!-- Bootstrap 5.3.3 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- 공통 헤더 CSS -->
+    <link rel="stylesheet" href="css/header.css" />
+    <!-- 데이터 분석 전용 CSS -->
+    <link rel="stylesheet" href="css/admin_analytics.css" />
+</head>
+<body>  
+
+<div id="app-header"></div>
+
+<div class="container-fluid px-4" style="max-width: 1600px;">
+    <div class="page-header d-flex justify-content-between align-items-end">
+        <div>
+            <h2 class="page-title">데이터 분석</h2>
+            <div class="page-subtitle" id="pageSubtitleDistrict">운영 현황 분석</div>
+        </div>
+        <div class="header-buttons d-flex gap-2">
+            <button class="btn active-tab" id="tabBtnStatus" onclick="switchTab('status')">
+                <i class="bi bi-building"></i> 구 현황
+            </button>
+            <button class="btn" id="tabBtnWeather" onclick="switchTab('weather')">
+                <i class="bi bi-cloud-sun"></i> AI 날씨 예측
+            </button>
+        </div>
+    </div>
+
+    <!-- 탭 1: 구 현황 -->
+    <div id="sectionStatus">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card card-green text-green">
+                    <i class="bi bi-bicycle stat-icon"></i>
+                    <div class="stat-value" id="statTodayRentals">-</div>
+                    <div class="stat-label">금일 총 대여량</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card card-red text-red">
+                    <i class="bi bi-bell stat-icon"></i>
+                    <div class="stat-value" id="statUrgentCount">-</div>
+                    <div class="stat-label">긴급 출동 요망</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card card-orange text-orange">
+                    <i class="bi bi-layers stat-icon"></i>
+                    <div class="stat-value" id="statFullCount">-</div>
+                    <div class="stat-label">과포화 수거 요망</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">시간대별 수요 현황</div>
+            <div class="chart-subtitle">마포구 · 오늘 기준</div>
+            <div class="chart-container">
+                <div class="mock-x-axis d-none d-md-flex">
+                    <span>00시</span><span>04시</span><span>08시</span><span>12시</span><span>16시</span><span>20시</span>
+                </div>
+                <canvas id="demandChart" style="width: 100%; height: 100%; z-index: 10; position: relative;"></canvas>
+                <div class="chart-legend" style="position: absolute; bottom: 0;">
+                    <span class="legend-item"><i class="bi bi-square-fill text-danger"></i> 피크 시간대</span>
+                    <span class="legend-item"><i class="bi bi-square-fill text-success"></i> 일반</span>
+                    <span class="legend-item"><i class="bi bi-square-fill" style="color:#e9ecef;"></i> 저수요</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="list-card">
+            <div class="list-header-flex">
+                <div>
+                    <div class="list-title">만성 불균형 대여소</div>
+                    <div class="list-subtitle">현재 고갈/과포화 상태인 대여소 — 증설/축소 정책 건의용</div>
+                </div>
+                <button class="btn-export"><i class="bi bi-download"></i> CSV 내보내기</button>
+            </div>
+            <div class="list-group list-group-flush" id="chronicList"></div>
+        </div>
+    </div>
+
+    <!-- 탭 2: AI 날씨 예측 -->
+    <div id="sectionWeather" style="display: none;">
+        <div class="weather-predict-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="bi bi-robot text-success"></i> AI 날씨 연동 수요 예측</h5>
+                    <p class="text-muted small mb-0">내일 기상 예보를 가중치로 적용한 동적 혼잡도 예측</p>
+                </div>
+                <div class="border rounded-pill px-3 py-1 bg-light text-secondary small fw-bold">
+                    <i class="bi bi-calendar-event"></i> 내일 예보 <span class="text-dark">강수 확률 80% · 최고 16°C</span>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th style="width: 12%;">시간대</th>
+                            <th style="width: 18%;">강수 확률</th>
+                            <th style="width: 12%;">기온</th>
+                            <th style="width: 20%;">예상 수요</th>
+                            <th style="width: 18%;">권장 조정</th>
+                            <th style="width: 20%;">근거</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weatherTableBody" style="font-size: 0.9rem;">
+                        <!-- 백엔드 데이터 연동 영역 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5.3 JS Bundle CDN -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 공통 헤더 JS -->
+<script src="js/header.js"></script>
+<!-- 모의 데이터(DB 객체) 스크립트를 먼저 로드 -->
+<script src="js/mock_data.js"></script>
+<!-- 데이터 분석 전용 JS -->
+<script src="js/admin_analytics.js"></script>
+</body>
+</html>

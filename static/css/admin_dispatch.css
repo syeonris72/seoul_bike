@@ -1,0 +1,119 @@
+/* admin_dispatch.css */
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f7f9fa;
+    color: #333;
+}
+
+/* --- 페이지 헤더 --- */
+.page-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.2rem; }
+
+.last-update-label { font-size: 0.8rem; color: #888; font-weight: 600; white-space: nowrap; }
+
+.ai-tab-btn {
+    background-color: #fff; border: 1.5px solid #d9c8ff; color: #7c3aed;
+    font-weight: 700; font-size: 0.85rem; border-radius: 999px; padding: 0.5rem 1rem;
+    display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
+}
+.ai-tab-btn:hover, .ai-tab-btn.active { background-color: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+/* --- 상단 필터 (상태 탭 + 자치구 칩) --- */
+.filter-section { border-bottom: 1px solid #eef0f2; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+
+.filter-pill { border-radius: 20px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; color: #555; background-color: #f4f5f7; border: none; cursor: pointer; transition: all 0.2s; }
+.filter-pill.active { background-color: #333; color: #fff; }
+.filter-pill .count { margin-left: 4px; font-weight: 800; }
+
+.district-chip {
+    border-radius: 20px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; color: #555;
+    background-color: #fff; border: 1.5px solid #eef0f2; cursor: pointer; transition: all 0.2s;
+}
+.district-chip.active { background-color: #eafbf0; border-color: #00c764; color: #00964e; }
+
+/* --- 지시서 리스트 (단일 리스트, 항목별 상태 표시) --- */
+.order-list { display: flex; flex-direction: column; gap: 0.8rem; }
+
+.order-row { background-color: #fff; border-radius: 12px; border: 1px solid #eef0f2; padding: 1rem 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.order-row.urgent { border-color: #f8d7da; }
+.order-row .order-status-badge { flex-shrink: 0; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.7rem; border-radius: 999px; }
+.order-status-badge.waiting { background-color: #f4f5f7; color: #6b7280; }
+.order-status-badge.progress { background-color: #eef2ff; color: #4b7bec; }
+.order-status-badge.completed { background-color: #eafbf0; color: #00964e; }
+
+.order-row .order-main { flex: 1; min-width: 220px; }
+.order-row .order-route { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.order-row .order-route .badge-urgent { background-color: #fdf5f5; color: #ff5252; border: 1px solid #ff5252; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 700; }
+.order-row .order-sub { font-size: 0.78rem; color: #888; margin-top: 4px; }
+.order-row .order-qty-block { text-align: right; flex-shrink: 0; }
+.order-row .order-qty-block .qty { font-size: 1.05rem; font-weight: 800; }
+.order-row .order-qty-block .qty-sub { font-size: 0.72rem; color: #888; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 0; color: #adb5bd; font-size: 0.85rem; font-weight: 500; }
+.empty-state i { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5; }
+
+/* --- AI 자동 추천 --- */
+.ai-recommend-card { background-color: #fff; border-radius: 16px; border: 1px solid #eef0f2; padding: 1.5rem; }
+.ai-recommend-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.ai-recommend-title { font-size: 1.1rem; font-weight: 800; color: #7c3aed; display: flex; align-items: center; gap: 8px; }
+.ai-recommend-subtitle { font-size: 0.82rem; color: #888; margin-top: 4px; }
+.btn-send-selected { background-color: #7c3aed; color: #fff; font-weight: 700; font-size: 0.85rem; border: none; border-radius: 10px; padding: 0.6rem 1.2rem; white-space: nowrap; }
+.btn-send-selected:disabled { background-color: #d1c4f0; cursor: not-allowed; }
+
+.ai-select-all-row { display: flex; align-items: center; gap: 8px; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #eef0f2; font-size: 0.85rem; font-weight: 600; }
+.ai-select-all-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.ai-selected-count { margin-left: auto; color: #888; font-weight: 500; }
+
+.ai-recommend-item { display: flex; align-items: center; gap: 12px; padding: 0.9rem; border: 1px solid #eef0f2; border-radius: 10px; margin-bottom: 0.6rem; }
+.ai-recommend-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+.ai-recommend-item .priority-badge { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; flex-shrink: 0; }
+.priority-badge.high { background-color: #fdf5f5; color: #ff5252; }
+.priority-badge.mid { background-color: #fef8f0; color: #f79624; }
+.ai-recommend-item .info { flex: 1; min-width: 180px; }
+.ai-recommend-item .info .name { font-size: 0.92rem; font-weight: 700; }
+.ai-recommend-item .info .addr { font-size: 0.75rem; color: #888; margin-top: 2px; }
+.ai-recommend-item .qty { font-size: 0.9rem; font-weight: 800; text-align: right; flex-shrink: 0; }
+.ai-edit-btn { background-color: #f4f5f7; border: none; color: #333; font-weight: 700; font-size: 0.8rem; border-radius: 8px; padding: 0.5rem 0.9rem; flex-shrink: 0; }
+.ai-edit-btn:hover { background-color: #e5e7eb; }
+
+/* --- 모달 (지시서 작성 폼) 커스텀 --- */
+.modal-content { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.modal-header { border-bottom: 1px solid #eef0f2; padding: 1.5rem; }
+.modal-title { font-weight: 800; font-size: 1.2rem; }
+.modal-body { padding: 1.5rem; background-color: #fdfdfd; }
+.modal-footer { border-top: 1px solid #eef0f2; padding: 1rem 1.5rem; background-color: #fff; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;}
+
+.section-title { font-size: 0.9rem; font-weight: 800; margin-bottom: 0.8rem; display: block; }
+.form-section { background: #fff; border: 1px solid #eef0f2; border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; }
+
+/* 긴급 토글 */
+.emergency-box { display: flex; justify-content: space-between; align-items: center; }
+.emergency-box h6 { font-weight: 800; margin: 0; color: #ff5252; }
+.form-switch .form-check-input { width: 2.5em; height: 1.2em; cursor: pointer; }
+.form-switch .form-check-input:checked { background-color: #ff5252; border-color: #ff5252; }
+
+/* 수량 조절 카운터 */
+.counter-grid { display: flex; gap: 1rem; }
+.counter-box { flex: 1; border: 1px solid #eef0f2; border-radius: 8px; padding: 1rem; text-align: center; }
+.bike-label { font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.8rem; }
+.max-label { font-size: 0.72rem; color: #999; font-weight: 500; }
+.counter-controls { display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; border-radius: 6px; padding: 0.2rem; }
+.counter-btn { width: 32px; height: 32px; border: none; background: #fff; border-radius: 4px; font-weight: 800; font-size: 1.2rem; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; }
+.counter-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.counter-val { font-size: 1.1rem; font-weight: 800; width: 40px; }
+
+/* 기사 리스트 */
+.driver-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+.driver-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; border: 1px solid #eef0f2; border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; }
+.driver-item:hover { border-color: #00c764; background-color: #f2fbf5; }
+.driver-item.selected { border-color: #00c764; background-color: #eafbf0; box-shadow: 0 0 0 1px #00c764; }
+.driver-item-info { display: flex; align-items: center; gap: 12px; }
+.driver-item-name { font-weight: 700; font-size: 0.9rem; margin: 0; line-height: 1.2;}
+.driver-item-desc { font-size: 0.75rem; color: #888; margin: 0;}
+.driver-status.waiting { background-color: #f4f5f7; color: #555; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+.driver-status.working { background-color: #eafbf0; color: #00c764; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+.driver-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.65rem; flex-shrink: 0; }
+
+/* 하단 버튼 */
+.btn-black { background-color: #111; color: #fff; font-weight: 700; }
+.btn-black:hover { background-color: #333; color: #fff; }

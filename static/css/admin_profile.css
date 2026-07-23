@@ -1,0 +1,123 @@
+/* admin_profile.css */
+
+body {
+  background-color: #f7f9fa;
+  font-family: 'Pretendard', sans-serif;
+  color: #333;
+}
+
+.profile-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 16px 48px;
+}
+
+.profile-back {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+  font-weight: 600;
+}
+.profile-back:hover { color: #111827; }
+
+/* 프로필 상단 배너 카드 */
+.profile-top-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+  position: relative;
+}
+
+.profile-banner {
+  height: 120px;
+  background: linear-gradient(135deg, #00965e, #34d399);
+}
+
+.profile-main-info {
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: -40px;
+  margin-bottom: 12px;
+}
+
+.profile-avatar-box {
+  width: 80px;
+  height: 80px;
+  background-color: #00965e;
+  color: #ffffff;
+  border: 4px solid #ffffff;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.profile-edit-btn {
+  border-radius: 8px;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.9rem;
+  font-weight: 600;
+}
+
+.profile-name-area {
+  padding: 0 24px 24px 24px;
+}
+
+/* 일반 정보 및 활동 현황 카드 */
+.profile-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+}
+
+.profile-info-box {
+  background-color: #f8f9fa;
+  border: 1px solid #f1f3f5;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* 활동 현황 박스 */
+.activity-box {
+  background-color: #f8f9fa;
+  border: 1px solid #f1f3f5;
+  border-radius: 12px;
+  padding: 16px;
+  height: 100%;
+}
+
+.activity-title {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.activity-value {
+  font-size: 1.05rem;
+  color: #111827;
+  font-weight: 800;
+}
+
+@media (min-width: 576px) {
+  .profile-wrap { padding: 36px 24px 56px; }
+  .profile-card { padding: 28px 32px; }
+}

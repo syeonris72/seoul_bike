@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>따릉이 - 실시간 정류소 현황</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="css/user_dashboard.css">
+</head>
+<body>
+
+  <div id="app-header"></div>
+
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-status-embed">
+        <div class="status-embed-title-row">
+          <span class="status-embed-title">실시간 현황</span>
+          <span class="status-count"></span>
+        </div>
+        <div class="section-head">
+          <span class="note">가까운 정류소부터 보여드려요</span>
+          <div class="tab-group status-tabs">
+            <button type="button" class="active" data-sort="distance">거리순</button>
+            <button type="button" data-sort="availability">여유순</button>
+          </div>
+        </div>
+        <div class="status-list"></div>
+      </div>
+      <div class="sidebar-foot-links">
+        <a href="#">고객센터</a><span class="dot-sep">·</span><a href="#">정류소 제안</a><span class="dot-sep">·</span><a href="#">개인정보처리방침</a>
+      </div>
+    </aside>
+
+    <div class="map-stage">
+      <div class="map-card" id="kakao-map">
+        <div class="map-surface"></div>
+
+        <div class="floating-search-wrap">
+          <i class="bi bi-search search-icon"></i>
+          <input type="text" id="stationSearch" placeholder="장소, 동, 대여소명, ID 검색">
+          <button type="button" id="headerFavBtn" class="fav-btn" title="즐겨찾기 패널">
+            <i class="bi bi-star"></i>
+          </button>
+        </div>
+
+        <div class="map-me" style="left:44%; top:50%;" title="내 위치"><div class="ring"></div><div class="core"></div></div>
+
+        <div class="map-filter-panel">
+          <button class="filter-chip active" data-filter="all"><i></i>전체</button>
+          <button class="filter-chip ok" data-filter="ok"><i></i>여유</button>
+          <button class="filter-chip mid" data-filter="mid"><i></i>보통</button>
+          <button class="filter-chip busy" data-filter="busy"><i></i>혼잡</button>
+        </div>
+
+        <button type="button" class="status-reopen-pill" id="statusReopenPill" aria-label="실시간 현황 다시 열기">실시간 현황</button>
+      </div>
+    </div>
+
+    <div class="status-panel" id="statusPanel">
+      <button class="status-panel-handle" id="statusPanelToggle" type="button" aria-expanded="true" aria-controls="statusPanelBody">
+        <span class="bar"></span>
+        <span class="row"><span class="title">실시간 현황</span><span class="count status-count"></span></span>
+      </button>
+      <div class="status-panel-body" id="statusPanelBody">
+        <div class="section-head">
+          <span class="note">가까운 정류소부터 보여드려요</span>
+          <div class="tab-group status-tabs"><button type="button" class="active" data-sort="distance">거리순</button><button type="button" data-sort="availability">여유순</button></div>
+        </div>
+        <div class="status-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대여소 상세 정보창 (새싹/일반 분리) -->
+  <div class="station-detail-backdrop" id="stationDetailBackdrop"></div>
+  <div class="station-detail-panel" id="stationDetailPanel">
+    <div class="sd-header">
+      <h3 class="sd-title" id="sdTitle">대여소명</h3>
+      <button class="sd-fav-btn" id="sdFavBtn"><i class="bi bi-star"></i></button>
+      <button class="sd-close-btn" id="sdCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="sd-body">
+      <p class="sd-addr" id="sdAddr">주소</p>
+      <div class="sd-stats">
+        <div class="sd-stat-item"><span class="label">일반 자전거</span><strong id="sdGeneral">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">새싹 자전거</span><strong id="sdSprout">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">거치대 수</span><strong id="sdCapacity">0면</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+  <!-- 패널 영역 유지 -->
+  <div class="panel guide-panel" id="guidePanel" role="dialog" aria-hidden="true" aria-label="이용안내 요금정보"><div class="panel-drag-handle"></div><div class="panel-header green"><div class="panel-header-top"><span class="panel-title">이용안내 · 요금정보</span><div class="icon-group"><button class="panel-close" type="button" aria-label="설정">⚙️</button><button class="panel-close" id="guideClose" type="button" aria-label="닫기">✕</button></div></div><div class="guide-user-row"><span>홍길동님</span><span class="chev">›</span></div><div class="ticket-banner"><strong>보유 중인 이용권이 없어요.</strong><span>이용권 구매 / 이용권 번호 입력 ›</span></div></div><div class="panel-list"><a href="#"><span class="ic">🎫</span>이용권 구매</a><a href="#"><span class="ic">📢</span>공지사항</a><a href="#"><span class="ic">📖</span>이용안내</a><a href="#"><span class="ic">🪖</span>자전거 안전수칙</a><a href="#"><span class="ic">🎧</span>고객센터</a><a href="#"><span class="ic">💳</span>추가요금 결제</a><a href="#"><span class="ic">🏆</span>따릉이 이용 랭킹</a><a href="#"><span class="ic">🔁</span>포인트 전환</a></div><div class="panel-brand-foot"><span class="brand-dot"></span><span class="brand-txt">가장 가까운<br>저탄소 이동수단</span><span class="brand-ver">Ver 3.0.9</span></div></div>
+  <div class="panel profile-panel" id="profilePanel" role="dialog" aria-hidden="true" aria-label="내 정보"><div class="panel-drag-handle"></div><div class="panel-header-row"><button class="panel-back" id="profileClose" type="button" aria-label="뒤로가기">‹</button><span class="panel-title">내 정보</span><span style="width:28px"></span></div><div class="profile-id-row"><span class="profile-id">홍길동님</span><button class="edit-info-btn" type="button">회원정보 변경</button></div><div class="stats-card"><div class="stats-top"><span>7월 이용이력</span><a href="user_rental.html">대여반납이력 ›</a></div><div class="stats-divider"></div><div class="stats-grid"><div class="stat-row"><span>이용시간</span><b>0 분</b></div><div class="stat-row"><span>거리</span><b>0.00 km</b></div><div class="stat-row"><span>칼로리</span><b>0.00 kcal</b></div><div class="stat-row"><span>탄소저감</span><b>0.00 kg</b></div></div></div><div class="panel-list"><a href="#"><span class="ic">🔔</span>알림함</a><a href="#"><span class="ic">🎫</span>내 이용권</a><a href="#"><span class="ic">👪</span>가족 등록 관리</a><a href="#"><span class="ic">𔠀</span>환승 마일리지</a><a href="#"><span class="ic">📍</span>재배치 마일리지</a><a href="#"><span class="ic">💳</span>자동 결제수단 등록/변경</a><a href="#"><span class="ic">🧾</span>결제/환불 이력</a><a href="#"><span class="ic">🎟️</span>보유쿠폰</a><a href="#"><span class="ic">➕</span>쿠폰등록</a><div class="divider"></div><a href="index.html" class="logout"><span class="ic">🚪</span>로그아웃</a></div></div>
+
+  <div class="panel favorites-panel" id="favoritesPanel" role="dialog" aria-hidden="true" aria-label="즐겨찾기">
+    <div class="panel-drag-handle"></div>
+    <div class="panel-header-row">
+      <span style="width:28px"></span>
+      <span class="panel-title">즐겨찾기</span>
+      <button class="panel-close" id="favoritesClose" type="button" aria-label="닫기" style="background:var(--bg); color:var(--ink);">✕</button>
+    </div>
+    <div class="fav-panel-body" id="favPanelBody">
+      <div class="fav-list" id="favList"></div>
+      <div class="fav-empty" id="favEmpty">
+        <div class="fav-empty-icon" id="favEmptyIcon">☆</div>
+        <p id="favEmptyText">아직 즐겨찾는 정류소가 없어요.<br>지도에서 정류소를 선택해 추가해보세요.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-modal-backdrop" id="infoModalBackdrop"></div>
+  <div class="info-modal" id="infoModal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="이용안내 요금정보"><div class="info-modal-header"><span class="info-modal-title">서울자전거 따릉이 이용안내</span><button class="info-modal-close" id="infoModalCloseX" type="button" aria-label="닫기">✕</button></div><div class="info-modal-body"><section><h4>이용대상</h4><p>만 13세 이상 (가족회원으로 구매 시 13세 미만도 이용 가능해요. 자세한 내용은 이용약관을 참고해 주세요.)</p></section><section><h4>요금 안내</h4><table class="info-modal-table"><thead><tr><th></th><th>1일권</th><th>7일권</th><th>30일권</th><th>180일권</th><th>365일권</th></tr></thead><tbody><tr><td>1시간권</td><td>1,000원</td><td>3,000원</td><td>5,000원</td><td>15,000원</td><td>30,000원</td></tr><tr><td>2시간권</td><td>2,000원</td><td>4,000원</td><td>7,000원</td><td>20,000원</td><td>40,000원</td></tr><tr><td>3시간권</td><td>3,000원</td><td>-</td><td>-</td><td>-</td><td>-</td></tr></tbody></table><p class="info-modal-note">* 대여 시간을 초과해 반납하면 초과 요금이 부과돼요.</p></section><section><h4>대여 방법</h4><p>앱스토어 또는 구글플레이에서 '따릉이' 앱을 설치하면 이용할 수 있어요.</p><p><b>회원</b> : 회원가입 → 이용권 구매 → 대여소 및 자전거 선택<br><b>비회원</b> : 결제수단 선택 후 QR 이용 → 대여소 및 자전거 선택 (QR 스캔)</p><p class="info-modal-note">회원가입 시 모든 이용권 종류를 구매할 수 있어요. 자세한 사항은 따릉이 홈페이지(bikeseoul.com) 또는 고객센터(1599-0120)로 문의해 주세요.</p></section><section><h4>반납 · 임시잠금</h4><p>거치대에 자전거를 세우고 잠금장치를 채우면 자동으로 반납 처리돼요. 잠시 자리를 비울 때는 임시잠금 기능을 이용해 주세요.</p></section><section><h4>안전 수칙</h4><ul class="info-modal-list"><li>주행 전 타이어, 브레이크, 체인 등을 점검해 주세요.</li><li>안전을 위해 헬멧 등 보호장구를 반드시 착용해 주세요.</li><li>주행 중에는 휴대전화, 이어폰을 사용하지 마세요.</li><li>음주 후에는 자전거를 이용하지 마세요.</li><li>횡단보도와 보도에서는 자전거를 끌고 이동해 주세요.</li></ul></section></div><div class="info-modal-footer"><label class="info-modal-checkbox"><input type="checkbox" id="infoModalHideToday">오늘 하루동안 안 보기</label><button class="info-modal-close-btn" id="infoModalCloseBtn" type="button">닫기</button></div></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="js/header.js"></script>
+  <script>
+    window.onload = function() {
+        if(typeof renderHeader === 'function') {
+            renderHeader('dashboard', { role: 'user', name: '홍길동', id: 1 });
+        }
+    };
+  </script>
+  <script src="js/mock_data.js"></script>
+  <script src="js/user_dashboard.js"></script>
+</body>
+</html>
