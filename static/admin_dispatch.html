@@ -49,22 +49,30 @@
         <div class="order-list" id="orderList"></div>
     </div>
 
-    <!-- AI 자동 추천 뷰 -->
-    <div id="aiRecommendSection" style="display:none;">
-        <div class="ai-recommend-card">
-            <div class="ai-recommend-header">
-                <div>
-                    <div class="ai-recommend-title"><i class="bi bi-stars"></i> AI 자동 추천 재배치</div>
-                    <div class="ai-recommend-subtitle">실시간 재고 데이터를 분석해 우선순위가 높은 재배치 건을 자동으로 추천합니다.</div>
+</div>
+
+<!-- [모달] AI 자동 추천 재배치 -->
+<div class="modal fade" id="aiRecommendModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 780px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-stars text-purple"></i> AI 자동 추천 재배치</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ai-recommend-card border-0 p-0">
+                    <div class="ai-recommend-header">
+                        <div class="ai-recommend-subtitle mt-0">실시간 재고 데이터를 분석해 우선순위가 높은 재배치 건을 자동으로 추천합니다.</div>
+                        <button type="button" class="btn-send-selected" id="sendSelectedBtn">선택 항목 일괄 발송</button>
+                    </div>
+                    <div class="ai-select-all-row">
+                        <input type="checkbox" id="aiSelectAll">
+                        <label for="aiSelectAll">전체 선택</label>
+                        <span class="ai-selected-count" id="aiSelectedCount">0건 선택됨</span>
+                    </div>
+                    <div id="aiRecommendList"></div>
                 </div>
-                <button type="button" class="btn-send-selected" id="sendSelectedBtn">선택 항목 일괄 발송</button>
             </div>
-            <div class="ai-select-all-row">
-                <input type="checkbox" id="aiSelectAll">
-                <label for="aiSelectAll">전체 선택</label>
-                <span class="ai-selected-count" id="aiSelectedCount">0건 선택됨</span>
-            </div>
-            <div id="aiRecommendList"></div>
         </div>
     </div>
 </div>
@@ -96,9 +104,9 @@
                         <div class="form-section">
                             <label class="section-title"><i class="bi bi-circle-fill text-danger me-1" style="font-size:0.5rem"></i> 수거 대여소 (출발지)</label>
                             <div class="row g-2">
-                                <div class="col-4"><select class="form-select form-select-sm bg-light" id="fromDistrictSelect"><option value="">자치구</option></select></div>
-                                <div class="col-4"><select class="form-select form-select-sm bg-light" id="fromDongSelect"><option value="">행정동</option></select></div>
-                                <div class="col-4"><select class="form-select form-select-sm bg-light" id="fromStationSelect"><option value="">대여소</option></select></div>
+                                <div class="col-12 col-sm-4"><select class="form-select form-select-sm bg-light" id="fromDistrictSelect"><option value="">자치구</option></select></div>
+                                <div class="col-12 col-sm-4"><select class="form-select form-select-sm bg-light" id="fromDongSelect"><option value="">행정동</option></select></div>
+                                <div class="col-12 col-sm-4"><select class="form-select form-select-sm bg-light" id="fromStationSelect"><option value="">대여소</option></select></div>
                             </div>
                         </div>
 
@@ -106,9 +114,9 @@
                         <div class="form-section">
                             <label class="section-title"><i class="bi bi-circle-fill text-success me-1" style="font-size:0.5rem"></i> 배치 대여소 (도착지)</label>
                             <div class="row g-2">
-                                <div class="col-4"><select class="form-select form-select-sm bg-light" id="toDistrictSelect"><option value="">자치구</option></select></div>
-                                <div class="col-4"><select class="form-select form-select-sm bg-light" id="toDongSelect"><option value="">행정동</option></select></div>
-                                <div class="col-4"><select class="form-select form-select-sm bg-light" id="toStationSelect"><option value="">대여소</option></select></div>
+                                <div class="col-12 col-sm-4"><select class="form-select form-select-sm bg-light" id="toDistrictSelect"><option value="">자치구</option></select></div>
+                                <div class="col-12 col-sm-4"><select class="form-select form-select-sm bg-light" id="toDongSelect"><option value="">행정동</option></select></div>
+                                <div class="col-12 col-sm-4"><select class="form-select form-select-sm bg-light" id="toStationSelect"><option value="">대여소</option></select></div>
                             </div>
                         </div>
 

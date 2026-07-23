@@ -10,38 +10,36 @@
       return;
   }
 
-  // DB가 로드되지 않았을 경우를 대비한 안전 장치
   if (typeof DB === 'undefined' || !DB.rental) {
       console.error("DB가 로드되지 않았습니다. mock_data.js 포함 여부를 확인하세요.");
       return;
   }
 
-  // 로그인한 유저의 대여기록만 가져오기
   var myRentals = DB.rental.filter(function(r) { return r.user_id === currentUser.id; });
 
-  var rentalData = { "7": [], "6": [], "5": [] };
-  var summaryData = {
-      "7": { count: 0, time: 0, dist: 0, carbon: 0 },
-      "6": { count: 0, time: 0, dist: 0, carbon: 0 },
-      "5": { count: 0, time: 0, dist: 0, carbon: 0 }
-  };
+  // 연-월(YYYY-M) 단위로 데이터 및 요약 구성
+  var rentalData = {};
+  var summaryRaw = {};
 
-  // DB 데이터를 월별로 분류하여 rentalData와 summaryData 구성
+  function ensureBucket(key) {
+    if (!rentalData[key]) rentalData[key] = [];
+    if (!summaryRaw[key]) summaryRaw[key] = { count: 0, time: 0, dist: 0, carbon: 0 };
+  }
+
   myRentals.forEach(function(r) {
       var dateObj = new Date(r.rent_time);
-      var m = (dateObj.getMonth() + 1).toString();
-
-      if (!rentalData[m]) rentalData[m] = [];
-      if (!summaryData[m]) summaryData[m] = { count: 0, time: 0, dist: 0, carbon: 0 };
+      var year = dateObj.getFullYear();
+      var month = dateObj.getMonth() + 1;
+      var key = year + '-' + month;
+      ensureBucket(key);
 
       var startSt = DB.station.find(function(s) { return s.id === r.rent_station_id; });
       var endSt = DB.station.find(function(s) { return s.id === r.return_station_id; }) || { name: '이용 중' };
 
-      // 대여 중이라 값이 null일 경우를 대비한 예외 처리
       var displayDuration = r.duration_min !== null ? r.duration_min + "분" : "이용 중";
       var displayDist = r.distance_km !== null ? r.distance_km + "km" : "이용 중";
 
-      rentalData[m].push({
+      rentalData[key].push({
           date: r.rent_time.replace('T', ' '),
           fee: "기본요금",
           start: startSt ? startSt.name : '알 수 없음',
@@ -50,26 +48,35 @@
           dist: displayDist
       });
 
-      summaryData[m].count += 1;
-      summaryData[m].time += r.duration_min || 0;
-      summaryData[m].dist += r.distance_km || 0;
-      summaryData[m].carbon += r.carbon_reduction || 0;
+      summaryRaw[key].count += 1;
+      summaryRaw[key].time += r.duration_min || 0;
+      summaryRaw[key].dist += r.distance_km || 0;
+      summaryRaw[key].carbon += r.carbon_reduction || 0;
   });
 
-  // 요약 데이터 텍스트 포맷팅
-  for (var key in summaryData) {
-      summaryData[key].count = summaryData[key].count + "회";
-      summaryData[key].time = summaryData[key].time + "분";
-      summaryData[key].dist = summaryData[key].dist.toFixed(1) + "km";
-      summaryData[key].carbon = summaryData[key].carbon.toFixed(1) + "kg";
-  }
+  // 오늘(2026-07-23) 기준 현재 연-월은 데이터가 없어도 항상 선택 가능하도록 보장
+  var todayYear = 2026, todayMonth = 7;
+  ensureBucket(todayYear + '-' + todayMonth);
 
   var historyListEl = document.getElementById("historyList");
   var monthButtons = document.querySelectorAll(".month-tabs button");
+  var yearSelect = document.getElementById('yearSelect');
+  var monthSelect = document.getElementById('monthSelect');
 
-  function render(month) {
-    var items = rentalData[month] || [];
-    var summary = summaryData[month] || { count: "0회", time: "0분", dist: "0.0km", carbon: "0.0kg" };
+  function formatSummary(key) {
+    var s = summaryRaw[key] || { count: 0, time: 0, dist: 0, carbon: 0 };
+    return {
+      count: s.count + "회",
+      time: s.time + "분",
+      dist: s.dist.toFixed(1) + "km",
+      carbon: s.carbon.toFixed(1) + "kg"
+    };
+  }
+
+  function render(year, month) {
+    var key = year + '-' + month;
+    var items = rentalData[key] || [];
+    var summary = formatSummary(key);
 
     document.getElementById("summaryCount").textContent = summary.count;
     document.getElementById("summaryTime").textContent = summary.time;
@@ -110,15 +117,47 @@
     historyListEl.innerHTML = html;
   }
 
+  // 모바일 월 탭 (당해 연도 기준)
   monthButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       monthButtons.forEach(function (b) { b.classList.remove("active"); });
       btn.classList.add("active");
-      var month = btn.getAttribute("data-month");
-      render(month);
+      var month = parseInt(btn.getAttribute("data-month"), 10);
+      render(todayYear, month);
+      if (yearSelect && monthSelect) { yearSelect.value = todayYear; monthSelect.value = month; }
     });
   });
 
-  // 초기 렌더링 (7월)
-  render("7");
+  // 데스크탑 연도/월 선택
+  if (yearSelect && monthSelect) {
+    var years = Object.keys(rentalData).map(function (k) { return parseInt(k.split('-')[0], 10); });
+    years = Array.from(new Set(years)).sort(function (a, b) { return b - a; });
+
+    years.forEach(function (y) {
+      var opt = document.createElement('option');
+      opt.value = y; opt.textContent = y + '년';
+      yearSelect.appendChild(opt);
+    });
+
+    for (var m = 1; m <= 12; m++) {
+      var mOpt = document.createElement('option');
+      mOpt.value = m; mOpt.textContent = m + '월';
+      monthSelect.appendChild(mOpt);
+    }
+
+    yearSelect.value = todayYear;
+    monthSelect.value = todayMonth;
+
+    function onYearMonthChange() {
+      var year = parseInt(yearSelect.value, 10);
+      var month = parseInt(monthSelect.value, 10);
+      render(year, month);
+      monthButtons.forEach(function (b) { b.classList.toggle('active', year === todayYear && parseInt(b.getAttribute('data-month'), 10) === month); });
+    }
+    yearSelect.addEventListener('change', onYearMonthChange);
+    monthSelect.addEventListener('change', onYearMonthChange);
+  }
+
+  // 초기 렌더링 (오늘 기준 연-월)
+  render(todayYear, todayMonth);
 })();

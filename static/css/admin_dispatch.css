@@ -36,7 +36,7 @@ body {
 
 .order-row { background-color: #fff; border-radius: 12px; border: 1px solid #eef0f2; padding: 1rem 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .order-row.urgent { border-color: #f8d7da; }
-.order-row .order-status-badge { flex-shrink: 0; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.7rem; border-radius: 999px; }
+.order-row .order-status-badge { flex-shrink: 0; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap; }
 .order-status-badge.waiting { background-color: #f4f5f7; color: #6b7280; }
 .order-status-badge.progress { background-color: #eef2ff; color: #4b7bec; }
 .order-status-badge.completed { background-color: #eafbf0; color: #00964e; }
@@ -77,11 +77,22 @@ body {
 .ai-edit-btn:hover { background-color: #e5e7eb; }
 
 /* --- 모달 (지시서 작성 폼) 커스텀 --- */
-.modal-content { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.modal-content { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-height: calc(100vh - 2rem); }
 .modal-header { border-bottom: 1px solid #eef0f2; padding: 1.5rem; }
 .modal-title { font-weight: 800; font-size: 1.2rem; }
-.modal-body { padding: 1.5rem; background-color: #fdfdfd; }
+.modal-body { padding: 1.5rem; background-color: #fdfdfd; overflow-y: auto; }
 .modal-footer { border-top: 1px solid #eef0f2; padding: 1rem 1.5rem; background-color: #fff; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;}
+
+/* --- 반응형: 모바일에서는 좁은 3분할 셀렉트/카운터가 눌리지 않도록 재배치 --- */
+@media (max-width: 575.98px) {
+    .modal-dialog { margin: 0.75rem; }
+    .modal-content { max-height: calc(100vh - 1.5rem); }
+    .modal-header, .modal-body { padding: 1.1rem; }
+    .modal-footer { padding: 0.9rem 1.1rem; flex-wrap: wrap; }
+    .modal-footer > .btn { flex: 1 1 auto; }
+    .counter-grid { flex-direction: column; }
+    .form-section { padding: 1rem; }
+}
 
 .section-title { font-size: 0.9rem; font-weight: 800; margin-bottom: 0.8rem; display: block; }
 .form-section { background: #fff; border: 1px solid #eef0f2; border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; }

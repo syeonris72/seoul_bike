@@ -5,10 +5,14 @@ var ROLE_LABEL = { seoul_admin: '중앙 본부 관리자' };
 // 로그인 사용자 정보 가져오기 (대시보드와 동일한 세션 연동)
 function getCurrentUser() {
     var raw = localStorage.getItem('loggedInUser'); // 통합 세션 키
+    var fallback = { id: 501, role: 'seoul_admin', name: '김관제', district_id: null };
     if (raw) {
-        try { return JSON.parse(raw); } catch (e) { }
+        try {
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.role === 'seoul_admin') return parsed;
+        } catch (e) { }
     }
-    return { id: 501, role: 'seoul_admin', name: '김관제', district_id: null };
+    return fallback;
 }
 
 function fmtNum(n) { return Number(n).toLocaleString('ko-KR'); }
@@ -96,6 +100,8 @@ function renderChronicList() {
 function renderPageSubtitle() {
     document.getElementById('pageSubtitleDistrict').textContent = '서울시 전체 운영 현황 분석';
     document.title = '데이터 분석 - 따릉이 관제 (서울시 전체)';
+    var chartSubtitleEl = document.getElementById('chartSubtitleDistrict');
+    if (chartSubtitleEl) chartSubtitleEl.textContent = '서울시 전체 · 오늘 기준';
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -112,23 +118,3 @@ document.addEventListener('DOMContentLoaded', function () {
         renderChronicList();
     }
 });
-
-// 탭 전환 함수
-function switchTab(tabName) {
-    const btnStatus = document.getElementById('tabBtnStatus');
-    const btnWeather = document.getElementById('tabBtnWeather');
-    const sectionStatus = document.getElementById('sectionStatus');
-    const sectionWeather = document.getElementById('sectionWeather');
-
-    if (tabName === 'status') {
-        btnStatus.classList.add('active-tab');
-        btnWeather.classList.remove('active-tab');
-        sectionStatus.style.display = 'block';
-        sectionWeather.style.display = 'none';
-    } else if (tabName === 'weather') {
-        btnWeather.classList.add('active-tab');
-        btnStatus.classList.remove('active-tab');
-        sectionStatus.style.display = 'none';
-        sectionWeather.style.display = 'block';
-    }
-}

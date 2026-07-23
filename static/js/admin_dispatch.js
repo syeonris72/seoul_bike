@@ -2,10 +2,14 @@
 
 function getCurrentUser() {
     var raw = localStorage.getItem('loggedInUser');
+    var fallback = { id: 501, role: 'seoul_admin', name: '김관제', district_id: null };
     if (raw) {
-        try { return JSON.parse(raw); } catch (e) { }
+        try {
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.role === 'seoul_admin') return parsed;
+        } catch (e) { }
     }
-    return { id: 501, role: 'seoul_admin', name: '김관제', district_id: null };
+    return fallback;
 }
 
 var currentUser = null;
@@ -18,6 +22,7 @@ var aiSelectedKeys = new Set();
 
 function getDistrict(id) { return DB.district.find(function (d) { return d.id === id; }); }
 function getStation(id) { return DB.station.find(function (s) { return s.id === id; }); }
+var STATUS_LABEL = { '대기': '대기', '진행중': '수행 중', '완료': '완료' };
 
 function classifyStation(st) {
     var total = st.general_bike_count + st.sprout_bike_count;
@@ -103,7 +108,7 @@ function orderRowHtml(o) {
 
     return (
         '<div class="order-row' + (crossDistrict && o.status !== '완료' ? ' urgent' : '') + '">' +
-            '<span class="order-status-badge ' + (STATUS_CLASS[o.status] || 'waiting') + '">' + o.status + '</span>' +
+            '<span class="order-status-badge ' + (STATUS_CLASS[o.status] || 'waiting') + '">' + STATUS_LABEL[o.status] + '</span>' +
             '<div class="order-main">' +
                 '<div class="order-route">' +
                     (from ? from.name : '알 수 없음') + ' → ' + (to ? to.name : '알 수 없음') +
@@ -402,12 +407,12 @@ function submitOrder() {
     alert('지시서가 전송되었습니다!');
 }
 
-// ── 뷰 전환 (일반 리스트 / AI 자동 추천) ────────────────────────────────
-function setView(view) {
-    document.getElementById('normalListSection').style.display = view === 'list' ? '' : 'none';
-    document.getElementById('aiRecommendSection').style.display = view === 'ai' ? '' : 'none';
-    document.getElementById('aiRecommendTabBtn').classList.toggle('active', view === 'ai');
-    if (view === 'ai') refreshAiRecommendations();
+// ── AI 자동 추천 팝업 열기 ────────────────────────────────
+function openAiRecommendModal() {
+    refreshAiRecommendations();
+    var modalEl = document.getElementById('aiRecommendModal');
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -421,10 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
     renderDistrictChips();
     renderOrderList();
 
-    document.getElementById('aiRecommendTabBtn').addEventListener('click', function () {
-        var goingToAi = document.getElementById('aiRecommendSection').style.display === 'none';
-        setView(goingToAi ? 'ai' : 'list');
-    });
+    document.getElementById('aiRecommendTabBtn').addEventListener('click', openAiRecommendModal);
 
     document.getElementById('aiSelectAll').addEventListener('change', function () {
         if (this.checked) currentAiRecs.forEach(function (r) { aiSelectedKeys.add(r.key); });
@@ -468,6 +470,10 @@ document.addEventListener('DOMContentLoaded', function () {
         renderOrderList();
         renderDistrictChips();
         refreshAiRecommendations();
+
+        var modalEl = document.getElementById('aiRecommendModal');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.hide();
     });
 
     // 캐스케이딩 셀렉트 이벤트

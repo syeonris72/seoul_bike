@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 3. 공통 헤더 렌더링 호출
   if (window.renderHeader) {
-    window.renderHeader('profile', { role: 'user', name: accountInfo.name });
+    window.renderHeader('profile', accountInfo);
   }
 
   // 4. 화면 데이터 바인딩 (하드코딩 제거)
@@ -68,22 +68,28 @@ document.addEventListener('DOMContentLoaded', function () {
   var profileModal = document.getElementById('profileModal');
   if (profileModal) {
     profileModal.addEventListener('show.bs.modal', function () {
+      document.getElementById('editLoginId').value = accountInfo.login_id || '';
       document.getElementById('editName').value = accountInfo.name || '';
     });
   }
 
-  // 회원정보(이름) 수정 저장
+  // 아이디/이름 수정 저장
   var saveProfileBtn = document.getElementById('saveProfileBtn');
   if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', function () {
+      var newLoginId = document.getElementById('editLoginId').value.trim();
       var newName = document.getElementById('editName').value.trim();
-      if (!newName) {
-        alert('이름을 입력해주세요.');
-        return;
-      }
+      if (!newLoginId) return alert('아이디를 입력해주세요.');
+      if (!newName) return alert('이름을 입력해주세요.');
 
-      // 세션에 새 이름 저장
+      var duplicate = typeof DB !== 'undefined' && DB.account.some(function (acc) {
+        return acc.login_id === newLoginId && acc.id !== accountInfo.id;
+      });
+      if (duplicate) return alert('이미 사용 중인 아이디입니다.');
+
+      accountInfo.login_id = newLoginId;
       sessionUser.name = newName;
+      sessionUser.login_id = newLoginId;
       localStorage.setItem('loggedInUser', JSON.stringify(sessionUser));
 
       alert('회원정보가 성공적으로 수정되었습니다.');

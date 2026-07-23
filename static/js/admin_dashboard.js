@@ -2,10 +2,15 @@
 
 function getCurrentUser() {
   var raw = localStorage.getItem('loggedInUser'); // 통합 세션 키
+  var fallback = { id: 501, role: 'seoul_admin', name: '김관제', district_id: null };
   if (raw) {
-    try { return JSON.parse(raw); } catch (e) { }
+    try {
+      var parsed = JSON.parse(raw);
+      // 다른 권한(이용자/기사)으로 로그인했던 세션이 남아있으면 관제 페이지 기본 계정으로 대체
+      if (parsed && parsed.role === 'seoul_admin') return parsed;
+    } catch (e) { }
   }
-  return { id: 501, role: 'seoul_admin', name: '김관제', district_id: null };
+  return fallback;
 }
 
 var currentUser = null;
@@ -69,65 +74,99 @@ function getFilteredDispatchOrders() {
   });
 }
 
-// ── 자치구 / 행정동 / 상태 토글 ────────────────────────────────
-function fillDistrictSelect() {
-  var selectEl = document.getElementById('filterDistrict');
-  selectEl.innerHTML = '';
-  var allOpt = document.createElement('option');
-  allOpt.value = ''; allOpt.textContent = '전체 자치구';
-  selectEl.appendChild(allOpt);
-  DB.district.forEach(function (d) {
-    var opt = document.createElement('option');
-    opt.value = d.id; opt.textContent = d.name;
-    selectEl.appendChild(opt);
-  });
-  selectEl.value = filterState.districtId || '';
-}
+// ── 자치구 / 행정동 드롭다운 (index.html의 자치구 선택 토글과 동일한 패턴) ────────────────────────────────
+function fillDistrictDropdown() {
+  var listEl = document.getElementById('districtDropdownList');
+  listEl.innerHTML = '';
 
-function fillDongSelect() {
-  var selectEl = document.getElementById('filterDong');
-  selectEl.innerHTML = '';
-  var allOpt = document.createElement('option');
-  allOpt.value = ''; allOpt.textContent = '전체 행정동';
-  selectEl.appendChild(allOpt);
+  var options = [{ id: null, name: '전체 자치구' }].concat(
+    DB.district.map(function (d) { return { id: d.id, name: d.name }; })
+  );
 
-  if (filterState.districtId && DB.districtDongMap[filterState.districtId]) {
-    DB.districtDongMap[filterState.districtId].forEach(function (dongName) {
-      var opt = document.createElement('option');
-      opt.value = dongName; opt.textContent = dongName;
-      selectEl.appendChild(opt);
+  options.forEach(function (opt) {
+    var isSelected = filterState.districtId === opt.id;
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.className = 'dropdown-item' + (isSelected ? ' selected-item' : '');
+    a.href = '#';
+    a.textContent = opt.name;
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      filterState.districtId = opt.id;
+      filterState.dong = null;
+      onFilterChange();
     });
-    selectEl.disabled = false;
-  } else {
-    selectEl.disabled = true;
-  }
-  selectEl.value = filterState.dong || '';
+    li.appendChild(a);
+    listEl.appendChild(li);
+  });
+
+  document.getElementById('selectedDistrictLabel').textContent = filterState.districtId ? getDistrict(filterState.districtId).name : '전체 자치구';
 }
 
-// 스테이션 상태 옵션은 mock 데이터(DB.station)에서 실제 등장하는 상태값만 구성
-function fillStatusSelect() {
-  var selectEl = document.getElementById('filterStatus');
-  selectEl.innerHTML = '';
-  var allOpt = document.createElement('option');
-  allOpt.value = ''; allOpt.textContent = '전체 상태';
-  selectEl.appendChild(allOpt);
+function fillDongDropdown() {
+  var listEl = document.getElementById('dongDropdownList');
+  var btn = document.getElementById('dongDropdownBtn');
+  listEl.innerHTML = '';
+
+  if (!filterState.districtId) {
+    btn.disabled = true;
+    document.getElementById('selectedDongLabel').textContent = '전체 행정동';
+    return;
+  }
+  btn.disabled = false;
+
+  var dongList = DB.districtDongMap[filterState.districtId] || [];
+  var options = [null].concat(dongList);
+
+  options.forEach(function (dongName) {
+    var isSelected = filterState.dong === dongName;
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.className = 'dropdown-item' + (isSelected ? ' selected-item' : '');
+    a.href = '#';
+    a.textContent = dongName || '전체 행정동';
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      filterState.dong = dongName;
+      onFilterChange();
+    });
+    li.appendChild(a);
+    listEl.appendChild(li);
+  });
+
+  document.getElementById('selectedDongLabel').textContent = filterState.dong || '전체 행정동';
+}
+
+// 스테이션 상태 필터칩은 mock 데이터(DB.station)에서 실제 등장하는 상태값만 구성
+function renderStatusChips() {
+  var container = document.getElementById('mapStatusFilter');
+  container.innerHTML = '';
 
   var levelsPresent = {};
   DB.station.forEach(function (st) { levelsPresent[classifyStation(st).level] = true; });
 
-  LEVEL_ORDER.forEach(function (level) {
-    if (!levelsPresent[level]) return;
-    var opt = document.createElement('option');
-    opt.value = level; opt.textContent = LEVEL_LABEL[level];
-    selectEl.appendChild(opt);
+  var chips = [{ level: null, label: '전체' }].concat(
+    LEVEL_ORDER.filter(function (level) { return levelsPresent[level]; })
+      .map(function (level) { return { level: level, label: LEVEL_LABEL[level] }; })
+  );
+
+  chips.forEach(function (chip) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'filter-chip' + (chip.level ? ' ' + LEVEL_BADGE[chip.level] : '') + (filterState.status === chip.level ? ' active' : '');
+    btn.innerHTML = (chip.level ? '<i></i>' : '') + chip.label;
+    btn.addEventListener('click', function () {
+      filterState.status = chip.level;
+      onFilterChange();
+    });
+    container.appendChild(btn);
   });
-  selectEl.value = filterState.status || '';
 }
 
 function syncFilterToggles() {
-  fillDistrictSelect();
-  fillDongSelect();
-  fillStatusSelect();
+  fillDistrictDropdown();
+  fillDongDropdown();
+  renderStatusChips();
 }
 
 // ── 좌측 패널: 지도현황 탭 ────────────────────────────────
@@ -160,6 +199,8 @@ function renderStationList() {
 }
 
 // ── 좌측 패널: 지시서 탭 ────────────────────────────────
+var STATUS_LABEL = { '대기': '대기', '진행중': '수행 중', '완료': '완료' };
+
 function renderDispatchPane() {
   var orders = getFilteredDispatchOrders();
   var STATUS_BADGE = { '대기': 'waiting', '진행중': 'progress', '완료': 'done' };
@@ -172,7 +213,7 @@ function renderDispatchPane() {
       return (
         '<div class="status-row" data-id="' + o.id + '">' +
           '<div class="left">' +
-            '<span class="badge ' + (STATUS_BADGE[o.status] || 'waiting') + '">' + o.status + '</span>' +
+            '<span class="badge ' + (STATUS_BADGE[o.status] || 'waiting') + '">' + STATUS_LABEL[o.status] + '</span>' +
             '<div class="info">' +
               '<div class="name">' + (from ? from.name : '알 수 없음') + ' → ' + (to ? to.name : '알 수 없음') + '</div>' +
               '<div class="addr">일반 ' + o.general_qty + '대 · 새싹 ' + o.sprout_qty + '대 · ' + (driver ? '담당: ' + driver.name : '담당자 미배정') + '</div>' +
@@ -196,8 +237,9 @@ function renderMapPins() {
 
   getFilteredStations().forEach(function (st) {
     var c = classifyStation(st);
-    var leftPct = (10 + (st.id * 37) % 80) + '%';
-    var topPct = (12 + (st.id * 41) % 76) + '%';
+    // 자치구별로 미리 계산된 격자 좌표(map_x/map_y)를 사용해 같은 동네 정류소끼리 뭉쳐 보이도록 배치
+    var leftPct = Math.min(94, Math.max(4, ((st.map_x - 60) / 680) * 100)) + '%';
+    var topPct = Math.min(90, Math.max(8, ((st.map_y - 100) / 400) * 100)) + '%';
 
     var pin = document.createElement('div');
     pin.className = 'map-pin ' + LEVEL_BADGE[c.level];
@@ -207,7 +249,26 @@ function renderMapPins() {
     pin.innerHTML = '<span class="dot"></span><span class="chip">' + st.name + ' <span class="count">' + c.total + '대</span></span>';
     mapContainer.appendChild(pin);
   });
+  applySidebarOcclusion();
 }
+
+// ── 좌측 패널에 가려지는 스테이션 핀은 클릭되지 않도록 처리 (user_dashboard와 동일한 패턴) ────────────────────────────────
+function applySidebarOcclusion() {
+  var sidebarEl = document.getElementById('sidebar');
+  var mapCard = document.querySelector('.map-card');
+  if (!sidebarEl || !mapCard) return;
+
+  var isDesktopSidebarVisible = window.innerWidth >= 900 && getComputedStyle(sidebarEl).display !== 'none';
+  var sidebarRightEdge = isDesktopSidebarVisible ? sidebarEl.getBoundingClientRect().right : 0;
+
+  document.querySelectorAll('.map-pin').forEach(function (pin) {
+    if (!isDesktopSidebarVisible) { pin.classList.remove('occluded'); return; }
+    var pinRect = pin.getBoundingClientRect();
+    var pinCenterX = pinRect.left + pinRect.width / 2;
+    pin.classList.toggle('occluded', pinCenterX < sidebarRightEdge);
+  });
+}
+window.addEventListener('resize', applySidebarOcclusion);
 
 function renderAll() {
   renderStationList();
@@ -241,8 +302,12 @@ function openStationDetail(id) {
   currentDetailStationId = id;
   var district = getDistrict(st.district_id);
 
+  var c = classifyStation(st);
   document.getElementById('sdTitle').textContent = st.name;
   document.getElementById('sdAddr').textContent = (district ? district.name : '') + ' · ' + st.neighborhood_name;
+  var statusBadge = document.getElementById('sdStatusBadge');
+  statusBadge.textContent = LEVEL_LABEL[c.level] + ' (' + c.percent + '%)';
+  statusBadge.className = 'badge sd-status-badge ' + LEVEL_BADGE[c.level];
   document.getElementById('sdGeneral').textContent = st.general_bike_count + '대';
   document.getElementById('sdSprout').textContent = st.sprout_bike_count + '대';
   document.getElementById('sdCapacity').textContent = st.capacity + '면';
@@ -257,6 +322,32 @@ function closeStationDetail() {
   currentDetailStationId = null;
 }
 
+// ── 지시서 상세 팝업 ────────────────────────────────
+function openOrderDetail(id) {
+  var o = DB.dispatch_order.find(function (order) { return order.id === id; });
+  if (!o) return;
+  var from = getStation(o.from_station_id), to = getStation(o.to_station_id);
+  var driver = DB.account.find(function (a) { return a.id === o.driver_id; });
+  var STATUS_BADGE = { '대기': 'waiting', '진행중': 'progress', '완료': 'done' };
+
+  document.getElementById('odTitle').textContent = (from ? from.name : '알 수 없음') + ' → ' + (to ? to.name : '알 수 없음');
+  document.getElementById('odMeta').textContent = (o.ordered_at ? o.ordered_at.slice(0, 16).replace('T', ' ') : '') + (isCrossDistrict(o) ? ' · 긴급(구간 간 이동)' : '');
+  var statusBadge = document.getElementById('odStatusBadge');
+  statusBadge.textContent = STATUS_LABEL[o.status] || o.status;
+  statusBadge.className = 'badge sd-status-badge ' + (STATUS_BADGE[o.status] || 'waiting');
+  document.getElementById('odGeneral').textContent = o.general_qty + '대';
+  document.getElementById('odSprout').textContent = o.sprout_qty + '대';
+  document.getElementById('odDriver').textContent = driver ? driver.name + ' 기사' : '담당자 미배정';
+
+  document.getElementById('orderDetailBackdrop').classList.add('show');
+  document.getElementById('orderDetailPanel').classList.add('show');
+}
+
+function closeOrderDetail() {
+  document.getElementById('orderDetailBackdrop').classList.remove('show');
+  document.getElementById('orderDetailPanel').classList.remove('show');
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   currentUser = getCurrentUser();
 
@@ -269,33 +360,21 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', function () { setActiveLeftTab(btn.getAttribute('data-tab')); });
   });
 
-  // 지역/상태 토글
-  document.getElementById('filterDistrict').addEventListener('change', function () {
-    filterState.districtId = this.value ? parseInt(this.value, 10) : null;
-    filterState.dong = null;
-    onFilterChange();
-  });
-  document.getElementById('filterDong').addEventListener('change', function () {
-    filterState.dong = this.value || null;
-    onFilterChange();
-  });
-  document.getElementById('filterStatus').addEventListener('change', function () {
-    filterState.status = this.value || null;
-    onFilterChange();
-  });
-
-  // 스테이션 리스트/핀 클릭 → 상세 팝업
+  // 스테이션 리스트/핀 클릭 → 상세 팝업, 지시서 리스트 클릭 → 지시서 상세 팝업
   document.addEventListener('click', function (e) {
     var pin = e.target.closest('.map-pin');
-    var row = e.target.closest('.station-list .status-row');
-    var targetId = null;
-    if (pin) targetId = pin.getAttribute('data-id');
-    else if (row) targetId = row.getAttribute('data-id');
-    if (targetId) openStationDetail(parseInt(targetId, 10));
+    var stationRow = e.target.closest('.station-list .status-row');
+    var orderRow = e.target.closest('.dispatch-pane-list .status-row');
+
+    if (pin) openStationDetail(parseInt(pin.getAttribute('data-id'), 10));
+    else if (stationRow) openStationDetail(parseInt(stationRow.getAttribute('data-id'), 10));
+    else if (orderRow) openOrderDetail(parseInt(orderRow.getAttribute('data-id'), 10));
   });
 
   document.getElementById('sdCloseBtn').addEventListener('click', closeStationDetail);
   document.getElementById('stationDetailBackdrop').addEventListener('click', closeStationDetail);
+  document.getElementById('odCloseBtn').addEventListener('click', closeOrderDetail);
+  document.getElementById('orderDetailBackdrop').addEventListener('click', closeOrderDetail);
 
   // 지시서 쓰기 → 지시서 관리 페이지로 이동, 선택한 스테이션을 출발지로 자동 지정
   document.getElementById('sdWriteOrderBtn').addEventListener('click', function () {
@@ -311,6 +390,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (statusPanel) statusPanel.classList.toggle('collapsed', collapsed);
     if (statusPanelToggle) statusPanelToggle.setAttribute('aria-expanded', String(!collapsed));
     if (reopenPill) reopenPill.classList.toggle('show', collapsed);
+    // 모바일 하단 시트가 펼쳐진 동안에는 겹쳐 보이는 우측 하단 필터 칩을 함께 숨김
+    var filterPanel = document.getElementById('mapStatusFilter');
+    if (filterPanel) filterPanel.classList.toggle('hidden-behind-sheet', !collapsed);
   }
   if (statusPanelToggle) {
     statusPanelToggle.addEventListener('click', function (e) {
@@ -318,6 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
       setStatusPanelCollapsed(!statusPanel.classList.contains('collapsed'));
     });
   }
+  setStatusPanelCollapsed(statusPanel ? statusPanel.classList.contains('collapsed') : false);
   if (reopenPill) reopenPill.addEventListener('click', function () { setStatusPanelCollapsed(false); });
 
   syncFilterToggles();

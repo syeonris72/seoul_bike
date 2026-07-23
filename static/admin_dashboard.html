@@ -47,12 +47,26 @@
       <div class="map-card" id="kakao-map">
         <div class="map-surface"></div>
 
-        <!-- 자치구 / 행정동 / 스테이션 상태 토글 -->
+        <!-- 자치구 / 행정동 토글 -->
         <div class="floating-filter-wrap" id="mapFilterBar">
-          <select id="filterDistrict" class="form-select form-select-sm" aria-label="자치구 선택"></select>
-          <select id="filterDong" class="form-select form-select-sm" aria-label="행정동 선택"></select>
-          <select id="filterStatus" class="form-select form-select-sm" aria-label="스테이션 상태 선택"></select>
+          <div class="region-select-area">
+            <button type="button" class="region-select-btn" id="districtDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="자치구 선택">
+              <span id="selectedDistrictLabel">전체 자치구</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu region-dropdown-menu" id="districtDropdownList" aria-labelledby="districtDropdownBtn"></ul>
+          </div>
+          <div class="region-select-area">
+            <button type="button" class="region-select-btn" id="dongDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="행정동 선택" disabled>
+              <span id="selectedDongLabel">전체 행정동</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu region-dropdown-menu" id="dongDropdownList" aria-labelledby="dongDropdownBtn"></ul>
+          </div>
         </div>
+
+        <!-- 스테이션 상태 필터칩 (하단, user_dashboard와 동일한 패턴) -->
+        <div class="map-filter-panel" id="mapStatusFilter" aria-label="스테이션 상태 필터"></div>
 
         <button type="button" class="status-reopen-pill" id="statusReopenPill" aria-label="현황 패널 다시 열기">관제 현황</button>
       </div>
@@ -98,6 +112,7 @@
     </div>
     <div class="sd-body">
       <p class="sd-addr" id="sdAddr">주소</p>
+      <span class="badge sd-status-badge" id="sdStatusBadge">-</span>
       <div class="sd-stats">
         <div class="sd-stat-item"><span class="label">일반 자전거</span><strong id="sdGeneral">0대</strong></div>
         <div class="sd-stat-item"><span class="label">새싹 자전거</span><strong id="sdSprout">0대</strong></div>
@@ -106,6 +121,24 @@
       <button type="button" class="sd-write-btn" id="sdWriteOrderBtn">
         <i class="bi bi-pencil-square me-2"></i>지시서 쓰기
       </button>
+    </div>
+  </div>
+
+  <!-- 지시서 상세 팝업 -->
+  <div class="station-detail-backdrop" id="orderDetailBackdrop"></div>
+  <div class="station-detail-panel" id="orderDetailPanel">
+    <div class="sd-header">
+      <h3 class="sd-title" id="odTitle">지시서</h3>
+      <button class="sd-close-btn" id="odCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="sd-body">
+      <p class="sd-addr" id="odMeta">-</p>
+      <span class="badge sd-status-badge" id="odStatusBadge">-</span>
+      <div class="sd-stats">
+        <div class="sd-stat-item"><span class="label">일반</span><strong id="odGeneral">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">새싹</span><strong id="odSprout">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">담당 기사</span><strong id="odDriver">-</strong></div>
+      </div>
     </div>
   </div>
 

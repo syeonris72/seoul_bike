@@ -5,44 +5,78 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-/* 스위치형 탭 버튼 CSS */
-.tab-container {
-            background-color: #f1f3f5;
-            border-radius: 12px;
-            padding: 4px;
-            display: inline-flex;
-        }
-        .tab-btn {
-            border: none;
-            background: transparent;
-            padding: 6px 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #6c757d;
-            border-radius: 8px;
-            transition: all 0.2s ease-in-out;
-        }
-        .tab-btn.active {
-            background-color: #ffffff;
-            color: #212529;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+/* 상태별 탭 (전체/대기/진행 중/완료) */
+.status-tab-container {
+    background-color: #f1f3f5;
+    border-radius: 12px;
+    padding: 4px;
+    display: inline-flex;
+    flex-wrap: wrap;
+}
+.status-tab-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+}
+.status-tab-btn.active {
+    background-color: #ffffff;
+    color: #212529;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.tab-count { font-size: 0.75rem; font-weight: 700; color: #9ca3af; margin-left: 2px; }
+.status-tab-btn.active .tab-count { color: #00965e; }
 
-        /* 버튼 커스텀 색상 */
-        .btn-indigo { background-color: #5552eb; color: white; border: none; }
-        .btn-indigo:hover { background-color: #4338ca; color: white; }
-        .btn-soft-red { background-color: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
-        .btn-soft-red:hover { background-color: #fee2e2; color: #dc2626; }
+/* 지시서 목록: 긴급 / 고장 수거 / 일반 재배치 3개 박스 */
+.task-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; max-width: 1400px; }
+.task-column { display: flex; flex-direction: column; min-height: 0; }
+.task-column-head {
+    display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; color: #212529;
+    padding-bottom: 0.6rem; margin-bottom: 0.75rem; border-bottom: 2px solid #eef0f2; flex-shrink: 0;
+}
+.task-column-head .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.task-column-head .dot.urgent { background: #ef4444; }
+.task-column-head .dot.report { background: #f59e0b; }
+.task-column-head .dot.dispatch { background: #00965e; }
+.task-column-count { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: #9ca3af; }
+.task-column-body { overflow-y: auto; max-height: 72vh; padding-right: 2px; }
 
-        /* 지도 화면 빈 배경 스타일 */
-        .map-placeholder {
-            height: calc(100vh - 150px);
-            background-color: #e9ecef; /* 실제 지도가 들어갈 회색 영역 */
-            background-image: radial-gradient(#dee2e6 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        .empty-state-box {
-            background-color: white;
-            padding: 2rem 3rem;
-            border-radius: 16px;
-        }
+@media (max-width: 991.98px) {
+    .task-columns { grid-template-columns: 1fr; gap: 1.5rem; }
+    .task-column-body { max-height: 60vh; }
+}
+
+/* 지시서 카드 */
+.order-card-item { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 1rem; padding: 1rem 1.25rem; border-left: 4px solid transparent; }
+.order-card-item.urgent { border-left-color: #ef4444; background: #fff8f8; }
+.order-card-item.type-report { border-left-color: #f59e0b; }
+
+.empty-state-box {
+    background-color: white;
+    padding: 2rem 3rem;
+    border-radius: 16px;
+}
+
+/* 버튼 커스텀 색상 */
+.btn-indigo { background-color: #5552eb; color: white; border: none; }
+.btn-indigo:hover { background-color: #4338ca; color: white; }
+.btn-start { background-color: #00965e; color: white; border: none; }
+.btn-start:hover { background-color: #007b4d; color: white; }
+.btn-complete { background-color: #111; color: white; border: none; }
+.btn-complete:hover { background-color: #333; color: white; }
+
+/* QR/ID 스캔 팝업 */
+.scan-progress-box { background: #f8f9fa; border-radius: 12px; padding: 1rem; }
+.scanned-list { max-height: 160px; overflow-y: auto; }
+.scanned-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-radius: 8px; padding: 0.5rem 0.8rem; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; }
+.scanned-item button { border: none; background: transparent; color: #ef4444; }
+
+@media (max-width: 575.98px) {
+    .status-tab-btn { padding: 5px 10px; font-size: 0.78rem; }
+    .type-chip { font-size: 0.75rem; padding: 5px 10px; }
+}

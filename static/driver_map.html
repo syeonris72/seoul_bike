@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경로 지도 - 따릉이 관제</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="css/driver_map.css">
+</head>
+<body>
+
+  <div id="app-header"></div>
+
+  <div class="driver-map-wrap">
+    <aside class="route-sidebar" id="routeSidebar">
+      <button type="button" class="route-panel-handle" id="routePanelToggle" aria-expanded="true" aria-controls="routeList">
+        <span class="bar"></span>
+      </button>
+      <div class="route-sidebar-title-row">
+        <span class="route-sidebar-title"><i class="bi bi-signpost-2"></i> 내 재배치 경로</span>
+        <span class="route-count" id="routeCount"></span>
+      </div>
+      <div class="route-list" id="routeList"></div>
+    </aside>
+
+    <div class="map-stage">
+      <div class="map-card" id="routeMap">
+        <div class="map-surface"></div>
+        <div class="map-title-badge"><i class="bi bi-truck"></i> 실시간 재배치 경로</div>
+        <div id="route-pins"></div>
+        <div class="route-legend">
+          <div><span class="legend-dot start"></span>수거 대여소 (출발지)</div>
+          <div><span class="legend-dot end"></span>배치 대여소 (도착지)</div>
+        </div>
+        <button type="button" class="route-reopen-pill" id="routeReopenPill" aria-label="경로 목록 다시 열기"><i class="bi bi-list-ul"></i> 경로 목록</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/mock_data.js"></script>
+  <script src="js/driver_map.js"></script>
+</body>
+</html>
