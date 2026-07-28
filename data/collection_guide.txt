@@ -1,0 +1,63 @@
+[데이터 수집 가이드]
+
+
+1. 필수 실행 (초기 세팅) - 반드시 가장 먼저 실행
+
+- collect_common.py: 대여소 마스터(station_loc), 공휴일 정보 세팅
+  * 아래 3번(대여 이력), 4번(실시간 데이터) 스크립트가 대상 대여소를 걸러낼 때
+    이 station_loc 테이블을 조회하므로, 이 스크립트가 끝나지 않으면 3/4번은 데이터가 비어버림
+
+
+2. 인프라/환경 데이터 수집 (station_loc에 의존하지 않음, 서로 순서 무관)
+
+- collect_infra.py: 공원, 학교, 대학, 상권, 하천, 지하철 정보 세팅
+
+- collect_env_2024.py: 2024년 기온/강수량/미세먼지/적설량 데이터 세팅 (구 collect_weather.py)
+
+- collect_pop.py: 2024년 유동인구, 생활인구 세팅
+
+
+3. 대여 이력 수집 (1번 완료 후 실행, 데이터 용량이 크므로 작업 시간 확보 필요)
+
+- collect_rent_history_2023.py: 2023년 12월 25~31일 패딩용 데이터 세팅 (구 rent_history.py)
+
+- collect_rent_history_2024.py: 2024년 월별 대여 이력 세팅
+  * 실행할 때마다 수집할 월(1~12)을 입력받으므로, 1월부터 12월까지 총 12번 반복 실행 필요
+
+
+4. 실시간 데이터 (1번 완료 후 실행)
+
+- collect_rt.py: 실시간 날씨/미세먼지/자전거 상태 데이터
+
+
+5. station_loc 정비 (4번까지 완료 후 실행)
+
+- backfill_neighborhood.py: 전체 대여소 좌표 -> 행정동(admin_dong) 역지오코딩 (1회성)
+
+- init_tables.py: 서비스 테이블(account, station_stock 등) 생성 + station_stock 시딩
+  * station_stock 시딩 시 rent_history_2023/2024(일반/새싹 비율)와 rt_bike_status(현재 거치 대수)를
+    조회하므로 3번, 4번이 끝난 뒤 실행해야 함
+
+- fix_station_loc.py: 좌표 (0,0) 오류 보정 + 중복 대여소 정리 (1회성)
+  * 중복 판단에 station_stock(거치 대수)과 rt_bike_status(실측 이름)를 쓰므로
+    반드시 init_tables.py 이후에 실행. 이 순서를 지키지 않으면 거치 대수가 전부 0으로 보여
+    정상 대여소까지 삭제 대상으로 잘못 걸러질 수 있음
+
+
+6. 최종 마스터 테이블 생성 (5번까지 완료 후 실행)
+
+- total_master.py: 위에서 수집/정비한 모든 테이블(infra_*, env, pop, rent_history, station_loc,
+  korea_holidays)을 합쳐 infra_master / demand_prediction_master_2024(학습용 마스터) 테이블 생성
+  * station_loc 정비(5번)가 끝난 뒤 실행해야 정리된 대여소 기준으로 마스터가 만들어짐
+
+
+7. 기타 (선택 실행, 순서 무관하게 필요할 때만)
+
+- seed_accounts.py: 개발/테스트용 계정 시딩 (init_tables.py로 account 테이블 생성된 이후 실행)
+  * 비밀번호가 전부 "1234"인 테스트 계정이므로 운영 DB에서는 절대 실행 금지
+
+- reset_db.py: DB 전체 테이블 삭제 (되돌릴 수 없음)
+  * 처음부터 다시 수집해야 할 때만 실행하고, 그 다음 1번부터 순서대로 다시 진행
+
+
+* [참고] common_utils.py는 공통 모듈이므로 직접 실행 X

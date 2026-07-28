@@ -1,0 +1,360 @@
+/* admin-dashboard.css */
+:root {
+  --bg: #fcfcfc;
+  --card: #ffffff;
+  --accent: #00965e;
+  --accent-dark: #00965e;
+  --accent-soft: #f3f4f6;
+  --ink: #131a29;
+  --muted: #767676;
+  --line: #e5e7eb;
+  --ok: #00965e;
+  --ok-bg: #ecfdf5;
+  --mid: #fb933d;
+  --mid-bg: #fff7ed;
+  --busy: #ef4545;
+  --busy-bg: #fef2f2;
+  --full: #1f2937;
+  --full-bg: #eef0f2;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; color: var(--ink); background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+svg { display: block; }
+
+.dashboard { position: relative; flex: 1 1 auto; overflow: hidden; }
+/* sidebar-wrap: 사이드바 + 접기 버튼을 함께 슬라이드시키는 래퍼 (overflow를 걸지 않아 버튼이 가장자리 밖으로 튀어나와도 잘리지 않음) */
+.sidebar-wrap { position: absolute; top: 0; bottom: 0; left: 0; z-index: 20; width: 400px; transition: transform 0.25s cubic-bezier(.2,.8,.3,1); }
+/* 접기 버튼(.sidebar-toggle-btn)이 래퍼 오른쪽 가장자리보다 15px 더 튀어나와 있으므로,
+   딱 -100%만 이동하면 그 15px만큼 화면에 버튼이 걸쳐 남는다. 버튼 폭 + 여유분만큼 더 이동시킨다. */
+.dashboard.sidebar-collapsed .sidebar-wrap { transform: translateX(calc(-100% - 20px)); }
+.sidebar { position: relative; height: 100%; border-right: 1px solid var(--line); background: #fff; padding: 18px 16px 24px; overflow-y: auto; box-shadow: 10px 0 28px rgba(20,60,35,0.08); }
+
+/* 사이드바 접기 버튼: 사이드바 우측 가장자리 중앙에 탭 형태로 고정 (사이드바가 접히면 래퍼와 함께 슬라이드되어 사라짐) */
+.sidebar-toggle-btn {
+  display: none; position: absolute; top: 50%; right: 0; z-index: 21; transform: translate(50%, -50%);
+  align-items: center; justify-content: center; width: 30px; height: 44px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--muted);
+  font-size: 14px; cursor: pointer; box-shadow: 4px 0 12px rgba(20,60,35,0.08);
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-toggle-btn:hover { background: var(--accent-soft); color: var(--accent-dark); }
+/* header.css의 전역 버튼 눌림 효과(button:active { transform: scale(0.96) })는 transform 값을
+   통째로 덮어써서, 위치 지정에 transform을 쓰는 이 버튼을 누르는 순간 엉뚱한 자리로 튀게 만든다.
+   위치 transform과 함께 합성해서 덮어쓰지 않도록 여기서 다시 지정한다. */
+.sidebar-toggle-btn:active:not(:disabled) { transform: translate(50%, -50%) scale(0.96); }
+
+/* 사이드바를 접었을 때 다시 펼치는 버튼 (사이드바 바깥, 접혀 있을 때만 보임)
+   사이드바가 슬라이드로 사라지는 동안(0.25s) 이 버튼이 곧바로 나타나면 아직 사라지는 중인
+   사이드바 위에 겹쳐 보이므로, 사이드바가 거의 다 빠져나간 뒤에 페이드인되도록 지연시킨다. */
+.sidebar-reopen-btn {
+  display: none; position: absolute; top: 50%; left: 0; z-index: 21; transform: translateY(-50%);
+  align-items: center; justify-content: center; width: 30px; height: 44px;
+  border: 1px solid var(--line); border-left: none; border-radius: 0 10px 10px 0;
+  background: #fff; color: var(--muted); font-size: 14px; cursor: pointer;
+  box-shadow: 4px 0 12px rgba(20,60,35,0.08); transition: background 0.15s, color 0.15s;
+}
+.sidebar-reopen-btn:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-reopen-btn:active:not(:disabled) { transform: translateY(-50%) scale(0.96); }
+
+@media (min-width: 900px) {
+  .sidebar-toggle-btn { display: inline-flex; }
+  .sidebar-reopen-btn {
+    display: inline-flex; opacity: 0; visibility: hidden; pointer-events: none;
+    transition: background 0.15s, color 0.15s, opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .dashboard.sidebar-collapsed .sidebar-reopen-btn {
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transition: background 0.15s, color 0.15s, opacity 0.18s ease 0.2s, visibility 0s linear 0.2s;
+  }
+  .dashboard.sidebar-collapsed .map-stage { left: 0; }
+}
+.sidebar-status-embed { display: flex; flex-direction: column; }
+.status-embed-title-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 0.4rem; flex-wrap: nowrap; }
+.status-embed-title { font-size: 1.4rem; font-weight: 800; color: #333; white-space: nowrap; }
+.status-count { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.status-embed-subtitle { font-size: 0.85rem; color: #888; margin: 0 0 14px; }
+/* 일반 페이지(page-title)와 동일하게 모바일에서 제목 크기를 축소 */
+@media (max-width: 575.98px) {
+  .status-embed-title { font-size: 1.2rem; }
+  .status-embed-subtitle { font-size: 0.78rem; }
+}
+
+.map-stage { position: absolute; left: 400px; right: 0; top: 0; bottom: 0; padding: 0; transition: left 0.25s cubic-bezier(.2,.8,.3,1); }
+.map-card { position: absolute; inset: 0; height: 100%; width: 100%; border-radius: 0; overflow: hidden; border: none; }
+.kakao-map-container { position: absolute; inset: 0; background: #f3f4f6; }
+
+/* 지역 토글 (지도 좌측 상단 플로팅) — index.html의 자치구 선택 토글과 동일한 스타일 */
+.floating-filter-wrap {
+  position: absolute; top: 20px; left: 16px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  max-width: calc(100% - 2rem);
+}
+.region-select-area { position: relative; display: inline-flex; }
+
+.region-select-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: auto; min-width: 125px; max-width: 190px; background-color: var(--ok-bg); border: 1px solid var(--accent);
+  color: var(--accent-dark); font-weight: 600; font-size: 13.5px; line-height: 1;
+  border-radius: 999px; padding: 9px 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.region-select-btn:hover:not(:disabled) { background-color: #e3f6ec; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+.region-select-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.region-select-btn i { font-size: 11px; flex-shrink: 0; transition: transform 0.2s ease; }
+.region-select-btn[aria-expanded="true"] i { transform: rotate(180deg); }
+.region-select-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 드롭다운 메뉴 (부트스트랩 기본 위치 계산 엔진에 맡김) */
+.region-dropdown-menu {
+  width: 100% !important;
+  min-width: 100% !important;
+  margin-top: 6px !important;
+  padding: 6px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1) !important;
+  background-color: #fff !important;
+
+  max-height: 250px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.region-dropdown-menu::-webkit-scrollbar { width: 6px; }
+.region-dropdown-menu::-webkit-scrollbar-track { background: transparent; }
+.region-dropdown-menu::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.region-dropdown-menu::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+.region-dropdown-menu.show { animation: regionDropdownIn 0.15s ease both; }
+@keyframes regionDropdownIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.region-dropdown-menu .dropdown-item {
+  border-radius: 8px !important;
+  font-size: 13.5px; font-weight: 600; padding: 10px 12px; color: #333;
+  transition: all 0.15s ease;
+}
+.region-dropdown-menu .dropdown-item:hover { background-color: #f8f9fa; }
+.region-dropdown-menu .dropdown-item:active { transform: scale(0.97); }
+
+.region-dropdown-menu .dropdown-item.selected-item {
+  background-color: var(--ok-bg) !important;
+  color: var(--accent-dark) !important;
+}
+
+/* 스테이션 상태 필터칩 (지도 하단, user-dashboard의 .map-filter-panel과 동일) */
+.map-filter-panel {
+  position: absolute; right: 16px; bottom: 24px; z-index: 45;
+  display: flex; gap: 6px; background: rgba(255, 255, 255, 0.95);
+  padding: 6px 10px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px); flex-wrap: wrap; max-width: calc(100% - 2rem);
+  transition: opacity 0.2s ease;
+}
+.filter-chip {
+  display: inline-flex; align-items: center; flex-shrink: 0;
+  border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 6px 10px; font-size: 11.5px; font-weight: 700; color: var(--ink); cursor: pointer; gap: 4px;
+  /* border-radius/padding은 접힘↔펼침 전환 시 레이아웃(display, flex-direction)이 순간적으로
+     바뀌는 것과 같이 즉시 바뀌어야 함 — 이 둘만 느리게 애니메이션되면 모서리가 따로 노는 것처럼 보임
+     (map-filter-panel에서 겪은 것과 같은 문제) */
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.filter-chip:active { transform: scale(0.95); }
+.filter-chip:hover:not(.active) { border-color: var(--accent); }
+.filter-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; transition: background-color 0.15s ease; }
+.filter-chip.ok i { background: var(--ok); }
+.filter-chip.mid i { background: var(--mid); }
+.filter-chip.busy i { background: var(--busy); }
+.filter-chip.full i { background: var(--full); }
+.filter-chip.active { border-color: var(--accent); background: var(--ok-bg); color: var(--accent-dark); }
+
+/* 지도 위를 드래그할 때 핀 이름표 텍스트가 선택되면서 "고스트" 복사본이 따라다니는 것을 방지 */
+.map-card, .map-pin { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.map-pin { position: absolute; display: flex; align-items: center; gap: 6px; transform: translate(-50%, -100%); cursor: pointer; transition: opacity 0.2s ease; }
+.map-pin .dot { width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(20,60,35,0.25); flex-shrink: 0; transition: transform 0.15s ease; }
+.map-pin:hover .dot { transform: scale(1.15); }
+.map-pin:active .dot { transform: scale(0.95); }
+.map-pin.ok .dot { background: var(--ok); }
+.map-pin.mid .dot { background: var(--mid); }
+.map-pin.busy .dot { background: var(--busy); }
+.map-pin.full .dot { background: var(--full); }
+/* 정류소가 많을 땐 이름표가 서로 겹치므로 점만 보여주고, 이름/상세 정보는 탭(클릭)해서 여는 상세 팝업으로 확인 */
+/* (호버로 이름표를 띄우면 촘촘한 핀 사이를 드래그/클릭할 때 옆 핀까지 같이 반응해 "핀이 하나 더 뜨는" 것처럼 보이는 문제가 있어 제거함) */
+.map-pin .chip {
+  display: none; font-size: 12px; font-weight: 700; background: #fff; padding: 5px 10px;
+  border-radius: 999px; box-shadow: 0 2px 6px rgba(20,60,35,0.15); white-space: nowrap;
+  pointer-events: none;
+}
+.map-pin .chip .count { color: var(--muted); font-weight: 600; margin-left: 3px; }
+.map-pin.occluded { opacity: 0; pointer-events: none; }
+
+/* ── 카카오맵 CustomOverlay용 핀 (position은 카카오가 자체 wrapper로 처리하므로 여기선 안 씀) ── */
+.kakao-map-pin { display: flex; align-items: center; gap: 6px; transform: translate(-50%, -100%); cursor: pointer; transition: opacity 0.2s ease; -webkit-user-select: none; user-select: none; }
+.kakao-map-pin .dot {
+  width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(20,60,35,0.25); flex-shrink: 0; transition: transform 0.15s ease;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff; line-height: 1;
+}
+.kakao-map-pin:hover .dot { transform: scale(1.15); }
+.kakao-map-pin:active .dot { transform: scale(0.95); }
+.kakao-map-pin.ok .dot { background: var(--ok); }
+.kakao-map-pin.mid .dot { background: var(--mid); }
+.kakao-map-pin.busy .dot { background: var(--busy); }
+.kakao-map-pin.full .dot { background: var(--full); }
+.kakao-map-pin .chip {
+  display: none; font-size: 12px; font-weight: 700; background: #fff; padding: 5px 10px;
+  border-radius: 999px; box-shadow: 0 2px 6px rgba(20,60,35,0.15); white-space: nowrap;
+  pointer-events: none;
+}
+.kakao-map-pin .chip .count { color: var(--muted); font-weight: 600; margin-left: 3px; }
+
+/* 모바일 관제 현황 바텀시트 */
+.status-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--card);
+  display: flex; flex-direction: column; max-height: 60vh;
+  box-shadow: 0 -10px 30px rgb(229 231 235); border-radius: 20px 20px 0 0;
+  transition: transform 0.32s cubic-bezier(.2,.8,.3,1);
+}
+.status-panel-handle { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; border: none; background: transparent; cursor: pointer; padding: 10px 16px 8px; flex-shrink: 0; }
+.status-panel-handle .bar { width: 36px; height: 4px; border-radius: 999px; background: var(--line); }
+.status-panel-handle .handle-row { max-width: 100%; }
+.status-panel-handle .title { font-size: 14.5px; font-weight: 800; color: var(--ink); white-space: nowrap; margin-right: 8px; }
+.status-panel-handle .count { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+/* 시트를 접을 때 display:none으로 순간이동시키지 않고, 아래로 밀려 내려가도록 슬라이드시켜 부드럽게 사라지게 함 */
+.status-panel.collapsed { transform: translateY(100%); pointer-events: none; }
+.status-panel-body { overflow-y: auto; padding: 2px 20px 20px; }
+
+/* 스테이션/지시서 상태 배지 */
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge.ok { color: var(--ok); background: var(--ok-bg); }
+.badge.mid { color: var(--mid); background: var(--mid-bg); }
+.badge.busy { color: var(--busy); background: var(--busy-bg); }
+.badge.full { color: var(--full); background: var(--full-bg); }
+
+.status-list { display: flex; flex-direction: column; gap: 10px; }
+.status-empty { text-align: center; padding: 30px; color: var(--muted); font-size: 13.5px; }
+.status-row { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: transform 0.15s, box-shadow 0.15s; cursor: pointer; }
+.status-row:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.status-row:active { transform: scale(0.98); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+.status-row .left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.status-row .info .name { font-size: 15px; font-weight: 700; }
+.status-row .info .addr { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.status-row .right { text-align: right; flex-shrink: 0; }
+.status-row .right .count { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.status-row .right .count span { color: var(--muted); font-weight: 600; }
+
+@media (max-width: 899px) {
+  .sidebar-wrap { display: none; }
+  .map-stage { left: 0; }
+  .map-pin .chip { font-size: 11px; padding: 4px 8px; }
+  .status-row { flex-wrap: wrap; }
+  .status-row .right { text-align: left; }
+  .region-select-btn { min-width: 105px; max-width: 145px; }
+  .map-filter-panel {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: 16px;
+    /* 관제 현황 시트(15)/시트 배경(40)/재오픈 알약(40)/상세 팝업(1050+) 등 어떤 팝업과 겹치더라도
+       상태 선택 필터가 항상 그 뒤에 있도록 이 페이지의 다른 z-index보다 낮게 유지 */
+    z-index: 10;
+    /* 접힌 상태(선택된 칩 하나)와 펼친 상태(전체 목록)가 서로 다른 폭으로 늘었다 줄었다 하지 않도록
+       두 상태 모두 같은 고정폭을 쓰게 함 (가장 긴 라벨 "과포화" 기준) */
+    width: 100px;
+  }
+  /* 관제 현황 하단 시트가 펼쳐져 있는 동안엔 겹치지 않도록 필터 칩을 숨김 (순간이동 대신 페이드로 부드럽게) */
+  .map-filter-panel.hidden-behind-sheet { opacity: 0; pointer-events: none; }
+
+  /* 모바일: 평소엔 선택된 옵션 하나만, 탭하면 나머지가 위로 펼쳐짐 */
+  .map-filter-panel.chips-collapsed { flex-direction: row; flex-wrap: nowrap; justify-content: center; }
+  .map-filter-panel.chips-collapsed .filter-chip:not(.active) { display: none; }
+  /* 접힌 상태에서 남는 선택 칩은 자체 테두리/배경을 없애 바깥 캡슐(.map-filter-panel) 하나만 뱃지처럼 보이게 함
+     (칩 자체의 pill 스타일까지 겹치면 캡슐 안에 캡슐이 하나 더 있는 것처럼 보임) */
+  .map-filter-panel.chips-collapsed .filter-chip.active {
+    border: none; background: transparent; box-shadow: none;
+  }
+  /* 펼친 상태: 알약이 여러 개 떠있는 게 아니라, 하나의 둥근 캡슐 안에 옵션이 줄지어 담긴 모양 */
+  .map-filter-panel:not(.chips-collapsed) {
+    flex-direction: column-reverse; flex-wrap: nowrap; align-items: stretch;
+    padding: 0; gap: 0; border-radius: 26px; overflow: hidden; background: #fff;
+  }
+  .map-filter-panel:not(.chips-collapsed) .filter-chip {
+    justify-content: center; border-radius: 0; border: none; background: #fff;
+    padding: 14px 22px; font-size: 13px;
+  }
+  .map-filter-panel:not(.chips-collapsed) .filter-chip + .filter-chip { border-top: 1px solid var(--line); }
+  /* 선택된 옵션은 줄(border) 하나로 어중간하게 표시하지 않고, 행 전체를 옅은 초록으로 칠해 명확히 표시 */
+  .map-filter-panel:not(.chips-collapsed) .filter-chip.active { background: var(--ok-bg); color: var(--accent-dark); }
+}
+
+@media (min-width: 900px) {
+  .status-panel { display: none !important; }
+  .status-reopen-pill { display: none !important; }
+}
+
+.status-reopen-pill {
+  display: inline-flex; position: absolute; left: 16px; bottom: 22px; z-index: 40;
+  align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 999px; background: #00965e; box-shadow: 0 4px 14px rgb(198 198 198); font-family: inherit; font-size: 13px; font-weight: 600; color: #fcfcfc; cursor: pointer;
+  opacity: 0; transform: translateY(10px) scale(0.94); visibility: hidden; pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(.2,.8,.3,1), visibility 0s linear 0.2s;
+}
+.status-reopen-pill.show {
+  opacity: 1; transform: translateY(0) scale(1); visibility: visible; pointer-events: auto;
+  transition: opacity 0.2s ease 0.12s, transform 0.24s cubic-bezier(.2,.8,.3,1) 0.12s, visibility 0s linear 0.12s;
+}
+@media (min-width: 900px) { .status-reopen-pill { display: none !important; } }
+
+/* 대여소/지시서 상세 정보 팝업: 뒷배경을 어둡게 가리지 않고 지도가 그대로 보이도록 함 */
+.station-detail-backdrop {
+  position: fixed; inset: 0; background: transparent; z-index: 1050;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.station-detail-backdrop.show { opacity: 1; pointer-events: auto; }
+
+.station-detail-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; border-radius: 20px 20px 0 0; z-index: 1051;
+  padding: 24px 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+  transform: translateY(100%); opacity: 0; pointer-events: none;
+  transition: transform 0.3s cubic-bezier(.2,.8,.3,1), opacity 0.25s ease;
+}
+.station-detail-panel.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+@media (min-width: 900px) {
+  .station-detail-panel {
+      top: auto;
+      bottom: 32px;
+      left: calc(50% + 200px);
+      right: auto;
+      border-radius: 16px;
+      width: 380px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      transform: translateX(-50%) translateY(16px);
+  }
+  .station-detail-panel.show { transform: translateX(-50%) translateY(0); }
+}
+
+.sd-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sd-title { margin: 0; font-size: 18px; font-weight: 800; flex: 1; color: var(--ink); }
+.sd-close-btn { background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 4px; display: flex; color: #888; transition: color 0.2s; }
+.sd-close-btn:hover { color: #333; }
+.sd-body { display: flex; flex-direction: column; gap: 16px; }
+.sd-addr { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.sd-status-badge { align-self: flex-start; }
+.sd-stats { display: flex; gap: 8px; background: #f8f9fa; padding: 12px; border-radius: 12px; }
+.sd-stat-item { flex: 1; display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.sd-stat-item .label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.sd-stat-item strong { font-size: 15px; font-weight: 800; color: var(--accent-dark); }
+.sd-write-btn { border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.15s ease, opacity 0.15s ease; }
+.sd-write-btn:hover { background: var(--accent-dark); opacity: 0.9; }

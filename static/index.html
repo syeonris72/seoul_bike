@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울자전거 따릉이</title>
+    <link rel="icon" type="image/png" href="img/web-logo-icon.png">
+    <!-- Bootstrap 5.3.3 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- 커스텀 CSS 호출 -->
+    <link rel="stylesheet" href="css/index.css?v=20260728b" />
+</head>
+<body class="vw-100 vh-100 overflow-hidden m-0 p-0">
+    <!--
+        전체 레이아웃: 좌우 2단 구성 (row)
+        - 왼쪽: 데스크톱 전용 비주얼/소개 패널 (모바일에서는 숨김, d-none d-xl-flex)
+        - 오른쪽: 로그인/회원가입 폼 패널 (모든 화면 크기에서 표시)
+        실제 상태 제어(탭 전환, 입력값 검증 등)는 js/index.js에서 담당한다.
+    -->
+    <div class="container-fluid h-100 p-0">
+        <div class="row g-0 h-100">
+
+            <!-- ======================= 왼쪽 영역 (데스크톱 전용 비주얼 패널) ======================= -->
+            <div class="col-xl-6 d-none d-xl-flex flex-column justify-content-between p-4 p-lg-5 left-visual-panel">
+
+                <!-- 왼쪽 상단 로고: 클릭 시 index.html(첫 화면)로 이동 -->
+                <div class="fs-4 fw-bold d-flex align-items-center">
+                    <a href="index.html" class="brand-logo-link">
+                        <img src="img/logo.png" alt="따릉이 공식 로고" class="brand-logo-img d-inline-block align-text-top me-2">
+                    </a>
+                </div>
+
+                <!-- 중앙 배지 + 메인 타이틀 + 서브 설명 -->
+                <div class="my-auto">
+                    <div class="badge rounded-pill fw-normal mb-3 py-2 px-3 seoul-badge">
+                        <span class="fw-bold text-brand-accent">서울</span>을 즐기다
+                    </div>
+
+                    <h1 class="display-5 fw-bold lh-base mb-4 text-white">
+                        <span class="hero-title-sub d-inline-block">누구나 쉽고 편리하게<br>이용할 수 있는 저탄소 이동수단</span><br><span class="text-brand-accent">서울자전거 따릉이</span>
+                    </h1>
+                    <p class="lh-lg text-sub">
+                        따릉이는 서울시만과 함께하는 공유자전거로<br>대여소가 설치된 곳이면 어디에서나 따릉이를 대여하고 반납할 수 있습니다.<br><span class="text-brand-accent">서울자전거 따릉이</span> 웹사이트를 통해 현재 위치에서 가까운 대여소를 찾아 따릉이를 이용하세요.
+                    </p>
+                </div>
+
+                <!-- 하단 통계 영역: 총 대여소 / 운영 자전거 / 일일 대여 (js/index.js의 loadStats()가 채움) -->
+                <div class="d-flex gap-4 gap-lg-5 pb-3 stats-text-area text-white">
+                    <div>
+                        <h3 class="fw-bold mb-1" id="stat-stations">-</h3>
+                        <p class="small mb-0">총 대여소</p>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-1" id="stat-bikes">-</h3>
+                        <p class="small mb-0">운영 자전거</p>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-1" id="stat-rentals">-</h3>
+                        <p class="small mb-0">일일 대여</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= 오른쪽 영역 (로그인/회원가입 폼) ======================= -->
+            <div class="col-12 col-xl-6 d-flex align-items-center justify-content-center h-100 bg-white right-panel">
+
+                <!-- 모바일 전용 상단 로고 (탭 전환과 무관하게 항상 상단 중앙에 고정, 스크롤 시 js/index.js가 숨김 처리) -->
+                <div class="mobile-logo-bar d-xl-none">
+                    <a href="index.html" class="mobile-logo-link">
+                        <img src="img/logo-icon.png" alt="따릉이 공식 로고" class="mobile-logo-img">
+                    </a>
+                </div>
+
+                <div class="form-container">
+
+                    <!-- 폼 제목/부제목: switchTab()에서 탭에 맞춰 텍스트를 갱신 -->
+                    <h2 class="fw-bold mb-1" id="main-title">로그인</h2>
+                    <p class="text-muted small mb-3" id="main-subtitle">부여받은 계정 정보로 로그인해 주세요.</p>
+
+                    <!-- 로그인 / 회원가입 탭 버튼 -->
+                    <div class="tab-container mb-3">
+                        <div class="tab-btn tab-active" id="tab-login">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> 로그인
+                        </div>
+                        <div class="tab-btn" id="tab-signup">
+                            <i class="bi bi-person-plus me-1"></i> 회원가입
+                        </div>
+                    </div>
+
+                    <span class="d-block fw-bold mb-2 field-label">접속 권한</span>
+
+                    <!-- 접속 권한 선택 카드 영역: 일반 회원 / 관리자 / 기사 (클릭 시 selectRole() 호출) -->
+                    <div class="row g-2 mb-3 justify-content-center">
+                        <div class="col-4">
+                            <div class="role-card h-100 p-2 text-center d-flex flex-column justify-content-center align-items-center role-active">
+                                <i class="bi bi-person fs-5 mb-1 role-icon"></i>
+                                <p class="fw-bold mb-0 role-card-title">일반 회원</p>
+                                <span class="text-muted mt-1 d-none d-sm-block role-card-desc">대여 및 반납</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="role-card h-100 p-2 text-center d-flex flex-column justify-content-center align-items-center">
+                                <i class="bi bi-building fs-5 mb-1 role-icon"></i>
+                                <p class="fw-bold mb-0 role-card-title">관리자</p>
+                                <span class="text-muted mt-1 d-none d-sm-block role-card-desc">통합 관제</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="role-card h-100 p-2 text-center d-flex flex-column justify-content-center align-items-center">
+                                <i class="bi bi-truck fs-5 mb-1 role-icon"></i>
+                                <p class="fw-bold mb-0 role-card-title">기사</p>
+                                <span class="text-muted mt-1 d-none d-sm-block role-card-desc">현장 재배치</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= 입력 폼 그룹 (표시 여부는 js/index.js updateFormVisibility()가 제어) ================= -->
+
+                    <!-- 이름: 회원가입 탭에서만 노출 -->
+                    <div class="mb-2 input-group-custom" id="group-name">
+                        <label class="form-label fw-bold mb-1 field-label">이름</label>
+                        <input type="text" class="form-control" id="userName" placeholder="이름을 입력해주세요">
+                    </div>
+
+                    <!-- 총괄 구역: 접속 권한이 '기사'일 때만 노출 (드롭다운 목록은 loadStats()가 채움) -->
+                    <div class="mb-2 input-group-custom" id="group-district">
+                        <label class="form-label fw-bold mb-1 field-label-muted">총괄 구역</label>
+                        <div id="district-select-area" class="position-relative">
+                            <button class="form-control text-start d-flex justify-content-between align-items-center custom-select-btn shadow-none" type="button" id="districtDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span id="selected-district">마포구</span>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00965e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </button>
+                            <ul class="dropdown-menu w-100 p-0 shadow-sm custom-dropdown-menu" aria-labelledby="districtDropdown" id="district-list"></ul>
+                        </div>
+                    </div>
+
+                    <!-- 아이디/사번: 접속 권한에 따라 라벨과 placeholder가 동적으로 바뀜 -->
+                    <div class="mb-2 input-group-custom" id="group-id">
+                        <label class="form-label fw-bold mb-1 field-label" id="id-label">아이디</label>
+                        <input type="text" class="form-control" id="empId" placeholder="아이디를 입력해주세요">
+                    </div>
+
+                    <!-- 이메일: 회원가입 탭 + '일반 회원'일 때만 노출 -->
+                    <div class="mb-2 input-group-custom" id="group-email">
+                        <label class="form-label fw-bold mb-1 field-label">이메일</label>
+                        <input type="email" class="form-control" id="userEmail" placeholder="이메일을 입력해주세요">
+                    </div>
+
+                    <!-- 비밀번호 -->
+                    <div class="mb-2 input-group-custom" id="group-pw">
+                        <label class="form-label fw-bold mb-1 field-label">비밀번호</label>
+                        <input type="password" class="form-control" id="empPw" placeholder="비밀번호를 입력해주세요">
+                    </div>
+
+                    <!-- 비밀번호 확인: 회원가입 탭에서만 노출, 불일치 시 에러 문구 표시 -->
+                    <div class="mb-2 input-group-custom" id="group-pw-confirm">
+                        <label class="form-label fw-bold mb-1 field-label">비밀번호 확인</label>
+                        <input type="password" class="form-control" id="empPwConfirm" placeholder="비밀번호를 다시 입력해주세요">
+                        <div class="invalid-feedback pw-error-text d-none" id="pw-confirm-error">비밀번호가 일치하지 않습니다.</div>
+                    </div>
+
+                    <!-- 개인정보 수집 동의: 회원가입 탭에서만 노출 -->
+                    <div class="form-check mb-3 mt-3" id="group-terms">
+                        <input class="form-check-input shadow-none" type="checkbox" id="termsCheck">
+                        <label class="form-check-label text-muted terms-label-text" for="termsCheck">
+                            개인정보 수집 및 이용에 동의합니다. (필수)
+                        </label>
+                    </div>
+
+                    <!-- 로그인/회원가입 실행 버튼: switchTab()이 아이콘/문구를, attemptAction()이 클릭 동작을 처리 -->
+                    <button class="btn btn-ttareungi w-100 fw-bold rounded-3 mt-1" id="action-btn">
+                        <i class="bi bi-box-arrow-in-right me-2 text-white"></i>로그인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3 JS Bundle CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 백엔드 호출 헬퍼 -->
+    <script src="js/api.js"></script>
+
+    <!-- 메인 로직 스크립트 로드 -->
+    <script src="js/index.js"></script>
+</body>
+</html>

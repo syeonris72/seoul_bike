@@ -1,0 +1,235 @@
+/* css/header.css */
+
+/* 전역 인터랙션: 버튼/링크를 누를 때 부드럽게 색이 바뀌고 살짝 눌리는 느낌을 준다 */
+button, .btn, a.btn, [role="button"] {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+}
+button:active:not(:disabled), .btn:active:not(:disabled), a.btn:active, [role="button"]:active {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.guest-empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; height: 100vh; text-align: center; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+}
+.guest-empty-state p { margin: 0; font-size: 15px; font-weight: 600; color: var(--muted, #767676); }
+.guest-empty-state a { padding: 10px 22px; border-radius: 10px; background: #00965e; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
+.guest-empty-state a:hover { background: #00965e; }
+
+/* QR 스캔 카메라 뷰 (모바일 전용 팝업 내부) */
+.scan-qr-reader {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #111;
+}
+.scan-qr-reader video { width: 100% !important; border-radius: 14px; }
+.scan-qr-reader img { display: none; }
+.scan-camera-status { font-size: 12.5px; font-weight: 600; text-align: center; margin-top: 8px; }
+.scan-camera-status.error { color: #ef4545; }
+.scan-camera-status.success { color: #2f9e44; }
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e3ebe4;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  flex-shrink: 0;
+}
+.brand-logo-link { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
+.brand-logo-img { height: 28px; width: auto; margin-right: 8px; }
+.brand-subtext {
+  font-size: 11.5px; font-weight: 700; color: #131a29; line-height: 1.25;
+  border-left: 1px solid #e5e7eb; padding-left: 12px; margin-left: 4px;
+}
+.brand-district { color: #a3a7b0; }
+.sh-nav { display: flex; align-items: center; gap: 8px; }
+.nav-menu-item {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
+  font-size: 14px; font-weight: 600; color: #4c5664; text-decoration: none;
+  background: transparent; transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.nav-menu-item:hover { background: #eef0f2; color: #131a29; font-weight: 700; }
+.sh-right { display: flex; align-items: center; gap: 16px; }
+
+.nav-menu-item.active { background: #ecfdf5; color: #00965e; font-weight: 700; }
+
+/* 날씨 드롭다운 */
+.weather-badge-wrap { position: relative; }
+.weather-badge { display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #eef0f2; border-radius: 999px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; color: #333; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+.weather-badge:hover { background: #f1f3f5; }
+.weather-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.weather-sep { color: #d1d5db; }
+.weather-icon-temp { color: #f98718; }
+.weather-icon-rain { color: #9294f8; }
+.weather-icon-wind { color: #6b7280; }
+.weather-popup {
+  position: absolute; top: calc(100% + 10px); right: 0; left: 0; width: auto; min-width: 280px;
+  background: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border: 1px solid #e5e7eb; padding: 16px;
+  z-index: 1100;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+.weather-popup.show { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.weather-popup-head { font-weight: 800; font-size: 0.95rem; margin-bottom: 2px; color: #1c2b22; }
+.weather-popup-sub { font-size: 0.75rem; color: #888; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f3f5; }
+.weather-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 8px; }
+.weather-trend { font-size: 0.8em; }
+
+/* 알림 및 메뉴 */
+.sh-icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #eef0f2; background: #f8f9fa; color: #333; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: background 0.2s; }
+.sh-icon-btn:hover { background: #f1f3f5; }
+.sh-dot { position: absolute; top: 8px; right: 8px; width: 7px; height: 7px; background: #ef4545; border-radius: 50%; display: none; }
+.sh-dropdown {
+  position: absolute; top: calc(100% + 10px); right: 0 !important; left: auto !important; width: 260px;
+  background: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border: 1px solid #eef0f2;
+  z-index: 1100; overflow: hidden;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+}
+.sh-dropdown.show { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.sh-menu-head { padding: 14px 16px; background: #f8f9fa; border-bottom: 1px solid #eef0f2; font-weight: 700; font-size: 0.9rem; color: #1c2b22; }
+
+#notif-list { max-height: 400px; overflow-y: auto; }
+
+/* ==========================================================================
+   알림창 아이템 공통 및 긴급(urgent) 스타일
+   ========================================================================== */
+.sh-notif-item {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f8f9fa;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+/* 🔴 긴급 알림 (고갈, 기사 대기): 연한 빨간 배경 + 왼쪽 테두리 */
+.sh-notif-item.urgent-notif {
+  background-color: #fff5f5 !important;
+  border-left: 4px solid #ef4545 !important;
+}
+
+.sh-notif-item.urgent-notif .title {
+  color: #ef4545 !important;
+  font-weight: 700;
+}
+
+/* 🚨 뱃지 앞에 강제로 생기는 점(::before) 원천 차단 🚨 */
+.sh-notif-item .badge::before,
+.sh-notif-item .badge::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 🟢 알림창 내 뱃지 찌그러짐 방지 및 정렬 유지 */
+.sh-notif-item .badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap !important; /* 뱃지 텍스트 줄바꿈 방지 */
+  flex-shrink: 0 !important;      /* 텍스트가 길어져도 뱃지가 찌그러지지 않도록 고정 */
+}
+
+.sh-menu-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: #333; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: background 0.15s; }
+.sh-menu-item:hover { background: #f8f9fa; color: #00965e; }
+.sh-menu-item.danger { color: #ef4545; }
+.sh-menu-item.danger:hover { background: #fef2f2; color: #ef4545; }
+
+/* 프로필 사이즈 및 정렬 통일 */
+.user-profile-wrap {
+  cursor: pointer;
+  padding: 4px 14px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid #eef0f2;
+  background: #fff;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.user-profile-wrap:hover { background: #f8f9fa; border-color: #dee2e6; }
+.profile-icon { width: 36px; height: 36px; border-radius: 50%; background: #00965e; color: #fff; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.profile-icon.driver { background: #f59e0b; }
+.user-icon-bg { background-color: #6b7280; }
+.profile-text-group { line-height: 1.2; text-align: left; display: flex; flex-direction: column; gap: 4px; }
+.header-profile-name { font-weight: 800; font-size: 14px; color: #333; white-space: nowrap; }
+.name-suffix { color: inherit; font-weight: 400; }
+.header-profile-name .header-profile-role { font-weight: 500; margin-left: 4px; }
+.header-profile-role { font-size: 11.5px; color: #a3a7b0; font-weight: 500; }
+.sh-menu-head .header-profile-role { color: #a3a7b0; }
+.profile-menu-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.profile-menu-head-row .header-profile-role { margin-left: 0; }
+
+.hamburger-btn { display: flex; flex-direction: column; justify-content: space-between; width: 24px; height: 18px; background: transparent; border: none; cursor: pointer; padding: 0; z-index: 1050; }
+.hamburger-btn span { width: 100%; height: 3px; background-color: #1c2b22; border-radius: 4px; transition: all 0.3s linear; }
+.mobile-menu-overlay { position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.5); z-index: 1200; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+.mobile-menu-overlay.show { right: 0; opacity: 1; visibility: visible; }
+.mobile-menu-content { position: absolute; top: 0; right: -320px; width: 300px; height: 100%; background: #ffffff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; display: flex; flex-direction: column; }
+.mobile-menu-overlay.show .mobile-menu-content { right: 0; }
+.mobile-menu-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px 24px 20px; border-bottom: 1px solid #eef0f2; }
+.mobile-close-btn { background: transparent; border: none; font-size: 1.8rem; color: #333; cursor: pointer; line-height: 1; padding: 0; margin-top: -6px; }
+.mobile-menu-body { padding: 24px; overflow-y: auto; flex-grow: 1; }
+.mobile-weather-section { margin-bottom: 16px; }
+.mobile-weather-badge { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; gap: 8px; background: #f8f9fa; border-radius: 16px; padding: 12px 10px; cursor: pointer; margin-bottom: 0; }
+.mobile-weather-badge .weather-item { flex-direction: column; justify-content: center; gap: 2px; font-size: 0.82rem; font-weight: 700; color: #333; line-height: 1.3; white-space: normal; }
+.mobile-weather-badge .weather-sep { display: none; }
+.mobile-weather-popup {
+  background: #fff; border: 1px solid #eef0f2; border-radius: 12px;
+  max-height: 0; overflow: hidden; opacity: 0; padding: 0 16px; margin-top: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, margin-top 0.25s ease;
+}
+.mobile-weather-popup.show { max-height: 300px; opacity: 1; padding: 16px; margin-top: 10px; }
+.mobile-nav { display: flex; flex-direction: column; gap: 8px; }
+.mobile-nav-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 12px; text-decoration: none; color: #333; font-weight: 600; font-size: 1.05rem; transition: background 0.2s; }
+.mobile-nav-item.active { background: #ecfdf5; color: #067f6c; }
+.mobile-nav-item:hover { background: #f8f9fa; }
+.mobile-nav-item.danger { color: #ef4545; }
+.mobile-nav-item.danger:hover { background: #fef2f2; }
+.mobile-menu-divider { height: 1px; background: #eef0f2; margin: 16px 0; }
+
+/* 모바일 메뉴 하단 안내 링크 */
+.mobile-menu-foot-links { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid #eef0f2; }
+.sh-footer-link-btn { border: none; background: transparent; color: #767676; font-size: 11.5px; cursor: pointer; padding: 0; font-family: inherit; }
+.sh-footer-link-btn:hover { color: #00965e; }
+.mobile-menu-foot-links .dot-sep { color: #d7dbdd; font-size: 11.5px; }
+
+/* 안내 팝업 */
+.sh-info-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1300;
+  opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s;
+}
+.sh-info-modal-backdrop.show { opacity: 1; visibility: visible; }
+.sh-info-modal {
+  position: fixed; top: 50%; left: 50%; width: min(360px, 90vw); max-height: 82vh; overflow-y: auto;
+  background: #fff; border-radius: 18px; z-index: 1301; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); font-family: inherit;
+  opacity: 0; visibility: hidden; transform: translate(-50%, -50%) scale(0.95);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.sh-info-modal.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+.sh-info-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; background: #fff; border-radius: 18px 18px 0 0; }
+.sh-info-modal-title { font-size: 16px; font-weight: 700; color: #222; }
+.sh-info-modal-close { border: none; background: none; font-size: 16px; line-height: 1; cursor: pointer; color: #767676; padding: 4px; }
+.sh-info-modal-body { padding: 4px 20px 20px; font-size: 14px; line-height: 1.6; color: #333; }
+.sh-info-modal-body p { margin: 0 0 4px; }
+
+@media (min-width: 992px) { .hamburger-btn { display: none !important; } }
+@media (max-width: 991px) {
+  .site-header { padding: 0 16px; }
+  .brand-subtext { font-size: 11px; }
+  .hamburger-btn { display: flex !important; }
+}

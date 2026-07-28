@@ -1,0 +1,31 @@
+# Github 업로드 시 제외하는 파일 목록
+
+# 가상환경 및 환경변수 (보안 및 로컬 환경)
+.venv/
+venv/
+.env
+
+# 파이썬 캐시 (자동 생성되는 불필요한 임시 파일)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# joblib 병렬처리 임시 폴더 (Windows non-ASCII 경로 회피용, ensemble.ipynb에서 생성)
+.joblib_tmp/
+
+# 대용량 데이터 및 공간정보(SHP) 파일
+# (data 폴더 안의 파이썬 코드들(.py)은 이 설정에 영향을 받지 않고 정상 업로드됩니다.)
+data/infra_river_SHP/
+data/rent_history/
+data/*.csv
+
+# 머신러닝 모델 파일 (대용량), 배포할 때는 필요함
+models_pkl/
+*.pkl
+
+# 파이참(IDE) 로컬 설정 파일
+.idea/
+
+*.sql
+
+*.db

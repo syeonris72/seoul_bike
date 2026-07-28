@@ -1,0 +1,160 @@
+body {
+    background-color: #fcfcfc;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+    color: #131a29;
+}
+
+/* 넓은 화면에서 왼쪽으로 쏠리지 않도록 본문을 가운데 정렬 */
+.driver-page-container { max-width: 1600px; margin-left: auto; margin-right: auto; padding-top: 2rem; }
+
+/* 상태 배지: 관제/일반 회원 페이지와 동일한 점 아이콘 + 크기로 통일 */
+.badge-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12px !important; padding: 5px 12px !important; }
+.badge-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+/* 페이지 타이틀 + 상태 탭: 지시서 관리(admin-dispatch)와 동일한 스타일로 통일 */
+.page-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.4rem; color: #333; }
+.page-subtitle { color: #888; font-size: 0.85rem; margin-bottom: 1rem; }
+
+/* ==========================================================================
+   상태 필터 드롭다운 (버튼 유지 + 버튼을 가리지 않는 카드 분리형 오버레이)
+   ========================================================================== */
+.status-select-area { display: inline-flex; position: relative; }
+
+.status-select-btn {
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    min-width: 135px;
+    border: 1px solid #00965e; background-color: #ecfdf5; color: #00965e;
+    font-size: 13.5px; font-weight: 600; line-height: 1; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+.status-select-btn:focus { outline: none; box-shadow: 0 0 0 2px #ecfdf5; }
+/* 라벨은 왼쪽에 붙이고, 카운트(+화살표)는 오른쪽 정렬되도록 카운트 앞의 남는 공간을 모두 흡수 */
+.status-select-btn .count { font-weight: 800; margin-left: auto; }
+.status-select-btn svg { transition: transform 0.2s ease; }
+.status-select-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.status-select-btn:active { transform: scale(0.95); }
+
+/* 드롭다운이 열렸을 때 모서리가 찌그러지지 않고 원래의 둥근 캡슐 형태를 유지 */
+.status-select-btn[aria-expanded="true"] { border-radius: 999px; border-color: #00965e; }
+
+/* 드롭다운 메뉴 (버튼 밑으로 고정된 카드형 오버레이) */
+.status-dropdown-menu,
+.status-dropdown-menu[data-bs-popper] {
+    position: absolute !important;
+    top: calc(100% + 6px) !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+    padding: 5px !important;
+    background-color: #fff !important;
+    z-index: 1050 !important;
+
+    max-height: 250px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #fff;
+}
+
+.status-dropdown-menu::-webkit-scrollbar { width: 6px; display: block; }
+.status-dropdown-menu::-webkit-scrollbar-track { background: #fff; margin-top: 8px; margin-bottom: 8px; border-radius: 10px; }
+.status-dropdown-menu::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.status-dropdown-menu::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+.status-dropdown-menu.show { animation: statusDropdownIn 0.15s ease both; }
+@keyframes statusDropdownIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-dropdown-menu .dropdown-item {
+    border-radius: 10px !important;
+    font-size: 13.5px; font-weight: 600; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: #333; cursor: pointer;
+    transition: all 0.15s ease;
+}
+.status-dropdown-menu .dropdown-item:hover { background-color: #f8f9fa; }
+.status-dropdown-menu .dropdown-item:active { transform: scale(0.97); }
+.status-dropdown-menu .dropdown-item .count { font-weight: 800; color: #9ca3af; transition: color 0.15s ease; }
+
+.status-dropdown-menu .dropdown-item.selected-item {
+    background-color: #ecfdf5 !important;
+    color: #00965e !important;
+}
+.status-dropdown-menu .dropdown-item.selected-item .count {
+    color: #00965e !important;
+}
+
+/* 지시서 목록: 긴급 / 고장 수거 / 일반 3개 박스 */
+.task-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.task-column { display: flex; flex-direction: column; min-height: 0; }
+.task-column-head {
+    display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; color: #212529;
+    padding-bottom: 0.6rem; margin-bottom: 0.75rem; border-bottom: 2px solid #eef0f2; flex-shrink: 0;
+}
+.task-column-head .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.task-column-head .dot.urgent { background: #ef4545; }
+.task-column-head .dot.report { background: #f59e0b; }
+.task-column-head .dot.dispatch { background: #00965e; }
+.task-column-count { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: #9ca3af; }
+.task-column-body { overflow-y: auto; max-height: 72vh; padding-right: 2px; }
+
+@media (max-width: 991.98px) {
+    .task-columns { grid-template-columns: 1fr; gap: 1.5rem; }
+    .task-column-body { max-height: 60vh; }
+}
+
+/* 지시서 카드 */
+.order-card-item { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 1rem; padding: 1rem 1.25rem; border-left: 4px solid transparent; }
+@media (min-width: 576px) { .order-card-item { padding: 1.25rem 1.5rem; } }
+.order-card-item.urgent { border-left-color: #ef4545; background: #fff; }
+.order-card-item.type-report { border-left-color: #f59e0b; }
+.order-card-item:not(.urgent):not(.type-report) { border-left-color: #00965e; }
+/* 유저/대여 반납 페이지의 목록 항목 제목·부가정보·뱃지와 글자크기·색을 통일 */
+.order-card-item h5 { font-size: 15px; color: #131a29; }
+.order-card-item .text-muted.small { font-size: 12px; color: #767676 !important; }
+.order-card-item .badge.rounded-pill { font-size: 12px; }
+
+.empty-state-box {
+    background-color: white;
+    padding: 2rem 3rem;
+    border-radius: 16px;
+    font-size: 13.5px;
+    color: #767676 !important;
+}
+
+/* 버튼 커스텀 색상 */
+.btn-indigo { background-color: #00965e; color: white; border: none; }
+.btn-indigo:hover { background-color: #007b4d; color: white; }
+.btn-start { background-color: #00965e; color: white; border: none; }
+.btn-start:hover { background-color: #007b4d; color: white; }
+/* QR/ID 스캔이 모두 끝나야만 나타나는 "완료" 액션 (카드 · 팝업 공용) */
+.btn-scan-complete { background-color: #00965e; color: white; border: none; }
+.btn-scan-complete:hover { background-color: #007b4d; color: white; }
+/* QR/ID 스캔 팝업이 열려 있는 동안 그 뒤에 보이는 "지시 수행 중" 버튼: 비활성화된 느낌이 들도록 글자도 회색으로 */
+.btn-scan-inactive { background-color: #f8f9fa; border: 1px solid #e5e7eb; color: #9ca3af; }
+.btn-scan-inactive:hover { background-color: #f8f9fa; color: #9ca3af; }
+
+/* QR/ID 스캔 팝업 */
+/* 자전거 ID 입력창: 포커스 시 뜨는 기본 파란색 outline/box-shadow 제거 */
+#scanBikeIdInput:focus { border-color: #ced4da; box-shadow: none; }
+.scan-progress-box { background: #f8f9fa; border-radius: 12px; padding: 1rem; }
+.scanned-list { max-height: 160px; overflow-y: auto; }
+.scanned-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border-radius: 8px; padding: 0.5rem 0.8rem; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; }
+.scanned-item button { border: none; background: transparent; color: #ef4545; font-size: 18px; padding: 4px; }
+
+@media (max-width: 575.98px) {
+    .driver-page-container { padding-top: 1.5rem; }
+    .status-select-btn { padding: 7px 12px; font-size: 12.5px; min-width: 120px; }
+    .page-title { font-size: 1.2rem; }
+    .page-subtitle { font-size: 0.78rem; }
+    .empty-state-box { padding: 1.5rem; }
+}

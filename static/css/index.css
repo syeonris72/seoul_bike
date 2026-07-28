@@ -1,0 +1,405 @@
+/* ==========================================================================
+   index.css
+   서울자전거 따릉이 로그인/회원가입 페이지(index.html) 전용 스타일시트.
+   구성: 전역 리셋 → 공통 폼 요소 → 버튼 → 레이아웃 → 탭 → 역할 카드 →
+        커스텀 셀렉트 → 통계 영역 → 좌측 비주얼 패널 → 텍스트 강조 클래스 →
+        로고 → 라벨/타이틀 → 카드 텍스트 → 기타 폼 요소 →
+        모바일 전용 상단 로고 바 → 모바일 반응형 미디어 쿼리
+   ========================================================================== */
+
+/* 전역 리셋: 폰트/기본 글자색/박스 모델 통일 */
+* {
+    font-family: 'Pretendard', sans-serif;
+    color: #333;
+    box-sizing: border-box;
+}
+
+/* 전역 인터랙션: 버튼/링크를 누를 때 부드럽게 색이 바뀌고 살짝 눌리는 느낌을 준다 */
+button, .btn, a.btn, [role="button"] {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+        box-shadow 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+}
+button:active:not(:disabled), .btn:active:not(:disabled), a.btn:active, [role="button"]:active {
+    transform: scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ------------------------------ 공통 폼 요소 ------------------------------ */
+/* 입력창/셀렉트 공통 스타일 */
+.form-control, .form-select {
+    border-radius: 8px;
+    border-color: #e5e7eb;
+    padding: 0.6rem 0.75rem;
+    font-size: 14px;
+}
+
+/* 포커스 시 기본 파란 테두리 대신 브랜드 컬러 테두리 사용, 그림자 제거 */
+.form-control:focus, .form-select:focus {
+    border-color: #00965e !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* 체크박스 포커스 시 파란 그림자 제거 */
+.form-check-input:focus {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+}
+/* 체크박스 선택/해제가 부드럽게 보이도록 색상 전환 적용 */
+.form-check-input {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+/* 체크박스 선택 시 브랜드 컬러로 채움 */
+.form-check-input:checked {
+    background-color: #00965e !important;
+    border-color: #00965e !important;
+}
+
+/* -------------------------------- 메인 버튼 -------------------------------- */
+/* 메인 따릉이 버튼(로그인/회원가입 실행) 스타일 */
+.btn-ttareungi {
+    background-color: #00965e;
+    color: #ffffff;
+    border: none;
+    padding: 0.75rem;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 10px rgba(0, 150, 94, 0.25);
+}
+.btn-ttareungi:hover {
+    background-color: #007b4d;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 150, 94, 0.35);
+}
+.btn-ttareungi:focus, .btn-ttareungi:active {
+    box-shadow: none !important;
+    outline: none !important;
+    background-color: #00965e;
+    color: #ffffff;
+}
+
+/* -------------------------------- 레이아웃 -------------------------------- */
+/* 우측(로그인/회원가입 폼) 패널 기본 여백 */
+.right-panel {
+    padding: 1rem;
+}
+
+/* 폼을 감싸는 중앙 컨테이너 (최대 너비 제한 + 세로 중앙 정렬) */
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 입력 필드 그룹 간 간격 */
+.input-group-custom {
+    margin-bottom: 0.5rem !important;
+}
+
+/* -------------------------------- 탭 토글 -------------------------------- */
+/* 로그인 / 회원가입 탭을 감싸는 알약형 배경 */
+.tab-container {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    padding: 4px;
+    display: flex;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+/* 탭 버튼 기본(비활성) 스타일 */
+.tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6B7280;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+/* 선택된(활성) 탭 스타일 */
+.tab-btn.tab-active {
+    background-color: #ffffff;
+    color: rgb(21 27 46 / 0.6) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* 탭 아이콘 색상을 탭 글자색과 동일하게 맞춤
+   (전역 리셋 `* { color: #333 }`이 아이콘에도 직접 적용되어
+    부모의 글자색을 상속받지 못하는 것을 방지) */
+.tab-btn i {
+    color: inherit;
+}
+
+/* ------------------------------ 접속 권한 카드 ------------------------------ */
+/* 일반 회원 / 관리자 / 기사 선택 카드 기본 스타일 */
+.role-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+}
+.role-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+/* 선택된 카드 강조 */
+.role-card.role-active {
+    border: 1px solid #00965e !important;
+    background-color: #ecfdf5;
+}
+.role-card.role-active p, .role-card.role-active span, .role-card.role-active .role-icon {
+    color: #00965e !important;
+}
+.role-icon {
+    color: #9ca3af;
+}
+
+/* ------------------------------ 커스텀 셀렉트 ------------------------------ */
+/* 총괄 구역 드롭다운 트리거 버튼 */
+.custom-select-btn {
+    background-color: #ecfdf5;
+    border: 1px solid #00965e;
+    color: #00965e;
+    font-weight: 500;
+}
+/* 드롭다운 목록
+   Bootstrap 기본 드롭다운은 display:none <-> block 전환이라 애니메이션이 불가능하므로,
+   항상 display:block으로 두고 visibility/opacity/transform으로 열고 닫음 */
+.custom-dropdown-menu {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    max-height: 150px;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
+    display: block !important;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    pointer-events: none;
+}
+.custom-dropdown-menu.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.custom-dropdown-menu .dropdown-item {
+    font-size: 13px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+/* 현재 선택된 항목 강조 */
+.custom-dropdown-menu .dropdown-item.selected-item {
+    background-color: #ecfdf5;
+    color: #00965e;
+    font-weight: 600;
+}
+
+/* ---------------------------- 좌측 하단 통계 영역 ---------------------------- */
+.stats-text-area h3 {
+    color: #ffffff !important;
+    text-shadow: 0 3px 12px rgb(76 86 100), 0 1px 4px rgb(76 86 100);
+    font-size: 2.2rem;
+}
+
+.stats-text-area p {
+    color: #e2e8f0 !important;
+    text-shadow: 0 2px 6px rgb(21 27 46 / 0.6);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* ------------------------------ 좌측 비주얼 패널 ------------------------------ */
+/* 배경 이미지 + 어두운 그라데이션 오버레이 */
+.left-visual-panel {
+    background: linear-gradient(rgb(140 145 163 / 0.75), rgba(15, 23, 33, 0.9)),
+                url('../img/main-visual.png') no-repeat center center / cover;
+    color: #ffffff !important;
+}
+
+/* 배경 이미지 위에서 잘 보이도록 텍스트를 흰색으로 강제 */
+.left-visual-panel h1,
+.left-visual-panel h3,
+.left-visual-panel p,
+.left-visual-panel div {
+    color: #ffffff !important;
+}
+
+/* 배경 이미지와의 대비를 위한 그림자 */
+.left-visual-panel h1 {
+    text-shadow: 0 4px 10px rgb(19 26 41);
+}
+
+.left-visual-panel h3 {
+    text-shadow: 0 2px 4px rgb(19 26 41);
+}
+
+.left-visual-panel p {
+    text-shadow: 0 2px 4px rgb(19 26 41);
+}
+
+/* -------------------------------- 텍스트 강조 -------------------------------- */
+/* 브랜드 포인트 컬러(초록) 강조 텍스트: "서울", "따릉이" 등 */
+.text-brand-accent {
+    color: #32e292 !important;
+}
+
+/* 좌측 패널 서브 설명 문구 색상 */
+.text-sub {
+    color: #e5e7eb !important;
+    text-shadow: 0 2px 4px rgb(19 26 41);
+}
+
+/* ---------------------------- 좌측 상단 브랜드 로고 ---------------------------- */
+.brand-logo-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.brand-logo-img {
+    height: 36px;
+    width: auto;
+    cursor: pointer;
+}
+
+/* --------------------------- 메인 타이틀 상단 두 줄 --------------------------- */
+/* "누구나 쉽고 편리하게 / 이용할 수 있는 저탄소 이동수단" 부분만
+   본문보다 작게, "서울자전거 따릉이"와 같은 흰색으로 표시 */
+.hero-title-sub {
+    font-size: 0.75em;
+    line-height: 1.15;
+    color: #ffffff !important;
+}
+
+/* ------------------------------ 좌측 상단 배지 ------------------------------ */
+.seoul-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: 13px;
+    text-shadow: 0 1px 2px rgb(19 26 41 / 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ------------------------------ 폼 라벨 공통 ------------------------------ */
+.field-label {
+    font-size: 12px;
+}
+
+/* "총괄 구역" 라벨처럼 톤을 살짝 낮춘 라벨 */
+.field-label-muted {
+    font-size: 12px;
+    color: #4b5563;
+}
+
+/* ---------------------------- 접속 권한 카드 텍스트 ---------------------------- */
+.role-card-title {
+    font-size: 11px;
+    word-break: keep-all;
+}
+
+.role-card-desc {
+    font-size: 9px;
+    line-height: 1.2;
+}
+
+/* --------------------------- 비밀번호 확인 에러 문구 --------------------------- */
+/* Bootstrap의 .invalid-feedback은 .is-invalid 없이는 항상 display:none이라
+   d-none을 지워도 감춰진 상태로 남는 문제가 있어, 여기서 display:block으로
+   되돌려 두고 실제 노출 여부는 .d-none(!important)이 전담하도록 함 */
+.pw-error-text {
+    display: block;
+    font-size: 11px;
+}
+
+/* ------------------------------ 개인정보 동의 라벨 ------------------------------ */
+.terms-label-text {
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ============================================================
+   모바일 전용 상단 로고 바
+   - 데스크톱(≥ xl breakpoint)에서는 Bootstrap의 d-xl-none으로 숨겨짐
+   - 기본값: 가로 전체 폭에서 로고를 중앙 정렬
+   - 아래 미디어 쿼리 구간에서 화면 상단에 고정(position: fixed)됨
+   ============================================================ */
+.mobile-logo-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
+}
+
+.mobile-logo-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.mobile-logo-img {
+    height: 40px;
+    width: auto;
+}
+
+/* ============================================================
+   모바일 반응형 구간
+   - 너비 1500px 이하 또는 높이 850px 이하(둘 중 하나만 만족해도 적용)일 때
+     왼쪽 비주얼 패널을 숨기고, 오른쪽 폼 영역만 전체 화면에 꽉 채워 보여줌
+   ============================================================ */
+@media (max-width: 1500px), (max-height: 850px) {
+
+    /* 로고를 화면 최상단에 고정 + 탭 전환과 무관하게 항상 같은 위치 유지 */
+    .mobile-logo-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding: 2.5rem 1.25rem 1rem;
+        z-index: 1030;
+        display: flex !important;
+        transition: opacity 0.1s ease, transform 0.1s ease;
+    }
+
+    /* 폼 영역을 스크롤할 때 JS(index.js)가 부여하는 클래스:
+       로고를 살짝 위로 밀어 올리며 서서히 사라지게 함 */
+    .mobile-logo-bar.logo-hidden {
+        opacity: 0;
+        transform: translateY(-12px);
+        pointer-events: none;
+    }
+
+    /* 오른쪽 폼 영역이 화면보다 커질 때(회원가입 등) 스크롤 가능하도록 처리.
+       고정된 로고 바와 겹치지 않도록 상단 여백을 확보 */
+    .right-panel {
+        padding-top: 6rem;
+        padding-bottom: 2rem;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        align-items: flex-start !important;
+        overflow-y: auto;
+        height: 100vh;
+    }
+
+    /* align-items: flex-start + margin: auto 조합으로
+       내용이 짧으면 중앙 정렬되고, 넘치면 위쪽부터 스크롤되도록 함
+       (align-items: center + overflow: auto를 함께 쓰면 넘친 위쪽 내용이
+        스크롤로도 보이지 않는 플렉스박스 특유의 버그를 피하기 위함) */
+    .form-container {
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    /* 좁은 화면에서는 좌측 비주얼 패널을 숨기고 폼 영역만 표시 */
+    .left-visual-panel {
+        display: none !important;
+    }
+}

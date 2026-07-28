@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>서울자전거 따릉이 - 프로필 · 설정</title>
+  <link rel="icon" type="image/png" href="img/web-logo-icon.png">
+  <!-- Bootstrap 5.3.3 CSS CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <!-- 프로필/설정 통합 전용 CSS (일반 회원·관리자·기사 공용) -->
+  <link rel="stylesheet" href="css/settings.css?v=20260728c" />
+</head>
+<body class="bg-light">
+  <div class="profile-wrap">
+    <!-- 상단 뒤로가기 -->
+    <a href="user-dashboard.html" id="profileBackLink" class="profile-back mb-3"><i class="bi bi-arrow-left"></i> <span id="profileBackText">돌아가기</span></a>
+
+    <!-- 프로필 상단 카드 (배너 및 아바타) -->
+    <div class="profile-top-card">
+      <div class="profile-banner" id="profileBanner"></div>
+      <div class="profile-main-info">
+        <div class="profile-avatar-box" id="profileAvatarInitial">-</div>
+      </div>
+      <div class="profile-name-area mt-2">
+        <h4 class="fw-bold mb-0" id="profileNameDisplay">-</h4>
+        <span class="badge fw-semibold px-2 py-1" id="profileRoleBadge">-</span>
+      </div>
+    </div>
+
+    <!-- 기본 정보 카드 -->
+    <div class="profile-card">
+      <h6 class="fw-bold mb-3">기본 정보</h6>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">아이디</label>
+        <div class="profile-info-box" id="infoLoginId">-</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">이름</label>
+        <div class="profile-info-box" id="infoName">-</div>
+      </div>
+
+      <div class="mb-3 role-field role-field-contact d-none">
+        <label class="form-label text-muted small fw-semibold">연락처</label>
+        <div class="profile-info-box" id="infoPhone">-</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold">이메일</label>
+        <div class="profile-info-box" id="infoEmail">-</div>
+      </div>
+
+      <div class="mb-3 role-field role-field-district d-none">
+        <label class="form-label text-muted small fw-semibold">담당 구역</label>
+        <div class="profile-info-box" id="infoDistrict">-</div>
+      </div>
+
+      <div class="mb-0">
+        <label class="form-label text-muted small fw-semibold" id="infoJoinedLabel">가입일</label>
+        <div class="profile-info-box" id="infoJoinedDate">-</div>
+      </div>
+    </div>
+
+    <!-- 활동 현황 카드 (관리자·기사 전용) -->
+    <div class="profile-card role-field role-field-activity d-none" id="activityCard">
+      <h6 class="fw-bold mb-3" id="activityCardTitle">활동 현황</h6>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title">오늘 완료</div>
+            <div class="activity-value" id="activityTodayDone">-</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="activity-box">
+            <div class="activity-title" id="activitySecondaryTitle">총 누적</div>
+            <div class="activity-value" id="activitySecondaryValue">-</div>
+          </div>
+        </div>
+        <div class="col-sm-6 role-field role-field-driver-only d-none">
+          <div class="activity-box">
+            <div class="activity-title">주요 활동 구역</div>
+            <div class="activity-value" id="activityDistrict">-</div>
+          </div>
+        </div>
+        <div class="col-sm-6 role-field role-field-driver-only d-none">
+          <div class="activity-box">
+            <div class="activity-title">현재 상태</div>
+            <div class="activity-value" id="activityStatus">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이용 통계 카드 (일반 회원 전용) -->
+    <div class="profile-card role-field role-field-user-only d-none" id="userStatsCard">
+      <h6 class="fw-bold mb-3">이용 통계</h6>
+      <div class="row g-3">
+        <div class="col-sm-4">
+          <div class="activity-box">
+            <div class="activity-title">총 이용 시간</div>
+            <div class="activity-value" id="statTotalMin">-</div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="activity-box">
+            <div class="activity-title">총 이동 거리</div>
+            <div class="activity-value" id="statTotalDist">-</div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="activity-box">
+            <div class="activity-title">탄소 절감량</div>
+            <div class="activity-value" id="statTotalCarbon">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 계정 관리 (설정 통합) -->
+    <div class="profile-card">
+      <h6 class="fw-bold mb-3">계정 관리</h6>
+      <div class="settings-row role-field role-field-user-only d-none" data-bs-toggle="modal" data-bs-target="#loginIdModal">
+        <div>
+          <div class="row-title">아이디 변경</div>
+          <div class="row-desc">로그인에 사용하는 아이디 변경</div>
+        </div>
+        <i class="bi bi-chevron-right text-muted"></i>
+      </div>
+      <div class="settings-row" data-bs-toggle="modal" data-bs-target="#passwordModal">
+        <div>
+          <div class="row-title">비밀번호 변경</div>
+          <div class="row-desc">계정 보안을 위한 비밀번호 재설정</div>
+        </div>
+        <i class="bi bi-chevron-right text-muted"></i>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4 px-2">
+      <button type="button" class="settings-text-link role-field role-field-user-only d-none" id="withdrawBtn">회원 탈퇴</button>
+      <button type="button" class="settings-text-link ms-auto" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- [모달] 아이디 변경 (일반 회원 전용) -->
+  <div class="modal fade" id="loginIdModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">아이디 변경</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="loginIdForm">
+            <div class="mb-3">
+              <label for="editLoginId" class="form-label fw-semibold small">아이디</label>
+              <input type="text" class="form-control" id="editLoginId" placeholder="아이디를 입력해주세요">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-top bg-light rounded-bottom-4">
+          <button type="button" class="btn btn-light border fw-semibold" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark fw-semibold" id="saveLoginIdBtn">아이디 변경</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [모달] 비밀번호 변경 -->
+  <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold">비밀번호 변경</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="passwordForm">
+            <div class="mb-3">
+              <label for="currentPassword" class="form-label fw-semibold small">현재 비밀번호</label>
+              <input type="password" class="form-control" id="currentPassword" placeholder="현재 비밀번호를 입력해주세요">
+            </div>
+            <div class="mb-3">
+              <label for="newPassword" class="form-label fw-semibold small">새 비밀번호</label>
+              <input type="password" class="form-control" id="newPassword" placeholder="새 비밀번호를 입력해주세요">
+              <ul class="password-rule-list" id="passwordRuleList">
+                <li id="ruleLength"><i class="bi bi-circle"></i> 8~16자</li>
+                <li id="ruleLetter"><i class="bi bi-circle"></i> 영문 포함</li>
+                <li id="ruleNumber"><i class="bi bi-circle"></i> 숫자 포함</li>
+                <li id="ruleSpecial"><i class="bi bi-circle"></i> 특수문자 포함</li>
+              </ul>
+            </div>
+            <div class="mb-3">
+              <label for="confirmPassword" class="form-label fw-semibold small">새 비밀번호 확인</label>
+              <input type="password" class="form-control" id="confirmPassword" placeholder="새 비밀번호를 다시 입력해주세요">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-top bg-light rounded-bottom-4">
+          <button type="button" class="btn btn-light border fw-semibold" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark fw-semibold" id="savePasswordBtn">비밀번호 변경</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5.3 JS Bundle CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <!-- 백엔드 호출 헬퍼 -->
+  <script src="js/api.js"></script>
+  <!-- 공통 헤더 JS -->
+  <script src="js/header.js"></script>
+  <!-- 프로필/설정 통합 전용 JS -->
+  <script src="js/settings.js"></script>
+</body>
+</html>

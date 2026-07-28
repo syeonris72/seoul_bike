@@ -1,0 +1,174 @@
+/* admin-reports.css */
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f7f9fa;
+    color: #333;
+}
+
+/* --- 페이지 헤더 --- */
+.reports-page-container { padding-top: 2rem; max-width: 1600px; }
+.page-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.4rem; }
+.page-subtitle { color: #888; font-size: 0.85rem; }
+
+.header-action-group { min-width: 0; }
+.header-action-group > * { flex-shrink: 0; }
+.btn-write-order { border-radius: 999px; white-space: nowrap; background-color: #00965e; color: #fff; font-weight: 700; border: none; }
+.btn-write-order:hover { background-color: #007b4d; color: #fff; }
+
+@media (max-width: 575.98px) {
+    .reports-page-container { padding-top: 1.5rem; }
+    .page-title { font-size: 1.2rem; }
+    .page-subtitle { font-size: 0.78rem; }
+    .header-action-group { width: 100%; gap: 0.6rem !important; }
+    .btn-write-order { flex: 1 1 auto; justify-content: center; }
+}
+
+/* ==========================================================================
+   상태 필터 및 모달 선택 드롭다운 (버튼 유지 + 카드 분리형 오버레이)
+   ========================================================================== */
+.status-select-area { display: inline-flex; align-items: flex-start; position: relative; }
+
+.status-select-btn {
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    min-width: 135px;
+    border: 1px solid #00965e; background-color: #ecfdf5; color: #00965e;
+    font-size: 13.5px; font-weight: 600; line-height: 1; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+.status-select-btn:focus { outline: none; box-shadow: 0 0 0 2px #ecfdf5; }
+/* 라벨은 왼쪽에 붙이고, 카운트(+화살표)는 오른쪽 정렬되도록 카운트 앞의 남는 공간을 모두 흡수 */
+.status-select-btn .count { font-weight: 800; margin-left: auto; }
+.status-select-btn svg { transition: transform 0.2s ease; flex-shrink: 0; }
+.status-select-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.status-select-btn:active { transform: scale(0.95); }
+
+/* 드롭다운 열렸을 때 둥근 캡슐 형태 완벽 유지 */
+.status-select-btn[aria-expanded="true"] { border-radius: 999px; border-color: #00965e; }
+
+/* 지시서 작성 모달의 대여소 선택 토글: "선택"처럼 짧은 라벨일 때도 너무 좁아 보이지 않도록 최소 너비 확보 */
+/* 대여소 이름은 길이가 제각각이라 min-width로 넓혀주되, 그보다 훨씬 긴 이름은
+   버튼이 무한정 늘어나지 않도록 max-width로 막고 말줄임표(ellipsis)로 처리한다 */
+#stationDropdownBtn { min-width: 170px; max-width: 230px; padding-left: 18px; padding-right: 18px; white-space: nowrap; justify-content: space-between; }
+#stationDropdownBtn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+#stationDropdownBtn[aria-expanded="true"] { border-radius: 999px; border-color: #00965e; }
+
+/* 드롭다운 메뉴 (버튼 밑으로 고정된 카드형 오버레이) */
+.status-dropdown-menu,
+.status-dropdown-menu[data-bs-popper] {
+    position: absolute !important;
+    top: calc(100% + 6px) !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+    padding: 5px !important;
+    background-color: #fff !important;
+    z-index: 1050 !important;
+
+    max-height: 220px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #fff;
+}
+
+.status-dropdown-menu::-webkit-scrollbar { width: 6px; display: block; }
+.status-dropdown-menu::-webkit-scrollbar-track { background: #fff; margin-top: 8px; margin-bottom: 8px; border-radius: 10px; }
+.status-dropdown-menu::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.status-dropdown-menu::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+.status-dropdown-menu.show { animation: statusDropdownIn 0.15s ease both; }
+@keyframes statusDropdownIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-dropdown-menu .dropdown-item {
+    border-radius: 10px !important;
+    font-size: 13px; font-weight: 600; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: #333; cursor: pointer;
+    transition: all 0.15s ease;
+}
+.status-dropdown-menu .dropdown-item:active { transform: scale(0.97); }
+.status-dropdown-menu .dropdown-item .count { font-weight: 800; color: #9ca3af; transition: color 0.15s ease; }
+.status-dropdown-menu .dropdown-item:hover { background-color: #f8f9fa; }
+
+.status-dropdown-menu .dropdown-item.selected-item { background-color: #ecfdf5 !important; color: #00965e !important; font-weight: 600; }
+.status-dropdown-menu .dropdown-item.selected-item .count { color: #00965e !important; }
+
+/* --- 신고 목록: 자치구별 박스로 항상 분리해 표시 (admin-dispatch.css의 task-columns와 동일한 틀) --- */
+.task-columns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+.task-column { display: flex; flex-direction: column; min-height: 0; }
+.task-column-head {
+    display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; color: #212529;
+    padding-bottom: 0.6rem; margin-bottom: 0.75rem; border-bottom: 2px solid #eef0f2; flex-shrink: 0;
+}
+.task-column-count { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: #9ca3af; }
+.task-column-body { display: flex; flex-direction: column; gap: 0.8rem; overflow-y: auto; max-height: 72vh; padding-right: 2px; }
+
+@media (max-width: 1199.98px) {
+    .task-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px) {
+    .task-columns { grid-template-columns: 1fr; gap: 1.25rem; }
+    .task-column-body { max-height: 60vh; }
+}
+
+/* --- 신고 카드: admin-dispatch.css의 order-card-item과 동일한 스타일 --- */
+.badge-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12px !important; padding: 5px 12px !important; }
+.badge-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.report-card-item { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 1rem 1.25rem; }
+@media (min-width: 576px) { .report-card-item { padding: 1.25rem 1.5rem; } }
+.report-card-item h5 { font-size: 15px; color: #131a29; }
+.report-card-item .text-muted.small { font-size: 12px; color: #767676 !important; }
+.report-card-item .badge.rounded-pill { font-size: 12px; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 0; color: #adb5bd; font-size: 0.85rem; font-weight: 500; }
+.empty-state i { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5; }
+
+/* --- 모달 (고장 신고 지시서 작성) --- */
+#reportDispatchModal .modal-dialog { max-width: 480px; }
+.modal-content { border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-height: calc(100vh - 2rem); }
+.modal-header { border-bottom: 1px solid #eef0f2; padding: 1.5rem; }
+.modal-title { font-weight: 800; font-size: 1.2rem; }
+.modal-body { padding: 1.5rem; background-color: #fdfdfd; overflow-y: auto; }
+.modal-footer { border-top: 1px solid #eef0f2; padding: 1rem 1.5rem; background-color: #fff; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+.modal-footer .btn { border-radius: 999px !important; }
+
+.section-title { font-size: 0.9rem; font-weight: 800; margin-bottom: 0.8rem; display: block; }
+.form-section { background: #fff; border: 1px solid #eef0f2; border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; }
+
+.driver-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+.driver-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid #eef0f2; border-radius: 14px; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; }
+.driver-item:hover { border-color: #00965e; background-color: #ecfdf5; }
+.driver-item.selected { border-color: #00965e; background-color: #ecfdf5; box-shadow: 0 0 0 1px #00965e; }
+.driver-item-info { display: flex; align-items: center; gap: 12px; }
+.driver-item-name { font-weight: 700; font-size: 0.9rem; margin: 0; line-height: 1.2; }
+.driver-status.waiting { background-color: #f4f5f7; color: #555; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+.driver-status.working { background-color: #ecfdf5; color: #00965e; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+.driver-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; background-color: #f59e0b; }
+
+/* --- 지시서 전송 버튼: 대여소·기사가 모두 선택되기 전에는 비활성(회색), 다 선택되면 초록색 --- */
+.btn-submit-dispatch { font-weight: 700; border: none; transition: background-color 0.2s ease, color 0.2s ease; }
+.btn-submit-dispatch:disabled { background-color: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+.btn-submit-dispatch:not(:disabled) { background-color: #00965e; color: #fff; }
+.btn-submit-dispatch:not(:disabled):hover { background-color: #007b4d; color: #fff; }
+
+@media (max-width: 575.98px) {
+    .modal-dialog { margin: 0.75rem; }
+    .modal-content { max-height: calc(100vh - 1.5rem); }
+    .modal-header, .modal-body { padding: 1.1rem; }
+    .modal-footer { padding: 0.9rem 1.1rem; flex-wrap: wrap; }
+    .modal-footer > .btn { flex: 1 1 auto; }
+    .form-section { padding: 1rem; }
+}

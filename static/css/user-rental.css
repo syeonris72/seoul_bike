@@ -1,0 +1,196 @@
+/* user-rental.css
+ * "대여 · 반납" 페이지 전용 스타일.
+ * 공통 헤더(#app-header) 스타일은 header.css가 담당하므로 여기서는 다루지 않는다.
+ */
+
+/* ===== 색상/치수 변수 ===== */
+:root {
+  --bg: #fcfcfc;
+  --card: #ffffff;
+  --accent: #00965e;
+  --accent-dark: #00965e;
+  --accent-soft: #f3f4f6;
+  --ink: #131a29;
+  --muted: #767676;
+  --line: #e5e7eb;
+  --ok-bg: #ecfdf5;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+}
+
+/* ===== 기본 리셋 ===== */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+/* ===== 페이지 레이아웃 ===== */
+.page { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+.page-head { margin-bottom: 18px; }
+.page-head h1 { font-size: 1.4rem; font-weight: 800; margin: 0 0 0.4rem; color: #333; }
+.page-head p { margin: 0; font-size: 0.85rem; color: #888; }
+
+@media (max-width: 575.98px) {
+  .page { padding-top: 24px; }
+  .page-head h1 { font-size: 1.2rem; }
+  .page-head p { font-size: 0.78rem; }
+}
+
+/* ===== 연도/월 선택 드롭다운 =====
+ * 모바일·데스크탑 공통 UI. 각 드롭다운 목록 맨 위에는 "전체" 항목이 온다.
+ * 연도가 "전체"로 선택되면 월 드롭다운 버튼이 disabled 처리된다(user-rental.js).
+ */
+.year-month-picker { display: flex; gap: 8px; margin-bottom: 18px; align-items: center; }
+
+/* ==========================================================================
+   연도/월 선택 드롭다운 (버튼 유지 + 버튼을 가리지 않는 카드 분리형 오버레이)
+   ========================================================================== */
+.ym-select-area { display: inline-flex; position: relative; }
+
+.ym-select-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-width: 105px;
+  border: 1px solid #00965e; background-color: #ecfdf5; color: #00965e;
+  font-size: 13.5px; font-weight: 600; line-height: 1; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+.ym-select-btn:focus { outline: none; box-shadow: 0 0 0 2px var(--ok-bg); }
+.ym-select-btn svg { transition: transform 0.2s ease; flex-shrink: 0; }
+.ym-select-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.ym-select-btn:active { transform: scale(0.96); }
+
+/* 드롭다운이 열렸을 때 둥근 캡슐 형태 완벽 유지 */
+.ym-select-btn[aria-expanded="true"] { border-radius: 999px; border-color: #00965e; }
+
+/* 월 선택 비활성 상태 (연도="전체"일 때, user-rental.js가 버튼에 disabled 속성을 부여) */
+.ym-select-btn:disabled {
+  border-color: var(--line); background-color: #fff; color: var(--muted); opacity: 0.6; cursor: not-allowed;
+}
+
+@media (max-width: 575.98px) {
+  .ym-select-btn { padding: 7px 12px; font-size: 12.5px; min-width: 92px; }
+}
+
+/* 드롭다운 메뉴 (버튼 밑으로 고정된 카드형 오버레이) */
+.ym-dropdown-menu,
+.ym-dropdown-menu[data-bs-popper] {
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  left: 0 !important;
+  right: auto !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+
+  border: 1px solid #e5e7eb !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+  padding: 5px !important;
+  background-color: #fff !important;
+  z-index: 1050 !important;
+
+  max-height: 220px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #fff;
+}
+
+.ym-dropdown-menu::-webkit-scrollbar { width: 6px; display: block; }
+.ym-dropdown-menu::-webkit-scrollbar-track { background: #fff; margin-top: 8px; margin-bottom: 8px; border-radius: 10px; }
+.ym-dropdown-menu::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.ym-dropdown-menu::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+.ym-dropdown-menu .dropdown-item {
+  border-radius: 10px !important;
+  font-size: 13.5px; font-weight: 600; padding: 10px 12px;
+  color: #333; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ym-dropdown-menu .dropdown-item:hover { background-color: #f8f9fa; }
+.ym-dropdown-menu .dropdown-item.selected-item { background-color: #ecfdf5; color: #00965e; font-weight: 600; }
+
+/* 드롭다운이 열릴 때 살짝 아래로 떨어지며 나타나는 페이드인 */
+.ym-dropdown-menu.show { animation: ymDropdownIn 0.15s ease both; }
+@keyframes ymDropdownIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 공통: 클릭 시 부드러운 인터랙션 =====
+ * 버튼/드롭다운 항목 전반에 트랜지션과 눌림 효과를 준다.
+ */
+.page button,
+.page .dropdown-item {
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease,
+              border-color 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+.page button:active,
+.page .dropdown-item:active {
+  transform: scale(0.95);
+}
+
+/* ===== 요약 카드 ===== */
+.summary-card {
+  display: flex; gap: 0; background: linear-gradient(160deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: #fff; border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 20px;
+}
+.summary-card .item { flex: 1; text-align: center; }
+.summary-card .item + .item { border-left: 1px solid rgba(255,255,255,0.25); }
+.summary-card .item b { display: block; font-size: 17px; font-weight: 800; }
+.summary-card .item span { font-size: 11.5px; opacity: 0.85; }
+
+@media (max-width: 640px) {
+  /* 좁은 화면에서는 2x2 그리드로 줄바꿈 */
+  .summary-card { flex-wrap: wrap; gap: 12px 0; }
+  .summary-card .item { flex: 1 1 45%; }
+  .summary-card .item:nth-child(2n+1) { border-left: none; }
+}
+
+/* ===== 대여/반납 내역 목록 ===== */
+.history-list { display: flex; flex-direction: column; gap: 12px; }
+
+.history-row {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md);
+  padding: 16px 18px;
+  /* 목록이 새로 그려질 때마다 살짝 떠오르며 나타나는 페이드인 */
+  animation: rentalRowIn 0.28s ease both;
+}
+@keyframes rentalRowIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.history-row .date-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.history-row .date { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.history-row .fee { font-size: 12px; font-weight: 700; color: var(--accent-dark); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; }
+
+.route { display: flex; align-items: center; gap: 10px; }
+.route .stop { flex: 1; min-width: 0; }
+.route .stop .label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.route .stop .name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route .arrow { color: var(--muted); flex-shrink: 0; }
+
+.history-row .meta { display: flex; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.history-row .meta span { font-size: 12.5px; color: var(--muted); }
+.history-row .meta b { color: var(--ink); font-weight: 700; }
+
+/* 내역이 없을 때 표시되는 안내 문구 */
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 13.5px; }
+
+/* 비로그인 상태로 접근했을 때 페이지 전체를 대체하는 빈 화면 안내 */
+.guest-empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; height: 100vh; text-align: center; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+}
+.guest-empty-state p { margin: 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+.guest-empty-state a { padding: 10px 22px; border-radius: 10px; background: #00965e; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
+.guest-empty-state a:hover { background: #00965e; }

@@ -1,0 +1,488 @@
+/* user-dashboard.css */
+/* 일반 회원 대시보드(지도 + 실시간 대여소 현황 + 즐겨찾기 + 각종 팝업) 전용 스타일.
+   섹션은 위에서부터: 공통 변수 → 기본 리셋 → 레이아웃(사이드바/지도) → 검색바 → 지도 핀 →
+   혼잡도 필터 패널 → 모바일 실시간 현황 시트 → 오버레이 패널(가이드/프로필) → 즐겨찾기 팝오버 →
+   반응형(모바일/데스크탑) 오버라이드 → 대여소 상세/고장신고/안내 모달 순으로 이어진다. */
+
+/* ── 공통 색상/치수 변수 ─────────────────────────────────────────────────────────── */
+:root {
+  --bg: #fcfcfc;
+  --card: #ffffff;
+  --accent: #00965e;
+  --accent-dark: #00965e;
+  --accent-soft: #f3f4f6;
+  --ink: #131a29;
+  --muted: #767676;
+  --line: #e5e7eb;
+  --ok: #00965e;
+  --ok-bg: #ecfdf5;
+  --mid: #fb933d;
+  --mid-bg: #fff7ed;
+  --busy: #ef4545;
+  --busy-bg: #fef2f2;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+}
+
+/* ── 기본 리셋 ────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; color: var(--ink); background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+svg { display: block; }
+
+/* ── 전체 레이아웃: 좌측 사이드바 + 지도 영역 ───────────────────────────────────── */
+.dashboard { position: relative; flex: 1 1 auto; overflow: hidden; }
+/* sidebar-wrap: 사이드바 + 접기 버튼을 함께 슬라이드시키는 래퍼 (overflow를 걸지 않아 버튼이 가장자리 밖으로 튀어나와도 잘리지 않음) */
+.sidebar-wrap { position: absolute; top: 0; bottom: 0; left: 0; z-index: 20; width: 400px; transition: transform 0.25s cubic-bezier(.2,.8,.3,1); }
+/* 접기 버튼(.sidebar-toggle-btn)이 래퍼 오른쪽 가장자리보다 15px 더 튀어나와 있으므로(위 주석 참고),
+   딱 -100%만 이동하면 그 15px만큼 화면에 버튼이 걸쳐 남는다. 버튼 폭 + 여유분만큼 더 이동시킨다. */
+.dashboard.sidebar-collapsed .sidebar-wrap { transform: translateX(calc(-100% - 20px)); }
+.sidebar { position: relative; height: 100%; border-right: 1px solid var(--line); background: #fcfcfc; padding: 18px 16px 24px; overflow-y: auto; box-shadow: 10px 0 28px rgba(20,60,35,0.08); }
+.sidebar-status-embed { display: flex; flex-direction: column; }
+.status-embed-title-row { display: flex; align-items: center; margin-bottom: 0.4rem; max-width: 100%; }
+.status-embed-title { font-size: 1.4rem; font-weight: 800; color: #333; white-space: nowrap; margin-right: 8px; }
+.status-count { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+/* 일반 페이지(page-title)와 동일하게 모바일에서 제목 크기를 축소 */
+@media (max-width: 575.98px) {
+  .status-embed-title { font-size: 1.2rem; }
+}
+
+/* 사이드바 접기 버튼: 사이드바 우측 가장자리 중앙에 탭 형태로 고정 (사이드바가 접히면 래퍼와 함께 슬라이드되어 사라짐) */
+.sidebar-toggle-btn {
+  display: none; position: absolute; top: 50%; right: 0; z-index: 21; transform: translate(50%, -50%);
+  align-items: center; justify-content: center; width: 30px; height: 44px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--muted);
+  font-size: 14px; cursor: pointer; box-shadow: 4px 0 12px rgba(20,60,35,0.08);
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-toggle-btn:hover { background: var(--accent-soft); color: var(--accent-dark); }
+/* header.css의 전역 버튼 눌림 효과(button:active { transform: scale(0.96) })는 transform 값을
+   통째로 덮어써서, 위치 지정에 transform을 쓰는 이 버튼을 누르는 순간 엉뚱한 자리로 튀게 만든다.
+   위치 transform과 함께 합성해서 덮어쓰지 않도록 여기서 다시 지정한다. */
+.sidebar-toggle-btn:active:not(:disabled) { transform: translate(50%, -50%) scale(0.96); }
+
+/* 사이드바를 접었을 때 다시 펼치는 버튼 (사이드바 바깥, 접혀 있을 때만 보임)
+   사이드바가 슬라이드로 사라지는 동안(0.25s) 이 버튼이 곧바로 나타나면 아직 사라지는 중인
+   사이드바 위에 겹쳐 보이므로, 사이드바가 거의 다 빠져나간 뒤에 페이드인되도록 지연시킨다. */
+.sidebar-reopen-btn {
+  display: none; position: absolute; top: 50%; left: 0; z-index: 21; transform: translateY(-50%);
+  align-items: center; justify-content: center; width: 30px; height: 44px;
+  border: 1px solid var(--line); border-left: none; border-radius: 0 10px 10px 0;
+  background: #fff; color: var(--muted); font-size: 14px; cursor: pointer;
+  box-shadow: 4px 0 12px rgba(20,60,35,0.08); transition: background 0.15s, color 0.15s;
+}
+.sidebar-reopen-btn:hover { background: var(--accent-soft); color: var(--accent-dark); }
+/* 위와 동일한 이유로, 위치 transform(translateY)이 눌림 효과에 덮어써지지 않도록 합성해서 재지정 */
+.sidebar-reopen-btn:active:not(:disabled) { transform: translateY(-50%) scale(0.96); }
+
+@media (min-width: 900px) {
+  .sidebar-toggle-btn { display: inline-flex; }
+  .sidebar-reopen-btn {
+    display: inline-flex; opacity: 0; visibility: hidden; pointer-events: none;
+    transition: background 0.15s, color 0.15s, opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .dashboard.sidebar-collapsed .sidebar-reopen-btn {
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transition: background 0.15s, color 0.15s, opacity 0.18s ease 0.2s, visibility 0s linear 0.2s;
+  }
+  .dashboard.sidebar-collapsed .floating-search-wrap { left: 24px; }
+}
+.sidebar-foot-links { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted); }
+.sidebar-foot-links a { color: var(--muted); }
+.sidebar-foot-links a:hover { color: var(--accent-dark); }
+.sidebar-foot-links .dot-sep { color: var(--line); }
+
+.map-stage { position: absolute; inset: 0; padding: 0; }
+.map-card { position: absolute; inset: 0; height: 100%; width: 100%; border-radius: 0; overflow: hidden; border: none; }
+.kakao-map-container { position: absolute; inset: 0; background: #f3f4f6; }
+
+/* ── 메인 대시보드 플로팅 검색바 ─────────────────────────────────────────────────── */
+.floating-search-wrap {
+  position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+  background: rgba(255, 255, 255, 0.98); border-radius: 999px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  display: flex; align-items: center; padding: 8px 18px; width: min(90%, 420px);
+  border: 1.5px solid transparent; transition: all 0.2s;
+}
+.floating-search-wrap .search-icon { color: var(--muted); font-size: 1.1rem; }
+.floating-search-wrap input { flex: 1; border: none; background: transparent; outline: none; margin-left: 10px; font-size: 14.5px; color: var(--ink); font-weight: 500; min-width: 0; }
+.floating-search-wrap input::placeholder { color: #888; }
+/* 즐겨찾기 버튼: 평소엔 회색, 즐겨찾기 보기가 켜져 있을 때만 금색으로 표시 */
+.floating-search-wrap .fav-btn { background: transparent; border: none; color: #b0b5bb; font-size: 1.2rem; cursor: pointer; padding: 0 4px; display: flex; align-items: center; transition: transform 0.2s, color 0.15s; }
+.floating-search-wrap .fav-btn:hover { transform: scale(1.1); }
+.floating-search-wrap .fav-btn.active { color: #ffc700; }
+
+/* 데스크탑: 중앙 정렬 대신 사이드바 바로 오른쪽(좌측 상단)에 배치 */
+@media (min-width: 900px) {
+  .floating-search-wrap {
+    left: 424px; transform: none; width: 380px;
+  }
+}
+
+
+/* ── 지도 위 대여소 핀 ────────────────────────────────────────────────────────── */
+/* 지도 위를 드래그할 때 핀 이름표 텍스트가 선택되면서 "고스트" 복사본이 따라다니는 것을 방지 */
+.map-card, .map-pin { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.map-pin { position: absolute; display: flex; align-items: center; gap: 6px; transform: translate(-50%, -100%); cursor: pointer; }
+.map-pin.flip { flex-direction: row-reverse; }
+/* 핀 자체가 원형 배지 역할을 하며 안에 남은 자전거 대수를 숫자로 표시 */
+.map-pin .dot {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(20,60,35,0.25); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff; line-height: 1;
+}
+.map-pin.ok .dot { background: var(--ok); }
+.map-pin.mid .dot { background: var(--mid); }
+.map-pin.busy .dot { background: var(--busy); }
+/* 대여소가 많을 땐 이름표가 서로 겹치므로 점만 보여주고, 이름/상세 정보는 탭(클릭)해서 여는 상세 팝업으로 확인 */
+/* (호버로 이름표를 띄우면 촘촘한 핀 사이를 드래그/클릭할 때 옆 핀까지 같이 반응해 "핀이 하나 더 뜨는" 것처럼 보이는 문제가 있어 제거함) */
+.map-pin .chip {
+  display: none; font-size: 12px; font-weight: 700; background: #fff; padding: 5px 10px;
+  border-radius: 999px; box-shadow: 0 2px 6px rgba(20,60,35,0.15); white-space: nowrap;
+  pointer-events: none;
+}
+.map-pin .chip .count { color: var(--muted); font-weight: 600; margin-left: 3px; }
+.map-pin.dimmed { opacity: 0.25; }
+.map-pin.occluded { opacity: 0; pointer-events: none; }
+
+/* 지도 중앙의 "내 위치" 마커(고정 위치 + 은은하게 퍼지는 파동 애니메이션) */
+.map-me { position: absolute; left: 44%; top: 50%; transform: translate(-50%, -50%); }
+.map-me .core { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(0,150,94,0.25); position: relative; z-index: 2; }
+.map-me .ring { position: absolute; inset: -14px; border-radius: 50%; background: rgba(0,150,94,0.18); animation: mapPulse 2.2s ease-out infinite; }
+
+/* ── 카카오맵 CustomOverlay용 핀 (position은 카카오가 자체 wrapper로 처리하므로 여기선 안 씀) ── */
+.kakao-map-pin { display: flex; align-items: center; gap: 6px; transform: translate(-50%, -100%); cursor: pointer; -webkit-user-select: none; user-select: none; }
+.kakao-map-pin .dot {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(20,60,35,0.25); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff; line-height: 1;
+}
+.kakao-map-pin.ok .dot { background: var(--ok); }
+.kakao-map-pin.mid .dot { background: var(--mid); }
+.kakao-map-pin.busy .dot { background: var(--busy); }
+.kakao-map-pin .chip {
+  display: none; font-size: 12px; font-weight: 700; background: #fff; padding: 5px 10px;
+  border-radius: 999px; box-shadow: 0 2px 6px rgba(20,60,35,0.15); white-space: nowrap; pointer-events: none;
+}
+.kakao-map-pin .chip .count { color: var(--muted); font-weight: 600; margin-left: 3px; }
+@keyframes mapPulse { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(1.9); opacity: 0; } }
+
+/* ── 혼잡도 필터 패널 (전체/여유/보통/혼잡) ─────────────────────────────────────── */
+/* 컴팩트 & 모바일 우측 하단 고정 필터 패널 */
+.map-filter-panel {
+  position: absolute; right: 16px; bottom: 24px; z-index: 10;
+  display: flex; gap: 6px; background: rgba(255, 255, 255, 0.95);
+  padding: 6px 10px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  transition: background 0.2s ease, box-shadow 0.2s ease, padding 0.2s ease, border-radius 0.2s ease;
+}
+.filter-chip {
+  display: inline-flex; align-items: center; flex-shrink: 0;
+  border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 6px 10px; font-size: 11.5px; font-weight: 700; color: var(--ink); cursor: pointer; gap: 4px;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, padding 0.2s ease;
+}
+.filter-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.filter-chip.ok i { background: var(--ok); }
+.filter-chip.mid i { background: var(--mid); }
+.filter-chip.busy i { background: var(--busy); }
+.filter-chip.active { border-color: var(--accent); background: #ecfdf5; color: var(--accent-dark); }
+@media (max-width: 899px) {
+  /* 접힌 상태(캡슐 하나)와 펼친 상태(목록)가 항상 같은 폭을 갖도록 레이아웃을 하나로 통일하고,
+     펼치고 접을 때 각 옵션의 높이/투명도만 부드럽게 전환되는 아코디언 방식으로 처리 */
+  .map-filter-panel {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: 16px;
+    z-index: 10;
+    width: 104px;
+    flex-direction: column-reverse; align-items: stretch;
+    padding: 0; gap: 0; background: #fff; backdrop-filter: none;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease;
+  }
+  /* 실시간 현황 하단 시트가 펼쳐져 있는 동안엔 겹치지 않도록 필터 칩을 숨김 */
+  .map-filter-panel.hidden-behind-sheet { display: none; }
+
+  .map-filter-panel .filter-chip {
+    justify-content: center; border-radius: 0; border: none; background: #fff;
+    padding: 10px 20px; font-size: 13px; font-weight: 600; overflow: hidden;
+    max-height: 60px; opacity: 1;
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  }
+  /* 어떤 옵션이 선택되어 있든 구분선은 항상 연한 회색으로 통일 */
+  .map-filter-panel .filter-chip + .filter-chip { border-top: 1px solid var(--line); transition: border-color 0.2s ease; }
+
+  /* 접힌 상태: 선택된 옵션만 남기고 나머지는 높이 0으로 부드럽게 접힘 → 둥근 캡슐 하나로 보임 */
+  .map-filter-panel.chips-collapsed {
+    border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  }
+  .map-filter-panel.chips-collapsed .filter-chip:not(.active) {
+    max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; border-top-color: transparent; pointer-events: none;
+  }
+  /* 접힌 상태에서는 어떤 옵션이 선택되어 있든 캡슐 하나만 보이므로, 선택된 칩 자체의 구분선도 숨김 */
+  .map-filter-panel.chips-collapsed .filter-chip.active { border-top-color: transparent; }
+
+  /* 펼친 상태: 하나의 둥근 캡슐 안에 옵션이 줄지어 담긴 모양 */
+  .map-filter-panel:not(.chips-collapsed) {
+    border-radius: 26px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+}
+
+/* ── 모바일 하단 "실시간 현황" 시트 ─────────────────────────────────────────────── */
+.status-panel { position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--card); display: flex; flex-direction: column; max-height: 60vh; box-shadow: 0 -10px 30px rgb(229 231 235); border-radius: 20px 20px 0 0; transition: max-height 0.28s cubic-bezier(.2,.8,.3,1), transform 0.28s cubic-bezier(.2,.8,.3,1); }
+.status-panel-handle { display: flex; flex-direction: column; align-items: center; gap: 17px; width: 100%; border: none; background: transparent; cursor: pointer; padding: 10px 16px 8px; flex-shrink: 0; }
+.status-panel-handle .bar { width: 36px; height: 4px; border-radius: 999px; background: var(--line); }
+.status-panel-handle .handle-row { max-width: 100%; }
+.status-panel-handle .title { font-size: 16px; font-weight: 800; color: var(--ink); white-space: nowrap; margin-right: 8px; }
+.status-panel-handle .count { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+/* 사용자가 손잡이를 눌러 접은 상태: 시트를 자기 높이만큼 아래로 밀어 화면 밖으로 슬라이드 */
+.status-panel.collapsed { transform: translateY(100%); pointer-events: none; }
+/* 다른 팝업/패널이 열려 있는 동안 겹치지 않도록 완전히 숨기는 상태(애니메이션 불필요) */
+.status-panel.overlay-hidden { display: none !important; }
+.status-panel-body { overflow-y: auto; padding: 2px 20px 20px; }
+
+/* ── 실시간 현황 목록 공통(정렬 탭 / 상태 배지 / 목록 행) ───────────────────────── */
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.section-head h2 { font-size: 16px; font-weight: 800; margin: 0; }
+.section-head .note { font-size: 0.85rem; color: #888; }
+.tab-group { display: inline-flex; background: #f8f9fa; padding: 4px; border-radius: 14px; gap: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+.tab-group button { border: none; background: transparent; padding: 6px 16px; min-width: 72px; text-align: center; border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: #6B7280; cursor: pointer; transition: all 0.2s; }
+.tab-group button.active { background: #fff; color: rgb(21 27 46 / 0.6); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; flex-shrink: 0; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge.ok { color: var(--ok); background: var(--ok-bg); }
+.badge.mid { color: var(--mid); background: var(--mid-bg); }
+.badge.busy { color: var(--busy); background: var(--busy-bg); }
+.status-list { display: flex; flex-direction: column; gap: 10px; }
+.status-empty { text-align: center; padding: 30px; color: var(--muted); font-size: 13.5px; }
+.status-row { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; transition: transform 0.15s; }
+.status-row:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.status-row .left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.status-row .info .name { font-size: 15px; font-weight: 700; }
+.status-row .info .addr { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.status-row .right { text-align: right; flex-shrink: 0; }
+.status-row .right .distance { font-size: 12px; color: var(--muted); }
+.status-row .right .count { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.status-row .right .count span { color: var(--muted); font-weight: 600; }
+
+/* ── 즐겨찾기 팝오버가 재사용하는 드래그 핸들 ────────────────────────────────────── */
+.panel-drag-handle { display: none; }
+.panel-title { font-size: 16px; font-weight: 800; }
+
+/* ── 즐겨찾기 팝오버 ──────────────────────────────────────────────────────────── */
+/* 즐겨찾기 팝오버: 모달(어두운 배경)이 아닌 일반 팝업 형태로 상단에 표시 */
+.favorites-popover {
+  position: fixed; z-index: 60; background: var(--card); box-shadow: 0 24px 60px -20px rgba(20,60,35,0.35);
+  display: flex; flex-direction: column; opacity: 0; pointer-events: none;
+  transition: opacity 0.18s, transform 0.22s cubic-bezier(.2,.8,.3,1);
+  top: 76px; right: 24px; width: 340px; max-height: min(480px, calc(100vh - 100px));
+  border-radius: var(--radius-lg); overflow: hidden; transform: translateY(-8px);
+}
+.favorites-popover.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.favorites-popover .panel-drag-handle { display: none; }
+
+.fav-panel-body { padding: 10px 16px 20px; overflow-y: auto; flex: 1; }
+.fav-empty { text-align: center; padding: 36px 12px; }
+.fav-empty-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-dark); font-size: 26px; display: flex; align-items: center; justify-content: center; }
+.fav-empty p { margin: 0 0 18px; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+/* 즐겨찾기 팝오버가 쓰는 상단 헤더 행(제목 + 좌우 여백용 spacer) */
+.panel-header-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 4px; flex-shrink: 0; }
+.panel-header-row .panel-title { color: var(--ink); }
+.panel-header-row-spacer { width: 28px; }
+
+/* ── 모바일(899px 이하) 전용 오버라이드 ──────────────────────────────────────────── */
+@media (max-width: 899px) {
+  .sidebar-wrap { display: none; }
+  .map-pin .chip { font-size: 11px; padding: 4px 8px; }
+  .status-row { flex-wrap: wrap; }
+  .status-row .right { text-align: left; }
+  .panel-drag-handle { display: block; width: 36px; height: 4px; border-radius: 999px; background: var(--line); margin: 10px auto 0; flex-shrink: 0; }
+
+  /* 즐겨찾기: 모바일에서는 실시간 현황과 동일한 하단 시트 형태로, 아래에서 부드럽게 슬라이드 업 */
+  .favorites-popover {
+    top: auto !important; bottom: 0 !important; right: 0 !important; left: 0 !important; width: 100% !important;
+    max-height: 60vh; border-radius: 20px 20px 0 0; transform: translateY(100%) !important;
+  }
+  .favorites-popover.open { transform: translateY(0) !important; }
+  /* 손잡이 막대는 시각적으로 작지만, 패딩으로 탭 가능한 영역을 넓혀 누르면 닫히게 함 */
+  .favorites-popover .panel-drag-handle {
+    display: block; width: 36px; height: 4px; border-radius: 999px; background: var(--line);
+    margin: 10px auto 0; flex-shrink: 0; cursor: pointer;
+    padding: 8px 24px; background-clip: content-box; box-sizing: content-box;
+  }
+}
+
+/* ── 데스크탑(900px 이상) 전용 오버라이드 ────────────────────────────────────────── */
+@media (min-width: 900px) {
+  /* 데스크탑에서는 사이드바가 항상 목록을 보여주므로 모바일 전용 하단 시트/재오픈 알약은 숨김 */
+  .status-panel { display: none !important; }
+  .status-reopen-pill { display: none !important; }
+
+  /* 즐겨찾기/대여소 상세 팝업이 뜨는 동안, 같은 자리(하단 중앙)에서 겹칠 수 있는 필터 칩을 숨김 */
+  .map-filter-panel.hidden-behind-sheet { display: none; }
+
+  /* 즐겨찾기 팝업: 대여소 상세 팝업과 동일하게 하단 중앙에 모달 형태로 표시 */
+  .favorites-popover {
+    top: auto; bottom: 32px; left: calc(50% + 150px); right: auto;
+    width: 380px; max-height: min(480px, calc(100vh - 100px));
+    border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    transform: translateX(-50%) translateY(16px);
+  }
+  .favorites-popover.open { transform: translateX(-50%) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) { .map-me .ring { animation: none; } }
+
+/* 모바일 하단 시트를 접었을 때, 다시 펼칠 수 있게 좌측 하단에 뜨는 재오픈 알약 버튼
+   시트가 슬라이드로 사라지는 동안(0.28s) 알약이 먼저 나타나면 시트 위에 겹쳐 보이므로,
+   시트가 거의 다 사라진 뒤에 페이드인되도록 지연시간을 준다. 다시 접힐 때(펼치기 클릭 시)는
+   지연 없이 즉시 사라진다. */
+.status-reopen-pill {
+  display: inline-flex; position: absolute; left: 16px; bottom: 22px; z-index: 40;
+  align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 999px; background: #00965e; box-shadow: 0 4px 14px rgb(198 198 198); font-family: inherit; font-size: 13px; font-weight: 600; color: #fcfcfc; cursor: pointer;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px) scale(0.92);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+}
+.status-reopen-pill.show {
+  opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1);
+  transition: opacity 0.2s ease 0.22s, transform 0.2s ease 0.22s, visibility 0s linear 0.22s;
+}
+@media (min-width: 992px) { .status-reopen-pill { display: none !important; } }
+
+/* 즐겨찾기 목록 내 항목 디자인 */
+.fav-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.fav-list:not(:empty) { margin-bottom: 10px; }
+.fav-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #eee; border-radius: 12px; background: #fff; }
+.fav-item-star { color: #ffc700; font-size: 16px; }
+.fav-item-name { flex: 1; font-size: 14px; font-weight: 600; color: #222; }
+.fav-item-count { font-size: 13px; color: #767676; }
+.fav-del-btn { background: transparent; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 4px; transition: color 0.2s; }
+.fav-del-btn:hover { color: #ef4545; }
+
+/* ── 대여소 상세 팝업 ─────────────────────────────────────────────────────────── */
+/* 대여소 상세 정보 팝업 모달: 뒷배경을 어둡게 가리지 않고 지도가 그대로 보이도록 함 */
+.station-detail-backdrop {
+  position: fixed; inset: 0; background: transparent; z-index: 1050;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.station-detail-backdrop.show { opacity: 1; pointer-events: auto; }
+
+/* 모바일 기본: 화면 하단에서 슬라이드 업되는 시트 구조 */
+.station-detail-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; border-radius: 20px 20px 0 0; z-index: 1051;
+  padding: 24px 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+  transform: translateY(100%); opacity: 0; pointer-events: none;
+  transition: transform 0.3s cubic-bezier(.2,.8,.3,1), opacity 0.25s ease;
+}
+.station-detail-panel.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+/* 데스크탑(900px 이상): 하단 중앙에 떠오르는 모달 박스 구조 */
+@media (min-width: 900px) {
+  .station-detail-panel {
+      top: auto;
+      bottom: 32px;
+      left: calc(50% + 150px);
+      right: auto;
+      border-radius: 16px;
+      width: 380px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      transform: translateX(-50%) translateY(16px);
+  }
+  .station-detail-panel.show { transform: translateX(-50%) translateY(0); }
+}
+
+.sd-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sd-title { margin: 0; font-size: 18px; font-weight: 800; flex: 1; color: var(--ink); }
+.sd-fav-btn, .sd-close-btn { background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 4px; display: flex; }
+.sd-fav-btn i.text-warning { color: #ffc700; }
+.sd-close-btn { color: #888; transition: color 0.2s; }
+.sd-close-btn:hover { color: #333; }
+.sd-body { display: flex; flex-direction: column; gap: 16px; }
+.sd-addr { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.sd-status-badge { align-self: flex-start; }
+/* 일반, 새싹 3분할 조정을 위해 gap 크기 및 폰트 축소 */
+.sd-stats { display: flex; gap: 8px; background: #f8f9fa; padding: 12px; border-radius: 12px; }
+.sd-stat-item { flex: 1; display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.sd-stat-item .label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.sd-stat-item strong { font-size: 15px; font-weight: 800; }
+.sd-stat-item strong.ok { color: var(--ok); }
+.sd-stat-item strong.mid { color: var(--mid); }
+.sd-stat-item strong.busy { color: var(--busy); }
+.sd-report-btn {
+  border: none; border-radius: 10px; background: var(--busy-bg); color: var(--busy);
+  font-size: 13.5px; font-weight: 700; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.sd-report-btn:hover { background: #fde3e3; }
+
+/* ── 고장 신고 팝업 (화면 중앙 모달) ─────────────────────────────────────────────── */
+.report-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1060;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.report-modal-backdrop.show { opacity: 1; pointer-events: auto; }
+.report-modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
+  width: min(380px, 90vw); background: #fff; border-radius: 18px; z-index: 1061; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.report-modal.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+.report-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #f0f0f0; }
+.report-modal-title { font-size: 22px; font-weight: 800; display: flex; align-items: center; }
+.report-modal-title i { font-size: 24px; }
+.report-modal-body { padding: 18px 20px; }
+.report-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.report-submit-btn { width: 100%; border: none; border-radius: 8px; background: var(--busy); color: #fff; font-size: 16px; font-weight: 700; padding: 12px; cursor: pointer; }
+.report-submit-btn:hover { background: #dc2626; }
+
+/* ── 하단 안내 링크(고객센터/대여소 제안/개인정보처리방침) + 공용 안내 모달 ────────── */
+.footer-link-btn { border: none; background: transparent; color: var(--muted); font-size: 11.5px; cursor: pointer; padding: 0; font-family: inherit; }
+.footer-link-btn:hover { color: var(--accent-dark); }
+.footer-info-modal { width: min(360px, 90vw); }
+
+/* .info-modal-*: 이용안내 모달과 하단 안내(고객센터 등) 팝업이 함께 쓰는 공용 모달 스타일 */
+.info-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.info-modal-backdrop.show { opacity: 1; pointer-events: auto; }
+.info-modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); width: min(440px, 90vw); max-height: 82vh; overflow-y: auto; background: #fff; border-radius: 18px; z-index: 1001; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); font-family: inherit;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.info-modal.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+/* 이용안내(요금정보) 모달만 화면 중앙보다 살짝 아래에 표시 */
+#infoModal { top: 54%; }
+.info-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; background: #fff; border-radius: 18px 18px 0 0; }
+.info-modal-title { font-size: 16px; font-weight: 700; color: #222; }
+.info-modal-close { border: none; background: none; font-size: 16px; line-height: 1; cursor: pointer; color: #767676; padding: 4px; }
+.info-modal-body { padding: 4px 20px 16px; font-size: 14px; line-height: 1.6; color: #333; }
+.info-modal-body section { margin-top: 18px; }
+.info-modal-body section:first-child { margin-top: 14px; }
+.info-modal-body h4 { margin: 0 0 6px; font-size: 14px; font-weight: 700; color: #00965e; }
+.info-modal-body p { margin: 0 0 4px; }
+.info-modal-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0; }
+.info-modal-table th, .info-modal-table td { border: 1px solid #eee; padding: 6px 4px; text-align: center; }
+.info-modal-table thead th { background: #f7f9f8; font-weight: 600; }
+.info-modal-note { font-size: 12px; color: #999; margin-top: 4px; }
+.info-modal-list { margin: 4px 0 0; padding-left: 18px; }
+.info-modal-list li { margin-bottom: 4px; }
+.info-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 20px; border-top: 1px solid #f0f0f0; position: sticky; bottom: 0; background: #fff; border-radius: 0 0 18px 18px; }
+.info-modal-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555; cursor: pointer; }
+.info-modal-close-btn { border: none; border-radius: 10px; background: #222; color: #fff; font-size: 13px; font-weight: 600; padding: 9px 18px; cursor: pointer; }
+
+/* 비로그인 상태로 접근했을 때 페이지 전체를 대체하는 빈 화면 안내 */
+.guest-empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; height: 100vh; text-align: center; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+}
+.guest-empty-state p { margin: 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+.guest-empty-state a { padding: 10px 22px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
+.guest-empty-state a:hover { background: var(--accent-dark); }

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>서울자전거 따릉이 - 관제 지도</title>
+  <link rel="icon" type="image/png" href="img/web-logo-icon.png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="css/admin-dashboard.css?v=20260728a">
+</head>
+<body>
+
+  <div id="app-header"></div>
+
+  <div class="dashboard">
+    <!-- 데스크탑 좌측 패널 -->
+    <!-- sidebar-wrap: 사이드바 접기/펼치기 슬라이드 애니메이션을 담당 (접기 버튼이 사이드바의 overflow-y로 잘리지 않도록 별도 래퍼에 둠) -->
+    <div class="sidebar-wrap" id="sidebarWrap">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-status-embed">
+          <div class="left-pane-map">
+            <div class="status-embed-title-row">
+              <span class="status-embed-title">스테이션 현황</span>
+              <span class="status-count station-count-label"></span>
+            </div>
+            <p class="status-embed-subtitle">구/행정동별 대여소 재고 현황을 한눈에 확인하세요.</p>
+            <div class="status-list station-list"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 사이드바 접기 버튼: 사이드바 우측 가장자리 중앙에 고정 (데스크탑 전용) -->
+      <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-expanded="true" aria-controls="sidebar" title="사이드바 접기/펼치기">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    </div>
+
+    <!-- 사이드바를 접었을 때 다시 펼치기 위한 버튼 (데스크탑 전용) -->
+    <button type="button" class="sidebar-reopen-btn" id="sidebarReopenBtn" aria-label="사이드바 펼치기">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <!-- 지도 영역 -->
+    <div class="map-stage">
+      <div class="map-card" id="kakao-map">
+        <div id="kakaoMapContainer" class="kakao-map-container"></div>
+
+        <!-- 자치구 / 행정동 토글 -->
+        <div class="floating-filter-wrap" id="mapFilterBar">
+          <div class="region-select-area">
+            <button type="button" class="region-select-btn" id="districtDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="자치구 선택">
+              <span id="selectedDistrictLabel">전체 자치구</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu region-dropdown-menu" id="districtDropdownList" aria-labelledby="districtDropdownBtn"></ul>
+          </div>
+          <div class="region-select-area">
+            <button type="button" class="region-select-btn" id="dongDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="행정동 선택" disabled>
+              <span id="selectedDongLabel">전체 행정동</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu region-dropdown-menu" id="dongDropdownList" aria-labelledby="dongDropdownBtn"></ul>
+          </div>
+        </div>
+
+        <!-- 스테이션 상태 필터칩 (하단, user-dashboard와 동일한 패턴) -->
+        <div class="map-filter-panel chips-collapsed" id="mapStatusFilter" aria-label="스테이션 상태 필터"></div>
+
+        <button type="button" class="status-reopen-pill" id="statusReopenPill" aria-label="현황 패널 다시 열기">관제 현황</button>
+      </div>
+    </div>
+
+    <!-- 모바일 하단 바텀시트 -->
+    <div class="status-panel" id="statusPanel">
+      <button class="status-panel-handle" id="statusPanelToggle" type="button" aria-expanded="true" aria-controls="statusPanelBody">
+        <span class="bar"></span>
+        <span class="handle-row"><span class="title">관제 현황</span><span class="count mobile-total-count"></span></span>
+      </button>
+      <div class="status-panel-body" id="statusPanelBody">
+        <div class="left-pane-map">
+          <div class="status-embed-title-row">
+            <span class="status-embed-title">스테이션 현황</span>
+            <span class="status-count station-count-label"></span>
+          </div>
+          <p class="status-embed-subtitle">구/행정동별 대여소 재고 현황을 한눈에 확인하세요.</p>
+          <div class="status-list station-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 스테이션 상세 팝업 -->
+  <div class="station-detail-backdrop" id="stationDetailBackdrop"></div>
+  <div class="station-detail-panel" id="stationDetailPanel">
+    <div class="sd-header">
+      <h3 class="sd-title" id="sdTitle">대여소명</h3>
+      <button class="sd-close-btn" id="sdCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="sd-body">
+      <p class="sd-addr" id="sdAddr">주소</p>
+      <span class="badge sd-status-badge" id="sdStatusBadge">-</span>
+      <div class="sd-stats">
+        <div class="sd-stat-item"><span class="label">일반 자전거</span><strong id="sdGeneral">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">새싹 자전거</span><strong id="sdSprout">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">거치대 수</span><strong id="sdCapacity">0면</strong></div>
+      </div>
+      <button type="button" class="sd-write-btn" id="sdWriteOrderBtn">
+        <i class="bi bi-pencil-square me-2"></i>지시서 쓰기
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/kakao-map.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/admin-dashboard.js"></script>
+</body>
+</html>

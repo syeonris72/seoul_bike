@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울자전거 따릉이 - 지시서 목록</title>
+    <link rel="icon" type="image/png" href="img/web-logo-icon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+    <link rel="stylesheet" href="css/driver-dashboard.css?v=20260728b">
+</head>
+<body>
+
+    <!-- 메인 헤더 렌더링 영역 -->
+    <div id="app-header"></div>
+
+    <div class="container-fluid px-3 px-sm-4 driver-page-container">
+        <h2 class="page-title">지시서 목록</h2>
+        <div class="page-subtitle">나에게 배정된 재배치 지시서를 확인하고 처리하세요.</div>
+
+        <!-- 상태별 필터: user-rental 페이지의 연도/월 선택과 동일한 드롭다운 토글 UI. 모바일/데스크탑 공통이며 좌측 정렬로 배치 -->
+        <div class="d-flex mb-4">
+            <div class="status-select-area position-relative" id="statusTabs">
+                <button type="button" class="status-select-btn" id="statusDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="상태 필터 선택">
+                    <span id="statusSelectedLabel">전체</span> <span class="count" id="statusSelectedCount">0</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <ul class="dropdown-menu status-dropdown-menu" id="statusFilterList" aria-labelledby="statusDropdownBtn">
+                    <li><a class="dropdown-item selected-item" href="#" data-status="all">전체 <span class="count" id="count-all">0</span></a></li>
+                    <li><a class="dropdown-item" href="#" data-status="대기">대기 <span class="count" id="count-waiting">0</span></a></li>
+                    <li><a class="dropdown-item" href="#" data-status="진행중">수행 중 <span class="count" id="count-doing">0</span></a></li>
+                    <li><a class="dropdown-item" href="#" data-status="완료">완료 <span class="count" id="count-done">0</span></a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 지시서 목록: 긴급 / 고장 수거 / 일반 3개의 박스로 항상 분리해 표시 -->
+        <div id="listView" class="task-columns mb-5">
+            <section class="task-column" data-column="urgent">
+                <div class="task-column-head"><span class="dot urgent"></span>긴급 <span class="task-column-count" id="col-count-urgent">0건</span></div>
+                <div class="task-column-body" id="col-urgent"></div>
+            </section>
+            <section class="task-column" data-column="report">
+                <div class="task-column-head"><span class="dot report"></span>고장 수거 <span class="task-column-count" id="col-count-report">0건</span></div>
+                <div class="task-column-body" id="col-report"></div>
+            </section>
+            <section class="task-column" data-column="dispatch">
+                <div class="task-column-head"><span class="dot dispatch"></span>일반 <span class="task-column-count" id="col-count-dispatch">0건</span></div>
+                <div class="task-column-body" id="col-dispatch"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- QR 스캔 / 자전거 ID 입력 팝업 -->
+    <div class="modal fade" id="scanModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow mx-3">
+                <div class="modal-header border-bottom-0 pb-0 mt-3 px-4">
+                    <h5 class="modal-title fw-bold fs-5">
+                        <span class="d-xxl-none"><i class="bi bi-qr-code me-2"></i>따릉이 QR 스캔</span>
+                        <span class="d-none d-xxl-inline"><i class="bi bi-list-ul me-2"></i>따릉이 ID 입력</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 pb-4 mt-2">
+                    <div class="scan-progress-box text-center mb-3">
+                        <span class="fw-bold fs-4" id="scanProgressText">0 / 0</span>
+                        <div class="text-muted small">추가된 따릉이 수</div>
+                    </div>
+
+                    <div id="scanInputArea">
+                        <!-- 아이패드 정도 크기(1400px)까지: 카메라로 QR 스캔 -->
+                        <div class="d-xxl-none mb-3">
+                            <div id="scanQrReader" class="scan-qr-reader"></div>
+                            <p class="scan-camera-status text-muted mb-0" id="scanCameraStatus">따릉이의 QR 코드를 카메라 화면 안에 비춰주세요.</p>
+                        </div>
+
+                        <!-- 데스크탑(1400px 초과): 자전거 ID 직접 입력 -->
+                        <div class="mb-3 d-none d-xxl-block">
+                            <div class="input-group">
+                                <input type="text" class="form-control py-2 rounded-start-3 bg-light" id="scanBikeIdInput" placeholder="">
+                                <button type="button" class="btn btn-scan-complete fw-bold rounded-end-3" id="scanAddBtn"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="scanned-list" id="scannedList"></div>
+                    </div>
+
+                    <!-- 지시받은 수량만큼 전부 스캔/입력하면 나타나는 완료 · 다시 스캔 액션 -->
+                    <div class="d-none mb-3" id="scanDoneActions">
+                        <button type="button" class="btn btn-scan-complete w-100 fw-bold py-3 rounded-3 mb-2" id="scanCompleteBtn"><i class="bi bi-check2-circle me-2"></i>완료</button>
+                        <button type="button" class="btn btn-light border w-100 fw-semibold py-2 rounded-3" id="scanRescanBtn">
+                            <i class="bi bi-arrow-counterclockwise me-2"></i>
+                            <span class="d-xxl-none">다시 스캔하기</span>
+                            <span class="d-none d-xxl-inline">다시 입력하기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3.3 JS Bundle CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- QR 카메라 스캔용 라이브러리 (모바일 팝업 전용) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/driver-dashboard.js"></script>
+</body>
+</html>

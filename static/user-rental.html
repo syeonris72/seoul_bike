@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울자전거 따릉이 - 대여 · 반납</title>
+<link rel="icon" type="image/png" href="img/web-logo-icon.png">
+
+<!-- 공통 헤더 렌더링을 위한 Bootstrap 및 헤더 CSS 필수 추가 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="css/header.css">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<!-- 대여/반납 이력 전용 CSS -->
+<link rel="stylesheet" href="css/user-rental.css?v=20260728a">
+</head>
+<body>
+
+  <!-- 공통 헤더(관리자 템플릿)가 삽입되는 공간 -->
+  <div id="app-header"></div>
+
+  <main class="page">
+    <div class="page-head">
+      <h1>대여 · 반납</h1>
+      <p>최근 대여하고 반납한 내역을 확인할 수 있어요.</p>
+    </div>
+
+    <!-- 연도 + 월 선택 ("전체"를 각 드롭다운에 포함, 모바일/데스크탑 공통, 로그인 화면의 커스텀 드롭다운과 동일한 스타일) -->
+    <div class="year-month-picker">
+      <div class="ym-select-area position-relative">
+        <button type="button" class="ym-select-btn" id="yearDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="연도 선택">
+          <span id="yearSelectedLabel">연도</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <ul class="dropdown-menu ym-dropdown-menu" id="yearList" aria-labelledby="yearDropdownBtn"></ul>
+      </div>
+      <div class="ym-select-area position-relative">
+        <button type="button" class="ym-select-btn" id="monthDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="월 선택">
+          <span id="monthSelectedLabel">월</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <ul class="dropdown-menu ym-dropdown-menu" id="monthList" aria-labelledby="monthDropdownBtn"></ul>
+      </div>
+    </div>
+
+    <!-- 선택된 연도/월 기준 요약 통계 (값은 user-rental.js가 채운다) -->
+    <div class="summary-card">
+      <div class="item"><b id="summaryCount">0회</b><span>이용횟수</span></div>
+      <div class="item"><b id="summaryTime">0분</b><span>이용시간</span></div>
+      <div class="item"><b id="summaryDist">0.0km</b><span>이용거리</span></div>
+      <div class="item"><b id="summaryCarbon">0.0kg</b><span>탄소저감</span></div>
+    </div>
+
+    <!-- 대여/반납 내역 카드 목록 (user-rental.js가 동적으로 렌더링) -->
+    <div class="history-list" id="historyList"></div>
+  </main>
+
+  <!-- 공통 헤더 JS (Bootstrap 포함) 추가 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <!-- 백엔드 호출 헬퍼 -->
+  <script src="js/api.js"></script>
+  <script src="js/header.js"></script>
+
+  <!-- 대여/반납 이력 전용 JS: 헤더 렌더링 + 내역 필터링/렌더링 로직 포함 -->
+  <script src="js/user-rental.js"></script>
+</body>
+</html>

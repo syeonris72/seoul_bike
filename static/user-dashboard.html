@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>서울자전거 따릉이 - 실시간 대여소 현황</title>
+  <link rel="icon" type="image/png" href="img/web-logo-icon.png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="css/user-dashboard.css?v=20260728c">
+</head>
+<body>
+
+  <!-- 공용 상단 헤더: header.js가 여기에 로그인 사용자 정보/날씨/알림 등을 렌더링함 -->
+  <div id="app-header"></div>
+
+  <div class="dashboard">
+    <!-- 데스크탑 좌측 사이드바: 실시간 대여소 현황 목록 (모바일에서는 숨기고 하단 시트로 대체) -->
+    <!-- sidebar-wrap: 사이드바 접기/펼치기 슬라이드 애니메이션을 담당 (접기 버튼이 사이드바의 overflow-y로 잘리지 않도록 별도 래퍼에 둠) -->
+    <div class="sidebar-wrap" id="sidebarWrap">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-status-embed">
+          <div class="status-embed-title-row">
+            <span class="status-embed-title">실시간 대여소 현황</span>
+            <span class="status-count"></span>
+          </div>
+          <div class="section-head">
+            <span class="note">가까운 대여소부터 보여드려요</span>
+            <div class="tab-group status-tabs">
+              <button type="button" class="active" data-sort="distance">거리순</button>
+              <button type="button" data-sort="availability">여유순</button>
+            </div>
+          </div>
+          <div class="status-list"></div>
+        </div>
+        <div class="sidebar-foot-links">
+          <button type="button" class="footer-link-btn" data-topic="support">고객센터</button><span class="dot-sep">·</span><button type="button" class="footer-link-btn" data-topic="suggest">대여소 제안</button><span class="dot-sep">·</span><button type="button" class="footer-link-btn" data-topic="privacy">개인정보처리방침</button>
+        </div>
+      </aside>
+
+      <!-- 사이드바 접기 버튼: 사이드바 우측 가장자리 중앙에 고정 (데스크탑 전용) -->
+      <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-expanded="true" aria-controls="sidebar" title="사이드바 접기/펼치기">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    </div>
+
+    <!-- 사이드바를 접었을 때 다시 펼치기 위한 버튼 (데스크탑 전용) -->
+    <button type="button" class="sidebar-reopen-btn" id="sidebarReopenBtn" aria-label="사이드바 펼치기">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <!-- 지도 영역: 대여소 핀 + 검색바 + 내 위치 + 혼잡도 필터 -->
+    <div class="map-stage">
+      <div class="map-card" id="kakao-map">
+        <div id="kakaoMapContainer" class="kakao-map-container"></div>
+
+        <!-- 플로팅 검색바 (데스크탑: 사이드바 옆 좌측 상단 / 모바일: 상단 중앙) -->
+        <div class="floating-search-wrap">
+          <i class="bi bi-search search-icon"></i>
+          <input type="text" id="stationSearch" placeholder="서울자전거 따릉이 대여소 검색">
+          <button type="button" id="headerFavBtn" class="fav-btn" title="즐겨찾기 패널">
+            <i class="bi bi-star-fill"></i>
+          </button>
+        </div>
+
+        <!-- 혼잡도 필터: 모바일에서는 캡슐 하나로 접혀 있다가 탭하면 목록으로 펼쳐짐 -->
+        <div class="map-filter-panel chips-collapsed">
+          <button class="filter-chip active" data-filter="all">전체</button>
+          <button class="filter-chip ok" data-filter="ok"><i></i>여유</button>
+          <button class="filter-chip mid" data-filter="mid"><i></i>보통</button>
+          <button class="filter-chip busy" data-filter="busy"><i></i>혼잡</button>
+        </div>
+
+        <!-- 모바일에서 하단 시트를 접었을 때 다시 펼치기 위한 재오픈 버튼 -->
+        <button type="button" class="status-reopen-pill" id="statusReopenPill" aria-label="실시간 현황 다시 열기">실시간 현황</button>
+      </div>
+    </div>
+
+    <!-- 모바일 전용 하단 "실시간 현황" 시트 (데스크탑에서는 숨기고 좌측 사이드바를 사용) -->
+    <div class="status-panel" id="statusPanel">
+      <button class="status-panel-handle" id="statusPanelToggle" type="button" aria-expanded="true" aria-controls="statusPanelBody">
+        <span class="bar"></span>
+        <span class="handle-row"><span class="title">실시간 현황</span><span class="count status-count"></span></span>
+      </button>
+      <div class="status-panel-body" id="statusPanelBody">
+        <div class="section-head">
+          <span class="note">가까운 대여소부터 보여드려요</span>
+          <div class="tab-group status-tabs"><button type="button" class="active" data-sort="distance">거리순</button><button type="button" data-sort="availability">여유순</button></div>
+        </div>
+        <div class="status-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 대여소 상세 정보창 (새싹/일반 분리) -->
+  <div class="station-detail-backdrop" id="stationDetailBackdrop"></div>
+  <div class="station-detail-panel" id="stationDetailPanel">
+    <div class="sd-header">
+      <h3 class="sd-title" id="sdTitle">대여소명</h3>
+      <button class="sd-fav-btn" id="sdFavBtn"><i class="bi bi-star"></i></button>
+      <button class="sd-close-btn" id="sdCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="sd-body">
+      <p class="sd-addr" id="sdAddr">주소</p>
+      <span class="badge sd-status-badge" id="sdStatusBadge">-</span>
+      <div class="sd-stats">
+        <div class="sd-stat-item"><span class="label">일반 자전거</span><strong id="sdGeneral">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">새싹 자전거</span><strong id="sdSprout">0대</strong></div>
+        <div class="sd-stat-item"><span class="label">거치대 수</span><strong id="sdCapacity">0면</strong></div>
+      </div>
+      <button type="button" class="sd-report-btn" id="sdReportBtn"><i class="bi bi-exclamation-triangle me-2"></i>고장 신고</button>
+    </div>
+  </div>
+
+  <!-- 고장 신고 팝업 -->
+  <div class="report-modal-backdrop" id="reportModalBackdrop"></div>
+  <div class="report-modal" id="reportModal" role="dialog" aria-hidden="true" aria-label="고장 신고">
+    <div class="report-modal-header">
+      <span class="report-modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>고장 신고</span>
+      <button type="button" class="sd-close-btn" id="reportModalCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="report-modal-body">
+      <label class="report-label">고장 따릉이 QR 스캔 / ID 입력</label>
+
+      <!-- 아이패드 정도 크기(1400px)까지: 카메라로 QR 스캔 -->
+      <div class="d-xxl-none mb-3">
+        <div id="reportQrReader" class="scan-qr-reader"></div>
+        <p class="scan-camera-status text-muted mb-0" id="reportCameraStatus">고장 따릉이의 QR 코드를 카메라 화면 안에 비춰주세요.</p>
+      </div>
+
+      <!-- 데스크탑(1400px 초과): 따릉이 ID 직접 입력 -->
+      <div class="mb-3 d-none d-xxl-block">
+        <input type="text" class="form-control" id="reportBikeIdInput" placeholder="따릉이 ID 입력 (예: BIKE-0012)">
+      </div>
+      <label class="report-label">고장 내용</label>
+      <textarea class="form-control mb-3" id="reportIssueInput" rows="3" placeholder="예: 브레이크 소음이 심해요"></textarea>
+      <button type="button" class="report-submit-btn" id="reportSubmitBtn">신고하기</button>
+    </div>
+  </div>
+
+  <!-- 즐겨찾기 팝업 (모바일: 하단 시트 / 데스크탑: 대여소 상세 팝업과 동일한 하단 중앙 모달) -->
+  <div class="favorites-popover" id="favoritesPanel" role="dialog" aria-hidden="true" aria-label="즐겨찾기">
+    <div class="panel-drag-handle"></div>
+    <div class="panel-header-row">
+      <span class="panel-header-row-spacer"></span>
+      <span class="panel-title">즐겨찾기</span>
+      <span class="panel-header-row-spacer"></span>
+    </div>
+    <div class="fav-panel-body" id="favPanelBody">
+      <div class="fav-list" id="favList"></div>
+      <div class="fav-empty" id="favEmpty">
+        <div class="fav-empty-icon" id="favEmptyIcon">☆</div>
+        <p id="favEmptyText">아직 즐겨찾는 대여소가 없어요.<br>지도에서 대여소를 선택해 추가해보세요.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 고객센터/대여소 제안/개인정보처리방침 안내 팝업 -->
+  <div class="info-modal-backdrop" id="footerInfoBackdrop"></div>
+  <div class="info-modal footer-info-modal" id="footerInfoModal" role="dialog" aria-hidden="true">
+    <div class="info-modal-header">
+      <span class="info-modal-title" id="footerInfoTitle">안내</span>
+      <button class="info-modal-close" id="footerInfoCloseBtn" type="button" aria-label="닫기">✕</button>
+    </div>
+    <div class="info-modal-body" id="footerInfoBody"></div>
+  </div>
+
+  <!-- 이용안내(요금 정보 상세) 모달 -->
+  <div class="info-modal-backdrop" id="infoModalBackdrop"></div>
+  <div class="info-modal" id="infoModal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="이용안내 요금정보">
+    <div class="info-modal-header">
+      <span class="info-modal-title">서울자전거 따릉이 이용안내</span>
+      <button class="info-modal-close" id="infoModalCloseX" type="button" aria-label="닫기">✕</button>
+    </div>
+    <div class="info-modal-body">
+      <section>
+        <h4>이용대상</h4>
+        <p>만 13세 이상 (가족회원으로 구매 시 13세 미만도 이용 가능해요. 자세한 내용은 이용약관을 참고해 주세요.)</p>
+      </section>
+      <section>
+        <h4>요금 안내</h4>
+        <table class="info-modal-table">
+          <thead>
+            <tr><th></th><th>1일권</th><th>7일권</th><th>30일권</th><th>180일권</th><th>365일권</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1시간권</td><td>1,000원</td><td>3,000원</td><td>5,000원</td><td>15,000원</td><td>30,000원</td></tr>
+            <tr><td>2시간권</td><td>2,000원</td><td>4,000원</td><td>7,000원</td><td>20,000원</td><td>40,000원</td></tr>
+            <tr><td>3시간권</td><td>3,000원</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+          </tbody>
+        </table>
+        <p class="info-modal-note">* 대여 시간을 초과해 반납하면 초과 요금이 부과돼요.</p>
+      </section>
+      <section>
+        <h4>대여 방법</h4>
+        <p>앱스토어 또는 구글플레이에서 '따릉이' 앱을 설치하면 이용할 수 있어요.</p>
+        <p><b>회원</b> : 회원가입 → 이용권 구매 → 대여소 및 자전거 선택<br><b>비회원</b> : 결제수단 선택 후 QR 이용 → 대여소 및 자전거 선택 (QR 스캔)</p>
+        <p class="info-modal-note">회원가입 시 모든 이용권 종류를 구매할 수 있어요. 자세한 사항은 따릉이 홈페이지(bikeseoul.com) 또는 고객센터(1599-0120)로 문의해 주세요.</p>
+      </section>
+      <section>
+        <h4>반납 · 임시잠금</h4>
+        <p>거치대에 자전거를 세우고 잠금장치를 채우면 자동으로 반납 처리돼요. 잠시 자리를 비울 때는 임시잠금 기능을 이용해 주세요.</p>
+      </section>
+      <section>
+        <h4>안전 수칙</h4>
+        <ul class="info-modal-list">
+          <li>주행 전 타이어, 브레이크, 체인 등을 점검해 주세요.</li>
+          <li>안전을 위해 헬멧 등 보호장구를 반드시 착용해 주세요.</li>
+          <li>주행 중에는 휴대전화, 이어폰을 사용하지 마세요.</li>
+          <li>음주 후에는 자전거를 이용하지 마세요.</li>
+          <li>횡단보도와 보도에서는 자전거를 끌고 이동해 주세요.</li>
+        </ul>
+      </section>
+    </div>
+    <div class="info-modal-footer">
+      <label class="info-modal-checkbox"><input type="checkbox" id="infoModalHideToday">오늘 하루동안 안 보기</label>
+      <button class="info-modal-close-btn" id="infoModalCloseBtn" type="button">닫기</button>
+    </div>
+  </div>
+
+  <!-- 외부 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <!-- QR 카메라 스캔용 라이브러리 (모바일 팝업 전용) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- 백엔드 호출 헬퍼 -->
+  <script src="js/api.js"></script>
+  <script src="js/kakao-map.js"></script>
+  <!-- 공용 헤더 렌더링 (실제 헤더 그리기 로직은 js/user-dashboard.js 상단에 있음) -->
+  <script src="js/header.js"></script>
+  <script src="js/user-dashboard.js"></script>
+</body>
+</html>

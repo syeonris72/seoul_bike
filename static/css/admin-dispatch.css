@@ -1,0 +1,314 @@
+/* admin-dispatch.css */
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f7f9fa;
+    color: #333;
+}
+
+/* --- 페이지 헤더 --- */
+.dispatch-page-container { padding-top: 2rem; max-width: 1600px; }
+.page-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.4rem; }
+.page-subtitle { color: #888; font-size: 0.85rem; }
+
+.last-update-label { font-size: 0.8rem; color: #888; font-weight: 600; white-space: nowrap; }
+
+/* 헤더 버튼 그룹: 좁은 화면에서 버튼이 찌그러져 글자가 세로로 줄바꿈되지 않도록 고정 */
+.header-action-group { min-width: 0; }
+.header-action-group > * { flex-shrink: 0; }
+
+.ai-tab-btn {
+    background-color: #ecfdf5; border: 1.5px solid #00965e; color: #00965e;
+    font-weight: 700; font-size: 0.85rem; border-radius: 999px; padding: 0.5rem 1rem;
+    display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; white-space: nowrap;
+}
+.ai-tab-btn:hover, .ai-tab-btn.active { background-color: #00965e; color: #fff; border-color: #00965e; }
+
+.btn-write-order { border-radius: 999px; white-space: nowrap; background-color: #00965e; color: #fff; font-weight: 700; }
+.btn-write-order:hover { background-color: #007b4d; color: #fff; }
+
+@media (max-width: 575.98px) {
+    .dispatch-page-container { padding-top: 1.5rem; }
+    .page-title { font-size: 1.2rem; }
+    .page-subtitle { font-size: 0.78rem; }
+    .header-action-group { width: 100%; gap: 0.6rem !important; }
+    .last-update-label { width: 100%; order: -1; }
+    .ai-tab-btn, .btn-write-order { flex: 1 1 auto; justify-content: center; padding-left: 0.75rem; padding-right: 0.75rem; }
+    .status-select-btn { padding: 7px 12px; font-size: 12.5px; min-width: 120px; }
+}
+
+/* ==========================================================================
+   상태 필터 드롭다운 (버튼 유지 + 버튼을 가리지 않는 카드 분리형 오버레이)
+   ========================================================================== */
+.status-select-area { display: inline-flex; position: relative; }
+
+.status-select-btn {
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    min-width: 135px;
+    border: 1px solid #00965e; background-color: #ecfdf5; color: #00965e;
+    font-size: 13.5px; font-weight: 600; line-height: 1; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+.status-select-btn:focus { outline: none; box-shadow: 0 0 0 2px #ecfdf5; }
+/* 라벨은 왼쪽에 붙이고, 카운트(+화살표)는 오른쪽 정렬되도록 카운트 앞의 남는 공간을 모두 흡수 */
+.status-select-btn .count { font-weight: 800; margin-left: auto; }
+.status-select-btn svg { transition: transform 0.2s ease; }
+.status-select-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.status-select-btn:active { transform: scale(0.95); }
+
+/* 드롭다운이 열렸을 때 모서리가 찌그러지지 않고 원래의 둥근 캡슐 형태를 유지 */
+.status-select-btn[aria-expanded="true"] { border-radius: 999px; border-color: #00965e; }
+
+/* 드롭다운 메뉴 (버튼 밑으로 고정된 카드형 오버레이) */
+.status-dropdown-menu,
+.status-dropdown-menu[data-bs-popper] {
+    position: absolute !important;
+    top: calc(100% + 6px) !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+    padding: 5px !important;
+    background-color: #fff !important;
+    z-index: 1050 !important;
+
+    max-height: 250px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #fff;
+}
+
+.status-dropdown-menu::-webkit-scrollbar { width: 6px; display: block; }
+.status-dropdown-menu::-webkit-scrollbar-track { background: #fff; margin-top: 8px; margin-bottom: 8px; border-radius: 10px; }
+.status-dropdown-menu::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.status-dropdown-menu::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+.status-dropdown-menu.show { animation: statusDropdownIn 0.15s ease both; }
+@keyframes statusDropdownIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-dropdown-menu .dropdown-item {
+    border-radius: 10px !important;
+    font-size: 13.5px; font-weight: 600; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: #333; cursor: pointer;
+    transition: all 0.15s ease;
+}
+.status-dropdown-menu .dropdown-item:hover { background-color: #f8f9fa; }
+.status-dropdown-menu .dropdown-item:active { transform: scale(0.97); }
+.status-dropdown-menu .dropdown-item .count { font-weight: 800; color: #9ca3af; transition: color 0.15s ease; }
+
+.status-dropdown-menu .dropdown-item.selected-item {
+    background-color: #ecfdf5 !important;
+    color: #00965e !important;
+}
+.status-dropdown-menu .dropdown-item.selected-item .count {
+    color: #00965e !important;
+}
+
+/* --- 지시서 목록: 자치구별 박스로 항상 분리해 표시 (driver-dashboard의 task-columns와 동일한 틀) --- */
+.task-columns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+.task-column { display: flex; flex-direction: column; min-height: 0; }
+.task-column-head {
+    display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; color: #212529;
+    padding-bottom: 0.6rem; margin-bottom: 0.75rem; border-bottom: 2px solid #eef0f2; flex-shrink: 0;
+}
+.task-column-count { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: #9ca3af; }
+/* 카드 3개 정도(긴급 카드 포함 시 조금 더 큼)만 보이고 나머지는 스크롤되도록 고정 높이로 제한 */
+.task-column-body { display: flex; flex-direction: column; gap: 0.8rem; overflow-y: auto; max-height: 540px; padding-right: 2px; }
+
+@media (max-width: 1199.98px) {
+    .task-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px) {
+    .task-columns { grid-template-columns: 1fr; gap: 1.25rem; }
+    .task-column-body { max-height: 60vh; }
+}
+
+/* 지시서 카드: driver-dashboard(지시서 목록)의 order-card-item과 동일한 스타일 */
+.badge-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12px !important; padding: 5px 12px !important; }
+.badge-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.order-card-item { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 1rem 1.25rem; border-left: 4px solid transparent; }
+@media (min-width: 576px) { .order-card-item { padding: 1.25rem 1.5rem; } }
+.order-card-item.urgent { border-left-color: #ef4545; background: #fff; }
+.order-card-item.type-report { border-left-color: #f59e0b; }
+.order-card-item:not(.urgent):not(.type-report) { border-left-color: #00965e; }
+.order-card-item h5 { font-size: 15px; color: #131a29; }
+.order-card-item .text-muted.small { font-size: 12px; color: #767676 !important; }
+.order-card-item .badge.rounded-pill { font-size: 12px; }
+.order-card-item .order-card-meta { margin-top: 0.6rem; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 0; color: #adb5bd; font-size: 0.85rem; font-weight: 500; }
+.empty-state i { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5; }
+
+/* --- AI 자동 추천 --- */
+.ai-recommend-card { background-color: #fff; border-radius: 16px; border: 1px solid #eef0f2; padding: 1.5rem; }
+.ai-recommend-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.ai-recommend-subtitle { font-size: 0.82rem; color: #888; margin-top: 4px; }
+.btn-send-selected { background-color: #00965e; color: #fff; font-weight: 700; font-size: 0.85rem; border: none; border-radius: 999px; padding: 0.7rem 1.2rem; white-space: nowrap; }
+.btn-send-selected:hover { background-color: #007b4d; }
+.btn-send-selected:disabled { background-color: #a7d9c3; cursor: not-allowed; }
+
+.ai-select-all-row { display: flex; align-items: center; gap: 8px; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #eef0f2; font-size: 0.85rem; font-weight: 600; }
+.ai-select-all-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #00965e; }
+.ai-selected-count { margin-left: auto; color: #888; font-weight: 500; }
+
+/* 재배치 추천 목록: 5개 정도만 보이고 나머지는 스크롤 */
+#aiRecommendList { max-height: 360px; overflow-y: auto; padding-right: 4px; }
+
+/* 모바일 등 좁은 화면에서 수량/수정 버튼이 잘리지 않도록 main(체크박스·뱃지·정보)과
+   actions(수량·수정)를 각각 묶어서, 공간이 부족하면 actions가 다음 줄로 자연스럽게 줄바꿈되게 한다. */
+.ai-recommend-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 12px; padding: 0.9rem; border: 1px solid #eef0f2; border-radius: 10px; margin-bottom: 0.6rem; }
+.ai-recommend-item-main { display: flex; align-items: center; gap: 12px; flex: 1 1 200px; min-width: 0; }
+.ai-recommend-item-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto; }
+.ai-recommend-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: #00965e; }
+.ai-recommend-item .priority-badge { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; flex-shrink: 0; }
+.priority-badge.high { background-color: #fdf5f5; color: #ef4545; }
+.priority-badge.mid { background-color: #fef8f0; color: #f79624; }
+.ai-recommend-item .info { flex: 1 1 auto; min-width: 0; }
+.ai-recommend-item .info .name { font-size: 0.92rem; font-weight: 700; }
+.ai-recommend-item .info .addr { font-size: 0.75rem; color: #888; margin-top: 2px; }
+.ai-recommend-item .qty { font-size: 0.9rem; font-weight: 800; text-align: left; flex-shrink: 0; }
+.ai-edit-btn { background-color: #f4f5f7; border: none; color: #333; font-weight: 700; font-size: 0.8rem; border-radius: 8px; padding: 0.5rem 0.9rem; flex-shrink: 0; }
+.ai-edit-btn:hover { background-color: #e5e7eb; }
+
+/* --- 모달 (지시서 작성 폼) 커스텀 --- */
+#aiRecommendModal .modal-dialog { max-width: 620px; }
+#dispatchModal .modal-dialog { max-width: 850px; }
+.modal-content { border-radius: 24px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-height: calc(100vh - 2rem); overflow: hidden; }
+.modal-header { border-bottom: 1px solid #eef0f2; padding: 1.5rem; }
+.modal-title { font-weight: 800; font-size: 1.2rem; }
+.modal-body { padding: 1.5rem; background-color: #fdfdfd; overflow-y: auto; }
+.modal-footer { border-top: 1px solid #eef0f2; padding: 1rem 1.5rem; background-color: #fff; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;}
+
+/* --- 반응형: 모바일에서는 좁은 3분할 셀렉트/카운터가 눌리지 않도록 재배치 --- */
+@media (max-width: 575.98px) {
+    .modal-dialog { margin: 0.75rem; }
+    .modal-content { max-height: calc(100vh - 1.5rem); }
+    .modal-header, .modal-body { padding: 1.1rem; }
+    .modal-footer { padding: 0.9rem 1.1rem; flex-wrap: wrap; }
+    .modal-footer > .btn { flex: 1 1 auto; }
+    .counter-grid { flex-direction: column; }
+    .form-section { padding: 1rem; }
+}
+
+.section-title { font-size: 0.9rem; font-weight: 800; margin-bottom: 0.8rem; display: block; }
+.section-title-dot { font-size: 0.5rem; }
+.form-section { background: #fff; border: 1px solid #eef0f2; border-radius: 18px; padding: 1.2rem; margin-bottom: 1rem; }
+
+/* ==========================================================================
+   지역 캐스케이딩 드롭다운 (버튼은 유지 + 버튼을 가리지 않는 오버레이 드롭다운)
+   ========================================================================== */
+.cascade-select-area { position: relative; }
+
+.cascade-select-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;
+    border: 1px solid #00965e; background-color: #ecfdf5; color: #00965e;
+    font-size: 13.5px; font-weight: 600; line-height: 1; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+.cascade-select-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cascade-select-btn svg { flex-shrink: 0; transition: transform 0.2s ease; }
+.cascade-select-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.cascade-select-btn:focus { outline: none; box-shadow: 0 0 0 2px #ecfdf5; }
+.cascade-select-btn:disabled { border-color: #e5e7eb; background-color: #f4f5f7; color: #adb5bd; cursor: not-allowed; }
+
+/* 드롭다운 열렸을 때 캡슐 모양 유지 */
+.cascade-select-btn[aria-expanded="true"] { border-radius: 999px; border-color: #00965e; }
+
+/* 드롭다운 메뉴 (버튼 밑으로 고정된 카드형 오버레이) */
+.cascade-dropdown-menu,
+.cascade-dropdown-menu[data-bs-popper] {
+    position: absolute !important;
+    top: calc(100% + 6px) !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
+
+    border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+    padding: 5px !important;
+    background-color: #fff !important;
+    z-index: 1050 !important;
+
+    max-height: 220px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #fff;
+}
+
+.cascade-dropdown-menu::-webkit-scrollbar { width: 6px; display: block; }
+.cascade-dropdown-menu::-webkit-scrollbar-track { background: #fff; margin-top: 8px; margin-bottom: 8px; border-radius: 10px; }
+.cascade-dropdown-menu::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.cascade-dropdown-menu::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+.cascade-dropdown-menu.show { animation: cascadeDropdownIn 0.15s ease both; }
+@keyframes cascadeDropdownIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.cascade-dropdown-menu .dropdown-item {
+    border-radius: 10px !important;
+    font-size: 13.5px; font-weight: 600; padding: 10px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: #333; cursor: pointer;
+    transition: all 0.15s ease;
+}
+.cascade-dropdown-menu .dropdown-item:hover { background-color: #f8f9fa; }
+.cascade-dropdown-menu .dropdown-item:active { transform: scale(0.97); }
+
+.cascade-dropdown-menu .dropdown-item.selected-item {
+    background-color: #ecfdf5 !important;
+    color: #00965e !important;
+}
+
+/* 긴급 토글 */
+.emergency-box { display: flex; justify-content: space-between; align-items: center; }
+.emergency-box h6 { font-weight: 800; margin: 0; color: #ef4545; }
+.form-switch .form-check-input {
+    width: 2.5em; height: 1.2em; cursor: pointer; border-color: rgba(0,0,0,.25);
+    -webkit-tap-highlight-color: transparent; outline: none;
+}
+.form-switch .form-check-input:checked { background-color: #ef4545; border-color: #ef4545; }
+.form-switch .form-check-input:focus { box-shadow: none; border-color: rgba(0,0,0,.25); outline: none; }
+.form-switch .form-check-input:checked:focus { border-color: #ef4545; }
+
+/* 수량 조절 카운터 */
+.counter-grid { display: flex; gap: 1rem; }
+.counter-box { flex: 1; border: 1px solid #eef0f2; border-radius: 14px; padding: 1rem; text-align: center; }
+.bike-label { font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.8rem; }
+.max-label { font-size: 0.72rem; color: #999; font-weight: 500; }
+.counter-controls { display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; border-radius: 10px; padding: 0.2rem; }
+.counter-btn { width: 32px; height: 32px; border: none; background: #fff; border-radius: 8px; font-weight: 800; font-size: 1.2rem; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; transition: transform 0.1s ease; }
+.counter-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.counter-btn:active { transform: scale(0.9); background: #f1f1f1; }
+.counter-val { font-size: 1.1rem; font-weight: 800; width: 40px; }
+
+/* 기사 리스트 */
+.driver-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+.driver-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; border: 1px solid #eef0f2; border-radius: 14px; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; }
+.driver-item:hover { border-color: #00965e; background-color: #ecfdf5; }
+.driver-item.selected { border-color: #00965e; background-color: #ecfdf5; box-shadow: 0 0 0 1px #00965e; }
+.driver-item-info { display: flex; align-items: center; gap: 12px; }
+.driver-item-name { font-weight: 700; font-size: 0.9rem; margin: 0; line-height: 1.2;}
+.driver-item-desc { font-size: 0.75rem; color: #888; margin: 0;}
+.driver-status.waiting { background-color: #f4f5f7; color: #555; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+.driver-status.working { background-color: #ecfdf5; color: #00965e; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
