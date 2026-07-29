@@ -12,7 +12,7 @@
     <!-- 공통 헤더 CSS -->
     <link rel="stylesheet" href="css/header.css" />
     <!-- 데이터 분석 전용 CSS -->
-    <link rel="stylesheet" href="css/admin-analytics.css?v=20260728a" />
+    <link rel="stylesheet" href="css/admin-analytics.css?v=20260729a" />
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <!-- Chart.js Sankey Plugin CDN (흐름 시각화용) -->
@@ -42,9 +42,9 @@
     <!-- ========================================== -->
 
     <div id="sectionStatus">
-        <!-- 상단 통계 카드 3개 -->
+        <!-- 상단 통계 카드 4개 -->
         <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stat-card card-green text-green">
                     <div class="stat-icon"><i class="bi bi-bicycle"></i></div>
                     <div class="stat-body">
@@ -53,7 +53,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stat-card card-red text-red">
                     <div class="stat-icon"><i class="bi bi-bell"></i></div>
                     <div class="stat-body">
@@ -62,12 +62,21 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-3">
                 <div class="stat-card card-orange text-orange">
                     <div class="stat-icon"><i class="bi bi-layers"></i></div>
                     <div class="stat-body">
                         <div class="stat-value" id="statFullCount">-</div>
                         <div class="stat-label">과포화 수거 요망</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card card-blue text-blue">
+                    <div class="stat-icon"><i class="bi bi-tree"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="statCarbonReduction">-</div>
+                        <div class="stat-label">누적 탄소 절감량(kg)</div>
                     </div>
                 </div>
             </div>
@@ -82,12 +91,34 @@
             </div>
         </div>
 
+        <!-- 요일별 대여량 패턴 & 재고 상태 분포 -->
+        <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+                <div class="chart-card h-100">
+                    <div class="chart-title">요일별 대여량 패턴</div>
+                    <div class="chart-subtitle">평일/주말 수요 차이를 확인해 인력·배차 스케줄에 반영하세요</div>
+                    <div class="chart-container chart-container--split">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-card h-100">
+                    <div class="chart-title">대여소 재고 상태 분포</div>
+                    <div class="chart-subtitle">전체 대여소를 재고 수준(적정/부족/고갈/과포화)별로 나눈 비율입니다</div>
+                    <div class="chart-container chart-container--split">
+                        <canvas id="stockDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 2. 콤보 차트 & 4. 다중 축 차트 -->
         <div class="row g-3 mb-3">
             <div class="col-lg-6">
                 <div class="chart-card h-100">
                     <div class="chart-title" id="comboChartTitle">유동인구 대비 실제 대여량 (수요 예측)</div>
-                    <div class="chart-subtitle" id="comboChartSubtitle">실선(예측 수요)이 막대(실제 대여량)보다 높으면 자전거 공급 부족을 의미합니다</div>
+                    <div class="chart-subtitle" id="comboChartSubtitle">실선(유동인구 비중 기반 규칙 추정치)이 막대(실제 대여량)보다 높으면 자전거 공급 부족을 의미합니다</div>
                     <div class="chart-container chart-container--split">
                         <canvas id="comboChart"></canvas>
                     </div>
@@ -109,7 +140,7 @@
             <div class="col-lg-6">
                 <div class="chart-card h-100">
                     <div class="chart-title">예측 모델 주요 변수 중요도</div>
-                    <div class="chart-subtitle">AI가 수요를 예측할 때 과거 대여 이력(Lag)이 미치는 영향력 비율</div>
+                    <div class="chart-subtitle">AI가 수요를 예측할 때 과거 대여 이력(Lag)이 미치는 영향력 비율 · 모델 자체 속성이라 자치구 필터와 무관하게 항상 전체 기준으로 표시됩니다</div>
                     <div class="chart-container chart-container--compact">
                         <canvas id="lagImportanceChart"></canvas>
                     </div>
@@ -118,10 +149,32 @@
             <!-- 2. 실제 대여량 vs AI 예측량 비교 -->
             <div class="col-lg-6">
                 <div class="chart-card h-100">
-                    <div class="chart-title" id="actualVsPredTitle">전일 기준 실제 대여량 vs AI 예측량 비교</div>
-                    <div class="chart-subtitle">전날 24시간 동안의 모델 성능 모니터링 추이</div>
+                    <div class="chart-title" id="actualVsPredTitle">실제 대여량 vs AI 예측량 비교</div>
+                    <div class="chart-subtitle" id="actualVsPredSubtitle">데이터셋에 존재하는 가장 최근 확정일의 24시간 동안 모델 성능 모니터링 추이</div>
                     <div class="chart-container chart-container--compact">
                         <canvas id="actualVsPredChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 이용자 성별/연령대 구성 -->
+        <div class="row g-3 mb-3">
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <div class="chart-title">이용자 성별 구성</div>
+                    <div class="chart-subtitle" id="genderChartSubtitle">과거 대여 이력 데이터 기준 성별 비중</div>
+                    <div class="chart-container chart-container--compact">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="chart-card h-100">
+                    <div class="chart-title">이용자 연령대별 구성</div>
+                    <div class="chart-subtitle" id="ageChartSubtitle">과거 대여 이력 데이터 기준 연령대 비중 · 실시간 대여(Rental)는 개인정보상 연령을 수집하지 않아 참고용 지표입니다</div>
+                    <div class="chart-container chart-container--compact">
+                        <canvas id="ageChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -148,7 +201,7 @@
                             <div class="list-title">만성 불균형 대여소</div>
                             <div class="list-subtitle">현재 고갈/과포화 상태 최우선 처리 요망</div>
                         </div>
-                        <button class="btn-export"><i class="bi bi-download"></i> CSV</button>
+                        <button class="btn-export" id="chronicCsvBtn"><i class="bi bi-download"></i> CSV</button>
                     </div>
 
                     <!-- 커스텀 탭 메뉴 (고갈 / 과포화) -->
@@ -165,6 +218,59 @@
                     <div class="tab-content flex-grow-1 mt-2 imbalance-tab-content" id="imbalanceTabsContent">
                         <div class="tab-pane fade show active list-group list-group-flush" id="dangerList" role="tabpanel"></div>
                         <div class="tab-pane fade list-group list-group-flush" id="fullList" role="tabpanel"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 자치구별 대여량 랭킹 (전체 자치구 보기에서만 노출) -->
+        <div class="chart-card" id="districtRankingCard">
+            <div class="chart-title">자치구별 대여량 랭킹</div>
+            <div class="chart-subtitle">자치구를 선택하면 이 비교 차트 대신 해당 자치구의 세부 지표가 표시됩니다</div>
+            <div class="chart-container chart-container--compact">
+                <canvas id="districtRankingChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 배차 처리 효율 -->
+        <div class="chart-card">
+            <div class="chart-title">배차 처리 효율</div>
+            <div class="chart-subtitle">지시서 발행부터 회수·투입 완료까지의 운영 효율 지표</div>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card card-blue text-blue">
+                        <div class="stat-icon"><i class="bi bi-stopwatch"></i></div>
+                        <div class="stat-body">
+                            <div class="stat-value" id="statAvgCompletionMin">-</div>
+                            <div class="stat-label">평균 처리 시간(분)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card card-red text-red">
+                        <div class="stat-icon"><i class="bi bi-lightning-charge"></i></div>
+                        <div class="stat-body">
+                            <div class="stat-value" id="statEmergencyCnt">-</div>
+                            <div class="stat-label">긴급 지시서</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card card-green text-green">
+                        <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+                        <div class="stat-body">
+                            <div class="stat-value" id="statCompletedCnt">-</div>
+                            <div class="stat-label">처리 완료</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card card-orange text-orange">
+                        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div class="stat-body">
+                            <div class="stat-value" id="statPendingCnt">-</div>
+                            <div class="stat-label">대기/진행 중</div>
+                        </div>
                     </div>
                 </div>
             </div>

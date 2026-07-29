@@ -9,9 +9,14 @@ from models.models import DemandPredictionMaster2024, RtAir, RtWeather
 
 logger = logging.getLogger(__name__)
 
-# serving/scheduler.py 기본 수집 주기(30분)의 몇 배 여유를 두고, 이보다 오래된 관측치는
-# 스케줄러가 죽어있다는 신호로 보고 "실시간"으로 취급하지 않는다.
+# serving/scheduler.py 기본 수집 주기(30분)의 몇 배 여유를 두고, target_dt와 이보다 멀리
+# 떨어진 관측치는 "그 시각의 실측"으로 취급하지 않는다 (라이브 예측이면 스케줄러가 죽어있다는
+# 신호, backtest면 그 시간대에 수집이 아예 없었다는 신호).
 _RT_MAX_AGE = timedelta(hours=2)
+
+# nearest-match 조회 시 DB에서 끌어올 후보 범위. 초단기실황 수집 주기(30분)보다 넉넉히 잡아
+# target_dt 앞뒤로 가장 가까운 관측치를 반드시 후보에 포함시킨다.
+_NEAREST_SEARCH_WINDOW = timedelta(hours=3)
 
 # RtWeather/RtAir 어디에도 적설량(snowfall) 컬럼이 없어 실시간 소스가 존재하지 않는다.
 # 그래서 실시간 예측에서는 항상 0으로 고정한다 - is_bad_weather의 snowfall 조건은
@@ -33,42 +38,50 @@ class WeatherFeatures:
     source: str  # "rt_live" | "demand_predict_master_fallback" | "hardcoded_default"
 
 
+def _nearest_row(session: Session, model, region_name: str, target_dt: datetime):
+    """model.measure_date가 target_dt에 가장 가까운 행 하나를 찾는다 (± _NEAREST_SEARCH_WINDOW
+    범위 내에서). target_dt가 "지금"이면 사실상 최신 관측치와 같은 결과를 주므로 라이브 예측
+    경로의 기존 동작과 호환되고, target_dt가 과거(backtest)면 그 시각에 가장 가까운 실측치를
+    돌려준다는 점이 다르다."""
+    window_start = target_dt - _NEAREST_SEARCH_WINDOW
+    window_end = target_dt + _NEAREST_SEARCH_WINDOW
+    rows = session.execute(
+        select(model).where(
+            model.region_name == region_name,
+            model.measure_date.between(window_start, window_end),
+        )
+    ).scalars().all()
+    if not rows:
+        return None
+    return min(rows, key=lambda r: abs((r.measure_date - target_dt).total_seconds()))
+
+
 def get_target_hour_weather(
     session: Session, station_id: str, district: str, target_dt: datetime
 ) -> WeatherFeatures:
     """
-    다음 1시간(target_dt)의 날씨 근사치를 구한다.
+    target_dt 시각의 날씨 근사치를 구한다 (라이브 예측이면 다음 1시간, backtest면 과거 특정 시각).
 
     주의: RtWeather/RtAir는 data/collect_rt.py가 KMA 초단기실황(getUltraSrtNcst) API로
-    채우는 테이블이라, 사실 "예보"가 아니라 "가장 최근 관측치(nowcast)"다. 1시간 지평선
-    에서는 합리적인 근사치지만, 정확한 미래 예보는 아니라는 점을 코드 이름에도 반영했다
-    (get_target_hour_*forecast*가 아니라 get_target_hour_weather).
+    채우는 테이블이라, 사실 "예보"가 아니라 "관측치(nowcast)"다. target_dt에 가장 가까운
+    관측치를 쓰므로 1시간 지평선의 라이브 예측에서는 합리적인 근사치이고, backtest에서도
+    수집이 켜져 있던 구간이면 시간대별로 실제 관측값 변화를 반영한다는 점에서 "정확한 예보"는
+    아니라는 점을 코드 이름에도 반영했다 (get_target_hour_*forecast*가 아니라
+    get_target_hour_weather).
     """
-    rt_weather_row = session.execute(
-        select(RtWeather)
-        .where(RtWeather.region_name == district)
-        .order_by(RtWeather.measure_date.desc())
-        .limit(1)
-    ).scalar_one_or_none()
+    rt_weather_row = _nearest_row(session, RtWeather, district, target_dt)
+    rt_air_row = _nearest_row(session, RtAir, district, target_dt)
 
-    rt_air_row = session.execute(
-        select(RtAir)
-        .where(RtAir.region_name == district)
-        .order_by(RtAir.measure_date.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-
-    now = datetime.now()
     rt_is_fresh = (
         rt_weather_row is not None and rt_air_row is not None
-        and now - rt_weather_row.measure_date <= _RT_MAX_AGE
-        and now - rt_air_row.measure_date <= _RT_MAX_AGE
+        and abs(target_dt - rt_weather_row.measure_date) <= _RT_MAX_AGE
+        and abs(target_dt - rt_air_row.measure_date) <= _RT_MAX_AGE
     )
     if not rt_is_fresh and rt_weather_row is not None and rt_air_row is not None:
         logger.warning(
-            "station_id=%s district=%s: rt_weather/rt_air 최신 관측치가 %s 이상 오래돼 stale로 "
-            "취급하고 폴백합니다 (weather=%s, air=%s)",
-            station_id, district, _RT_MAX_AGE, rt_weather_row.measure_date, rt_air_row.measure_date,
+            "station_id=%s district=%s target_dt=%s: rt_weather/rt_air 관측치가 %s 이상 떨어져 있어 "
+            "stale로 취급하고 폴백합니다 (weather=%s, air=%s)",
+            station_id, district, target_dt, _RT_MAX_AGE, rt_weather_row.measure_date, rt_air_row.measure_date,
         )
 
     if rt_is_fresh:

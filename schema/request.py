@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -15,6 +16,19 @@ class SignupRequest(BaseModel):
     password_confirm: str
     name: str
     email: EmailStr
+
+    @field_validator("password")
+    @classmethod
+    def password_meets_policy(cls, v):
+        if not (8 <= len(v) <= 16):
+            raise ValueError("password must be 8-16 characters long")
+        if not re.search(r"[A-Za-z]", v):
+            raise ValueError("password must contain a letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("password must contain a number")
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError("password must contain a special character")
+        return v
 
     @field_validator("password_confirm")
     @classmethod
@@ -41,6 +55,7 @@ class RentalCreateRequest(BaseModel):
 
 class ReturnRequest(BaseModel):
     return_station_id: str
+    bike_id: str
 
 
 class ReportCreateRequest(BaseModel):

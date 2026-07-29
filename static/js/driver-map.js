@@ -66,6 +66,12 @@ function renderMapMarkers(currentUser, kakao) {
         var from = getStation(o.from_station_id), to = getStation(o.to_station_id);
         if (!from || !to) return;
         var shape = PIN_SHAPES[idx % PIN_SHAPES.length];
+        // 고장 수거 지시서는 출발지=도착지(수거 대상 대여소 1곳)이므로, 수거/배치 핀을 둘 다 찍으면
+        // 같은 위치에 배치(초록) 핀이 수거 핀을 덮어버린다. 대신 고장(노랑) 핀 하나만 찍는다.
+        if (o.order_type === '고장수거') {
+            if (from.lat && from.lon) pins.push({ st: from, role: 'report', order: o, shape: shape });
+            return;
+        }
         if (from.lat && from.lon) pins.push({ st: from, role: 'start', order: o, shape: shape });
         if (to.lat && to.lon) pins.push({ st: to, role: 'end', order: o, shape: shape });
     });
@@ -119,13 +125,13 @@ function buildKakaoNaviUrl(station) {
 
 // 대여소 마커를 눌렀을 때: 대여소 이름/위치 + 외부 내비게이션 앱 연동 버튼만 짧게 보여준다.
 function openPinPopup(order, role, station) {
-    var isStart = role === 'start';
     var qty = order.general_qty + order.sprout_qty;
     var district = station ? getDistrict(station.district_id) : null;
+    var roleLabel = role === 'report' ? '고장 수거' : (role === 'start' ? '수거' : '배치');
 
     var roleTagEl = document.getElementById('pinPopupRoleTag');
-    roleTagEl.className = 'pin-popup-role-tag ' + (isStart ? 'start' : 'end');
-    roleTagEl.textContent = (isStart ? '수거' : '배치') + ' · ' + qty + '대';
+    roleTagEl.className = 'pin-popup-role-tag ' + role;
+    roleTagEl.textContent = roleLabel + ' · ' + qty + '대';
 
     document.getElementById('pinPopupStationName').textContent = station ? station.name : '알 수 없음';
     document.getElementById('pinPopupAddr').textContent =

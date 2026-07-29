@@ -65,6 +65,7 @@ function updateFormVisibility() {
     const groupPwConfirm = document.getElementById('group-pw-confirm');
     const groupTerms = document.getElementById('group-terms');
     const groupEmail = document.getElementById('group-email');
+    const passwordRuleList = document.getElementById('password-rule-list');
 
     const idLabel = document.getElementById('id-label');
     const idInput = document.getElementById('empId');
@@ -88,14 +89,41 @@ function updateFormVisibility() {
         groupTerms.style.display = 'none';
         groupPwConfirm.style.display = 'none';
         groupEmail.style.display = 'none';
+        passwordRuleList.classList.add('d-none');
     } else if (currentTab === 'signup') {
         groupName.style.display = 'block';
         groupTerms.style.display = 'block';
         groupPwConfirm.style.display = 'block';
         groupEmail.style.display = currentRole === '일반 회원' ? 'block' : 'none';
+        passwordRuleList.classList.remove('d-none');
     }
 
     document.getElementById('pw-confirm-error').classList.add('d-none');
+    checkPasswordRules();
+}
+
+// 회원가입 비밀번호 규칙 체크리스트 (8~16자 · 영문 · 숫자 · 특수문자 포함)
+// settings.js의 비밀번호 변경 규칙과 동일 - 서버(schema/request.py SignupRequest)도 같은 기준으로 검증한다.
+const PASSWORD_RULES = {
+    ruleLength: (v) => v.length >= 8 && v.length <= 16,
+    ruleLetter: (v) => /[A-Za-z]/.test(v),
+    ruleNumber: (v) => /[0-9]/.test(v),
+    ruleSpecial: (v) => /[^A-Za-z0-9]/.test(v)
+};
+
+function checkPasswordRules() {
+    const input = document.getElementById('empPw');
+    const v = input ? input.value : '';
+    let allValid = true;
+    Object.keys(PASSWORD_RULES).forEach(function (key) {
+        const li = document.getElementById(key);
+        if (!li) return;
+        const valid = PASSWORD_RULES[key](v);
+        li.classList.toggle('valid', valid);
+        li.querySelector('i').className = valid ? 'bi bi-check-circle-fill' : 'bi bi-circle';
+        if (!valid) allValid = false;
+    });
+    return allValid;
 }
 
 /**
@@ -257,6 +285,10 @@ async function _attemptActionInner() {
             alert('이메일을 입력해 주세요.');
             return;
         }
+        if (!checkPasswordRules()) {
+            alert('비밀번호가 규칙(8~16자, 영문·숫자·특수문자 포함)을 만족하지 않습니다.');
+            return;
+        }
         if (inputPw !== inputPwConfirm) {
             pwConfirmError.classList.remove('d-none');
             return;
@@ -291,6 +323,11 @@ async function _attemptActionInner() {
 document.addEventListener('DOMContentLoaded', function () {
     loadStats();
     updateFormVisibility();
+
+    const empPwInput = document.getElementById('empPw');
+    if (empPwInput) {
+        empPwInput.addEventListener('input', checkPasswordRules);
+    }
 
     document.getElementById('tab-login').addEventListener('click', function () {
         switchTab('login');

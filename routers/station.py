@@ -139,6 +139,13 @@ def create_rental(
     if inv is None:
         raise HTTPException(404, f"Unknown station_id: {req.station_id}")
 
+    # 일반 회원은 동시에 하나의 자전거만 대여할 수 있다.
+    user_active_rental = session.execute(
+        select(Rental.id).where(Rental.user_id == user.id, Rental.status == "대여중")
+    ).scalar_one_or_none()
+    if user_active_rental is not None:
+        raise HTTPException(409, "이미 대여 중인 자전거가 있습니다. 반납 후 다시 대여해 주세요.")
+
     # 같은 자전거가 이미 대여중이면 거부 (동시 요청 사이의 잔여 경합은 아래 재고 원자적 업데이트가 좁혀준다).
     already_rented = session.execute(
         select(Rental.id).where(Rental.bike_id == req.bike_id, Rental.status == "대여중")
@@ -184,6 +191,8 @@ def return_rental(
         raise HTTPException(404, "대여 기록을 찾을 수 없습니다.")
     if rental.status != "대여중":
         raise HTTPException(409, "이미 반납된 대여입니다.")
+    if req.bike_id != rental.bike_id:
+        raise HTTPException(400, "대여 중인 자전거 ID와 일치하지 않습니다.")
 
     return_inv = session.get(StationStock, req.return_station_id)
     if return_inv is None:
@@ -212,6 +221,20 @@ def return_rental(
     session.commit()
     session.refresh(rental)
     names = get_station_names(session, [rental.rent_station_id, rental.return_station_id])
+    return _rental_out(rental, names)
+
+
+@router.get("/rentals/active", response_model=RentalOut | None)
+def active_rental(
+    session: Session = Depends(get_session),
+    user: Account = Depends(require_role("user")),
+) -> RentalOut | None:
+    rental = session.execute(
+        select(Rental).where(Rental.user_id == user.id, Rental.status == "대여중")
+    ).scalar_one_or_none()
+    if rental is None:
+        return None
+    names = get_station_names(session, [rental.rent_station_id])
     return _rental_out(rental, names)
 
 

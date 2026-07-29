@@ -189,3 +189,45 @@ class PublicSummaryOut(BaseModel):
     total_bikes: int
     today_rentals: int
     as_of_label: str
+
+
+class GenderBreakdownOut(BaseModel):
+    male: int
+    female: int
+    unknown: int
+
+
+class AgeBreakdownOut(BaseModel):
+    age_10: int
+    age_20: int
+    age_30: int
+    age_40: int
+    age_50: int
+    age_60: int
+    unknown: int
+
+
+class DemographicsOut(BaseModel):
+    gender: GenderBreakdownOut
+    age: AgeBreakdownOut
+
+
+class CarbonSummaryOut(BaseModel):
+    total_carbon_reduction_kg: float
+    total_distance_km: float
+    avg_duration_min: float
+    completed_rental_cnt: int
+
+
+class DispatchEfficiencyOut(BaseModel):
+    avg_completion_min: float | None
+    emergency_cnt: int
+    normal_cnt: int
+    completed_cnt: int
+    pending_cnt: int
+
+
+class DistrictRankingPointOut(BaseModel):
+    district_id: int
+    district_name: str
+    value: int

@@ -6,6 +6,7 @@
     --mid: #fb933d; --mid-bg: #fff7ed;
     --busy: #ef4545; --busy-bg: #fef2f2;
     --full: #1f2937; --full-bg: #eef0f2;
+    --co2: #3b82f6; --co2-bg: #eff6ff;
 }
 
 body {
@@ -39,6 +40,7 @@ body {
 .card-green { background-color: var(--accent-bg); }
 .card-red { background-color: var(--busy-bg); }
 .card-orange { background-color: var(--mid-bg); }
+.card-blue { background-color: var(--co2-bg); }
 
 .stat-icon {
     width: 42px; height: 42px; border-radius: 11px; background-color: rgba(255,255,255,0.6);
@@ -48,6 +50,7 @@ body {
 .text-red { color: var(--busy) !important; }
 .text-orange { color: var(--mid) !important; }
 .text-full { color: var(--full) !important; }
+.text-blue { color: var(--co2) !important; }
 
 .stat-body { min-width: 0; }
 .stat-value { font-size: 1.55rem; font-weight: 800; line-height: 1.2; }

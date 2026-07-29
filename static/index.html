@@ -152,6 +152,12 @@
                     <div class="mb-2 input-group-custom" id="group-pw">
                         <label class="form-label fw-bold mb-1 field-label">비밀번호</label>
                         <input type="password" class="form-control" id="empPw" placeholder="비밀번호를 입력해주세요">
+                        <ul class="password-rule-list d-none" id="password-rule-list">
+                            <li id="ruleLength"><i class="bi bi-circle"></i> 8~16자</li>
+                            <li id="ruleLetter"><i class="bi bi-circle"></i> 영문 포함</li>
+                            <li id="ruleNumber"><i class="bi bi-circle"></i> 숫자 포함</li>
+                            <li id="ruleSpecial"><i class="bi bi-circle"></i> 특수문자 포함</li>
+                        </ul>
                     </div>
 
                     <!-- 비밀번호 확인: 회원가입 탭에서만 노출, 불일치 시 에러 문구 표시 -->

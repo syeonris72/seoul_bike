@@ -256,18 +256,23 @@ async function renderLagImportanceChart() {
     });
 }
 
-// 4. 전일 실제 vs AI 예측량 비교 (야간 배치가 채워둔 demand_prediction_forecast)
+// 4. 어제(달력 기준) 실시간 재고 변화 기반 실제 이용 추정치 vs AI 예측량 비교
+// (야간 배치가 rt_bike_status 순감소량으로 채워둔 demand_prediction_forecast를 그대로 읽음)
 async function renderActualVsPredChart() {
     var districtName = filterState.districtId ? (getDistrict(filterState.districtId)?.name || '서울시 전체') : '서울시 전체';
     var titleEl = document.getElementById('actualVsPredTitle');
+    var subtitleEl = document.getElementById('actualVsPredSubtitle');
 
     var monitoring = await safeGet(withDistrict('/analytics/model-monitoring'), null);
     var hasData = !!(monitoring && (monitoring.actual || []).some(function (d) { return d.value > 0; }));
 
     if (titleEl) {
         titleEl.textContent = monitoring
-            ? districtName + ' ' + monitoring.as_of_label + ' 기준 실제 대여량 vs AI 예측량 비교'
-            : districtName + ' 전일 기준 실제 대여량 vs AI 예측량 비교';
+            ? districtName + ' ' + monitoring.as_of_label + '(어제) 실제 이용 vs AI 예측량 비교'
+            : districtName + ' 실제 이용 vs AI 예측량 비교';
+    }
+    if (subtitleEl && monitoring) {
+        subtitleEl.textContent = '실시간 거치대 재고 변화(rt_bike_status, 30분 간격 수집)로 추정한 ' + monitoring.as_of_label + ' 실제 이용량과 AI 예측 비교 · 배차 재배치 물량이 섞여 순수 대여량과 오차가 있을 수 있고, 수집이 짧게 쌓인 시간대는 비어 보일 수 있습니다';
     }
 
     renderChartOrEmpty('actualVsPredChart', hasData, function (el) {
@@ -384,10 +389,199 @@ async function renderMultiAxisChart() {
 
 // 상단 통계 카드 (실제 오늘자 요약)
 async function renderStatCards() {
-    var summary = await safeGet(withDistrict('/analytics/today-summary'), null);
+    var results = await Promise.all([
+        safeGet(withDistrict('/analytics/today-summary'), null),
+        safeGet(withDistrict('/analytics/carbon-summary'), null)
+    ]);
+    var summary = results[0], carbon = results[1];
     document.getElementById('statTodayRentals').textContent = summary ? fmtNum(summary.today_rentals) : '-';
     document.getElementById('statUrgentCount').textContent = summary ? summary.urgent_dispatch_count : '-';
     document.getElementById('statFullCount').textContent = summary ? summary.full_station_count : '-';
+    document.getElementById('statCarbonReduction').textContent = carbon ? fmtNum(carbon.total_carbon_reduction_kg) : '-';
+}
+
+// 요일별 대여량 패턴 (0=월요일 ~ 6=일요일)
+async function renderWeeklyChart() {
+    var points = await safeGet(withDistrict('/analytics/weekly-demand'), []);
+    var hasData = points.some(function (d) { return d.value > 0; });
+    var dayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+
+    renderChartOrEmpty('weeklyChart', hasData, function (el) {
+        var sorted = points.slice().sort(function (a, b) { return a.day_of_week - b.day_of_week; });
+        var values = sorted.map(function (d) { return d.value; });
+        var isWeekend = sorted.map(function (d) { return d.day_of_week >= 5; });
+
+        new Chart(el, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(function (d) { return dayLabels[d.day_of_week]; }),
+                datasets: [{
+                    label: '대여량',
+                    data: values,
+                    backgroundColor: isWeekend.map(function (w) { return w ? CHART_COLORS.orange : CHART_COLORS.green; }),
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function (ctx) { return fmtNum(ctx.parsed.y) + '건'; } } }
+                },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' } } }
+            }
+        });
+    });
+}
+
+// 대여소 재고 상태 분포 (도넛)
+async function renderStockDistChart() {
+    var dist = await safeGet(withDistrict('/analytics/stock-distribution'), null);
+    var hasData = !!dist && (dist.normal + dist.warning + dist.danger + dist.full) > 0;
+
+    renderChartOrEmpty('stockDistChart', hasData, function (el) {
+        new Chart(el, {
+            type: 'doughnut',
+            data: {
+                labels: ['적정', '부족', '고갈', '과포화'],
+                datasets: [{
+                    data: [dist.normal, dist.warning, dist.danger, dist.full],
+                    backgroundColor: [CHART_COLORS.green, CHART_COLORS.orange, CHART_COLORS.red, CHART_COLORS.dark],
+                    borderWidth: 2, borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { boxWidth: 12, font: { size: 12 } } },
+                    tooltip: { callbacks: { label: function (ctx) { return ctx.label + ': ' + ctx.parsed + '개소'; } } }
+                }
+            }
+        });
+    });
+}
+
+// 이용자 성별/연령대 구성 (과거 대여 이력 데이터 기반 근사)
+async function renderDemographicsCharts() {
+    var demo = await safeGet(withDistrict('/analytics/demographics'), null);
+    var hasGenderData = !!demo && (demo.gender.male + demo.gender.female + demo.gender.unknown) > 0;
+    var hasAgeData = !!demo && Object.keys(demo.age).some(function (k) { return demo.age[k] > 0; });
+
+    renderChartOrEmpty('genderChart', hasGenderData, function (el) {
+        new Chart(el, {
+            type: 'doughnut',
+            data: {
+                labels: ['남성', '여성', '미상'],
+                datasets: [{
+                    data: [demo.gender.male, demo.gender.female, demo.gender.unknown],
+                    backgroundColor: [CHART_COLORS.blue, CHART_COLORS.red, CHART_COLORS.gray],
+                    borderWidth: 2, borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } } }
+            }
+        });
+    });
+
+    renderChartOrEmpty('ageChart', hasAgeData, function (el) {
+        var ageLabels = ['10대 이하', '20대', '30대', '40대', '50대', '60대 이상'];
+        var ageValues = demo ? [demo.age.age_10, demo.age.age_20, demo.age.age_30, demo.age.age_40, demo.age.age_50, demo.age.age_60] : [];
+
+        new Chart(el, {
+            type: 'bar',
+            data: {
+                labels: ageLabels,
+                datasets: [{
+                    label: '대여 건수',
+                    data: ageValues,
+                    backgroundColor: CHART_COLORS.orange,
+                    borderRadius: 6,
+                    barPercentage: 0.65
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function (ctx) { return fmtNum(ctx.parsed.y) + '건'; } } }
+                },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' } } }
+            }
+        });
+    });
+}
+
+// 자치구별 대여량 랭킹 (전체 자치구 보기에서만 노출)
+async function renderDistrictRankingChart() {
+    var card = document.getElementById('districtRankingCard');
+    if (!card) return;
+
+    if (filterState.districtId) {
+        card.classList.add('d-none');
+        return;
+    }
+    card.classList.remove('d-none');
+
+    var points = await safeGet('/analytics/district-ranking', []);
+    renderChartOrEmpty('districtRankingChart', points.length > 0, function (el) {
+        new Chart(el, {
+            type: 'bar',
+            data: {
+                labels: points.map(function (d) { return d.district_name; }),
+                datasets: [{
+                    label: '대여량',
+                    data: points.map(function (d) { return d.value; }),
+                    backgroundColor: CHART_COLORS.green,
+                    borderRadius: 8,
+                    barPercentage: 0.55
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function (ctx) { return fmtNum(ctx.parsed.x) + '건'; } } }
+                },
+                scales: {
+                    x: { grid: { color: '#f0f0f0' } },
+                    y: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } }
+                }
+            }
+        });
+    });
+}
+
+// 배차 처리 효율
+async function renderDispatchEfficiency() {
+    var eff = await safeGet(withDistrict('/analytics/dispatch-efficiency'), null);
+    document.getElementById('statAvgCompletionMin').textContent = eff && eff.avg_completion_min != null ? fmtNum(eff.avg_completion_min) : '-';
+    document.getElementById('statEmergencyCnt').textContent = eff ? fmtNum(eff.emergency_cnt) : '-';
+    document.getElementById('statCompletedCnt').textContent = eff ? fmtNum(eff.completed_cnt) : '-';
+    document.getElementById('statPendingCnt').textContent = eff ? fmtNum(eff.pending_cnt) : '-';
+}
+
+// 만성 불균형 리스트 CSV 내보내기 (현재 화면에 표시된 고갈/과포화 대여소 기준)
+function exportChronicListCsv() {
+    var stations = getScopedStations();
+    var rows = stations.filter(function (s) { return s.stock_level === '고갈' || s.stock_level === '과포화'; });
+    var header = ['대여소명', '자치구', '행정동', '상태', '보유대수', '거치대수'];
+    var lines = [header.join(',')].concat(rows.map(function (s) {
+        return [s.name, s.district_name || '', s.neighborhood_name || '', s.stock_level, s.total_bikes, s.capacity]
+            .map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+    }));
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '만성불균형_대여소_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 // 만성 불균형 대여소 리스트 (실제 stock_level 기준)
@@ -487,7 +681,12 @@ async function renderAll() {
         renderComboChart(),
         renderMultiAxisChart(),
         renderLagImportanceChart(),
-        renderActualVsPredChart()
+        renderActualVsPredChart(),
+        renderWeeklyChart(),
+        renderStockDistChart(),
+        renderDemographicsCharts(),
+        renderDistrictRankingChart(),
+        renderDispatchEfficiency()
     ]);
 }
 
@@ -513,6 +712,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         allStations = [];
         districts = [];
     }
+
+    var csvBtn = document.getElementById('chronicCsvBtn');
+    if (csvBtn) csvBtn.addEventListener('click', exportChronicListCsv);
 
     renderAll();
 });

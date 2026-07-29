@@ -329,6 +329,7 @@
       if (el) el.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted small">지도를 불러오지 못했습니다.</div>';
     }
     loadStations();
+    loadActiveRental();
   })();
 
   // 모바일에서 즐겨찾기 팝오버가 열려 있는 동안 실시간 현황 패널·필터 칩과 겹치지 않도록 숨김
@@ -468,6 +469,7 @@
   var sdCloseBtn = document.getElementById('sdCloseBtn');
   var sdStatusBadge = document.getElementById('sdStatusBadge');
   var sdReportBtn = document.getElementById('sdReportBtn');
+  var sdRentBtn = document.getElementById('sdRentBtn');
 
   // 상세 팝업 안의 즐겨찾기(별) 아이콘을 현재 대여소의 즐겨찾기 여부에 맞게 채움/빈 별로 갱신
   function updateSdFavIcon() {
@@ -495,6 +497,7 @@
     if(sdCapacity) sdCapacity.textContent = st.capacity + '면';
 
     updateSdFavIcon();
+    updateRentButton();
     if(sdBackdrop) sdBackdrop.classList.add('show');
     if(sdPanel) sdPanel.classList.add('show');
     // 데스크탑에서는 상세 팝업이 즐겨찾기 팝업과 같은 위치에 뜨므로, 겹쳐 보이는 필터 칩을 함께 숨김
@@ -670,6 +673,153 @@
     }
     alert('고장 신고가 접수되었습니다. 빠르게 처리하겠습니다!');
     closeReportModal();
+  });
+
+  // ── 대여 / 반납 팝업 (QR 스캔 / ID 입력) ────────────────────────────────────────
+  // 일반 회원은 동시에 하나의 자전거만 대여할 수 있으므로, 대여 중인 자전거가 있는지 여부(activeRental)에
+  // 따라 대여소 상세 팝업의 버튼이 "대여하기" ↔ "반납하기"로 바뀌고, 반납은 (대여한 곳이 아니라)
+  // 지금 누른 대여소를 반납 대여소로 사용한다.
+  var activeRental = null; // { id, bike_id, bike_type, ... } 또는 대여 중이 아니면 null
+  var rentModalBackdrop = document.getElementById('rentModalBackdrop');
+  var rentModal = document.getElementById('rentModal');
+  var rentModalCloseBtn = document.getElementById('rentModalCloseBtn');
+  var rentModalTitle = document.getElementById('rentModalTitle');
+  var rentBikeIdInput = document.getElementById('rentBikeIdInput');
+  var rentBikeTypeGroup = document.getElementById('rentBikeTypeGroup');
+  var rentSubmitBtn = document.getElementById('rentSubmitBtn');
+  var rentCameraStatus = document.getElementById('rentCameraStatus');
+  var rentModalMode = 'rent'; // 'rent' | 'return'
+
+  function updateRentButton() {
+    if (!sdRentBtn) return;
+    var renting = !!activeRental;
+    sdRentBtn.classList.toggle('returning', renting);
+    sdRentBtn.innerHTML = renting
+      ? '<i class="bi bi-box-arrow-in-down me-2"></i>반납하기'
+      : '<i class="bi bi-bicycle me-2"></i>대여하기';
+  }
+
+  async function loadActiveRental() {
+    try {
+      activeRental = await api.get('/station/rentals/active');
+    } catch (e) {
+      activeRental = null;
+    }
+    updateRentButton();
+  }
+
+  // 대여/반납 후 재고가 바뀌므로 대여소 목록을 다시 불러오고, 상세 팝업이 열려 있으면 그 수치도 갱신한다
+  async function refreshStationsAfterRentalChange() {
+    await loadStations();
+    if (currentDetailStationId) openStationDetail(currentDetailStationId);
+  }
+
+  // ── 대여/반납 전용 QR 카메라 스캔 (고장 신고 모달과 별도 인스턴스) ──────────────────
+  var rentQrCamera = null;
+
+  function startRentCamera() {
+    if (!isMobileViewport() || typeof Html5Qrcode === 'undefined') return;
+    rentQrCamera = new Html5Qrcode('rentQrReader');
+    rentQrCamera.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      function (decodedText) {
+        if (rentBikeIdInput) rentBikeIdInput.value = decodedText;
+        if (rentCameraStatus) {
+          rentCameraStatus.textContent = '스캔 완료: ' + decodedText;
+          rentCameraStatus.className = 'scan-camera-status success';
+        }
+        stopRentCamera();
+      },
+      function () { /* 프레임마다 QR을 못 찾는 경우는 무시 */ }
+    ).catch(function () {
+      if (rentCameraStatus) {
+        rentCameraStatus.textContent = '카메라를 사용할 수 없습니다. 카메라 권한을 확인해 주세요.';
+        rentCameraStatus.className = 'scan-camera-status error';
+      }
+      rentQrCamera = null;
+    });
+  }
+
+  function stopRentCamera() {
+    if (!rentQrCamera) return;
+    var camera = rentQrCamera;
+    rentQrCamera = null;
+    try {
+      camera.stop().catch(function () { }).finally(function () { camera.clear(); });
+    } catch (e) {
+      // 스캐너가 이미 정지된 상태 등에서 stop()이 동기적으로 예외를 던지는 경우를 방어한다.
+    }
+  }
+
+  function openRentModal() {
+    if (!currentDetailStationId) return;
+    rentModalMode = activeRental ? 'return' : 'rent';
+
+    if (rentBikeIdInput) rentBikeIdInput.value = '';
+    if (rentCameraStatus) {
+      rentCameraStatus.textContent = '따릉이의 QR 코드를 카메라 화면 안에 비춰주세요.';
+      rentCameraStatus.className = 'scan-camera-status text-muted';
+    }
+
+    var isReturn = rentModalMode === 'return';
+    if (rentModalTitle) rentModalTitle.innerHTML = isReturn
+      ? '<i class="bi bi-box-arrow-in-down text-warning me-2"></i>따릉이 반납'
+      : '<i class="bi bi-bicycle text-success me-2"></i>따릉이 대여';
+    if (rentBikeTypeGroup) rentBikeTypeGroup.style.display = isReturn ? 'none' : '';
+    if (rentSubmitBtn) {
+      rentSubmitBtn.textContent = isReturn ? '반납하기' : '대여하기';
+      rentSubmitBtn.classList.toggle('returning', isReturn);
+    }
+    // 대여 모달을 열 때마다 기본값(일반 자전거)으로 되돌려, 이전에 고른 종류가 남아있지 않게 한다
+    var generalRadio = document.getElementById('rentBikeTypeGeneral');
+    if (generalRadio) generalRadio.checked = true;
+
+    if (rentModalBackdrop) rentModalBackdrop.classList.add('show');
+    if (rentModal) rentModal.classList.add('show');
+    startRentCamera();
+  }
+  function closeRentModal() {
+    if (rentModalBackdrop) rentModalBackdrop.classList.remove('show');
+    if (rentModal) rentModal.classList.remove('show');
+    stopRentCamera();
+  }
+  if (sdRentBtn) sdRentBtn.addEventListener('click', openRentModal);
+  if (rentModalCloseBtn) rentModalCloseBtn.addEventListener('click', closeRentModal);
+  if (rentModalBackdrop) rentModalBackdrop.addEventListener('click', closeRentModal);
+
+  if (rentSubmitBtn) rentSubmitBtn.addEventListener('click', async function () {
+    var bikeId = rentBikeIdInput ? rentBikeIdInput.value.trim() : '';
+    if (!bikeId) { alert('따릉이 ID를 스캔하거나 입력해 주세요.'); return; }
+
+    rentSubmitBtn.disabled = true;
+    try {
+      if (rentModalMode === 'return') {
+        await api.patch('/station/rentals/' + activeRental.id + '/return', {
+          return_station_id: currentDetailStationId,
+          bike_id: bikeId
+        });
+        activeRental = null;
+        alert('반납이 완료되었습니다. 이용해 주셔서 감사합니다!');
+      } else {
+        var bikeTypeInput = document.querySelector('input[name="rentBikeType"]:checked');
+        var bikeType = bikeTypeInput ? bikeTypeInput.value : 'general';
+        activeRental = await api.post('/station/rentals', {
+          station_id: currentDetailStationId,
+          bike_id: bikeId,
+          bike_type: bikeType
+        });
+        alert('대여가 시작되었습니다. 즐거운 라이딩 되세요!');
+      }
+    } catch (e) {
+      alert(e.message || '요청 처리에 실패했습니다.');
+      return;
+    } finally {
+      rentSubmitBtn.disabled = false;
+    }
+    updateRentButton();
+    closeRentModal();
+    refreshStationsAfterRentalChange();
   });
 
   // ── 하단 안내 링크 (고객센터/대여소 제안/개인정보처리방침) ────────────────────────────────

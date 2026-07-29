@@ -18,8 +18,14 @@ from models.models import (
     DemandPredictionMaster2024,
 )
 from schema.response import (
+    AgeBreakdownOut,
+    CarbonSummaryOut,
+    DemographicsOut,
+    DispatchEfficiencyOut,
+    DistrictRankingPointOut,
     FeatureImportanceOut,
     FlowEdgeOut,
+    GenderBreakdownOut,
     HourlyPointOut,
     HourlyTempPointOut,
     ModelMonitoringOut,
@@ -28,6 +34,7 @@ from schema.response import (
     WeatherSummaryOut,
     WeeklyPointOut,
 )
+from serving.district import DISTRICTS
 from serving.analytics_utils import latest_available_date, total_rentals_on
 from serving.deps import get_champion_models
 from serving.district import district_name, district_id as district_id_of
@@ -357,9 +364,12 @@ def model_monitoring(
 ) -> ModelMonitoringOut:
     """
     serving/demand_prediction_forecast.py의 야간 배치가 demand_prediction_forecast에 미리 채워둔
-    '전일 실제 vs 챔피언 모델 예측' 시간대별 비교를 그대로 읽는다. 요청 시점에 모델을
-    돌리지 않으므로 항상 즉시 응답한다 (배치 자체가 무거운 이유는 해당 모듈의 docstring 참고).
-    배치가 아직 한 번도 안 돌았으면(서버 기동 직후 등) 404.
+    '전일(달력 기준 어제) 실제 vs 챔피언 모델 예측' 시간대별 비교를 그대로 읽는다. '실제'는
+    rt_bike_status(30분 간격 실시간 거치대 스냅샷)의 순감소량 기반 추정치라 진짜 실시간
+    이력이지만, 배치 실행 시점까지 rt_bike_status가 얼마나 쌓였느냐에 따라 일부 시간대가
+    비어 있을 수 있다. 요청 시점에 모델을 돌리지 않으므로 항상 즉시 응답한다 (배치 자체가
+    무거운 이유는 해당 모듈의 docstring 참고). 배치가 아직 한 번도 안 돌았으면(서버 기동 직후
+    등) 404.
     """
     storage_district_id = district_id or 0
     latest = session.execute(select(func.max(DemandPredictionForecast.target_date))).scalar_one_or_none()
@@ -380,3 +390,120 @@ def model_monitoring(
         predicted=[HourlyPointOut(hour=h, value=by_hour[h].predicted_total if h in by_hour else 0) for h in range(24)],
         sample_station_cnt=rows[0].sample_station_cnt if rows else 0,
     )
+
+
+@router.get("/demographics", response_model=DemographicsOut)
+def demographics(
+    district_id: int | None = None,
+    session: Session = Depends(get_session),
+    _admin: Account = Depends(require_role("admin")),
+) -> DemographicsOut:
+    """
+    demand_prediction_master_2024에 누적된 대여 건수를 성별/연령대별로 합산한다.
+    실시간 대여(Rental)는 개인정보상 성별/연령을 수집하지 않으므로, 과거 이력
+    데이터(공공데이터 기반 집계치)로 이용자 구성을 근사한다.
+    """
+    stmt = select(
+        func.sum(DemandPredictionMaster2024.rent_male_cnt),
+        func.sum(DemandPredictionMaster2024.rent_female_cnt),
+        func.sum(DemandPredictionMaster2024.rent_gender_unk_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_10_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_20_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_30_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_40_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_50_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_60_cnt),
+        func.sum(DemandPredictionMaster2024.rent_age_unk_cnt),
+    )
+    name = district_name(district_id) if district_id else None
+    if name:
+        stmt = stmt.where(DemandPredictionMaster2024.district == name)
+    row = session.execute(stmt).one()
+    male, female, gender_unk, a10, a20, a30, a40, a50, a60, age_unk = (int(v or 0) for v in row)
+
+    return DemographicsOut(
+        gender=GenderBreakdownOut(male=male, female=female, unknown=gender_unk),
+        age=AgeBreakdownOut(age_10=a10, age_20=a20, age_30=a30, age_40=a40, age_50=a50, age_60=a60, unknown=age_unk),
+    )
+
+
+@router.get("/carbon-summary", response_model=CarbonSummaryOut)
+def carbon_summary(
+    district_id: int | None = None,
+    session: Session = Depends(get_session),
+    _admin: Account = Depends(require_role("admin")),
+) -> CarbonSummaryOut:
+    """
+    완료된 실제 대여(Rental) 트랜잭션 기준 누적 탄소 절감량/이동거리/평균 이용시간.
+    station.py에서 반납 시점에 계산해 저장해 둔 carbon_reduction/distance_km/duration_min을 그대로 합산한다.
+    """
+    stmt = select(
+        func.sum(Rental.carbon_reduction),
+        func.sum(Rental.distance_km),
+        func.avg(Rental.duration_min),
+        func.count(),
+    ).where(Rental.status == "완료")
+    name = district_name(district_id) if district_id else None
+    if name:
+        stmt = stmt.join(StationLoc, StationLoc.station_id == Rental.rent_station_id).where(StationLoc.district == name)
+    total_carbon, total_distance, avg_duration, cnt = session.execute(stmt).one()
+
+    return CarbonSummaryOut(
+        total_carbon_reduction_kg=round(float(total_carbon or 0.0), 2),
+        total_distance_km=round(float(total_distance or 0.0), 1),
+        avg_duration_min=round(float(avg_duration or 0.0), 1),
+        completed_rental_cnt=int(cnt or 0),
+    )
+
+
+@router.get("/dispatch-efficiency", response_model=DispatchEfficiencyOut)
+def dispatch_efficiency(
+    district_id: int | None = None,
+    session: Session = Depends(get_session),
+    _admin: Account = Depends(require_role("admin")),
+) -> DispatchEfficiencyOut:
+    """
+    배차 지시서의 처리 효율 지표. 평균 처리 시간은 완료 건의 (dropoff_completed_at -
+    ordered_at)을 분 단위로 계산한다. MySQL TIMESTAMPDIFF 단위 파라미터 바인딩
+    이슈를 피하기 위해 두 시각을 그대로 읽어 파이썬에서 차이를 계산한다.
+    """
+    stmt = select(Dispatch)
+    name = district_name(district_id) if district_id else None
+    if name:
+        stmt = stmt.join(StationLoc, StationLoc.station_id == Dispatch.from_station_id).where(StationLoc.district == name)
+    dispatches = session.execute(stmt).scalars().all()
+
+    completed = [d for d in dispatches if d.status == "완료"]
+    durations = [
+        (d.dropoff_completed_at - d.ordered_at).total_seconds() / 60.0
+        for d in completed
+        if d.dropoff_completed_at is not None
+    ]
+    avg_completion_min = round(sum(durations) / len(durations), 1) if durations else None
+
+    return DispatchEfficiencyOut(
+        avg_completion_min=avg_completion_min,
+        emergency_cnt=sum(1 for d in dispatches if d.is_emergency),
+        normal_cnt=sum(1 for d in dispatches if not d.is_emergency),
+        completed_cnt=len(completed),
+        pending_cnt=sum(1 for d in dispatches if d.status != "완료"),
+    )
+
+
+@router.get("/district-ranking", response_model=list[DistrictRankingPointOut])
+def district_ranking(
+    session: Session = Depends(get_session),
+    _admin: Account = Depends(require_role("admin")),
+) -> list[DistrictRankingPointOut]:
+    """자치구별 누적 대여량 랭킹 (전체 자치구 뷰에서 구간 비교용)."""
+    stmt = select(
+        DemandPredictionMaster2024.district,
+        func.sum(DemandPredictionMaster2024.general_rent_cnt + DemandPredictionMaster2024.sprout_rent_cnt),
+    ).group_by(DemandPredictionMaster2024.district)
+    by_name = {name: int(v or 0) for name, v in session.execute(stmt).all()}
+
+    points = [
+        DistrictRankingPointOut(district_id=d["id"], district_name=d["name"], value=by_name.get(d["name"], 0))
+        for d in DISTRICTS
+    ]
+    return sorted(points, key=lambda p: p.value, reverse=True)

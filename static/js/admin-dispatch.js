@@ -163,7 +163,17 @@ function buildAiRecommendations() {
     var shortages = [];
     var surpluses = [];
 
+    // 이미 대기/진행중인 지시서가 걸려 있는 대여소는 추천에서 제외한다.
+    // (재고 데이터는 기사가 실제로 이동을 완료해야 갱신되므로, 이 체크가 없으면 발송 직후에도
+    //  동일한 추천 건이 그대로 다시 나타나 중복 발송으로 이어진다.)
+    var hasActiveOrder = function (stationId) {
+        return allOrders.some(function (o) {
+            return o.status !== '완료' && (o.from_station_id === stationId || o.to_station_id === stationId);
+        });
+    };
+
     stations.forEach(function (s) {
+        if (hasActiveOrder(s.station_id)) return;
         var c = classifyStation(s);
         if (c.level === 'danger' || c.level === 'warning') {
             shortages.push({ station: s, need: Math.max(3, s.capacity - c.total), priority: c.level === 'danger' ? 'high' : 'mid' });
@@ -642,7 +652,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     general_qty: rec.generalQty,
                     sprout_qty: rec.sproutQty,
                     driver_id: rec.driverId,
-                    is_emergency: false
+                    is_emergency: rec.priority === 'high'
                 });
             }));
         } catch (e) {
@@ -702,9 +712,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('openWriteModalBtn').addEventListener('click', function () { openWriteModal(); });
     document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
 
-    // 관제 지도 페이지에서 "지시서 쓰기"로 넘어온 경우: 해당 스테이션을 출발지로 자동 선택 후 모달 오픈
+    // 관제 지도 페이지에서 "지시서 쓰기"로 넘어온 경우: 해당 스테이션을 role에 따라 출발지(수거) 또는 도착지(배치)로 자동 선택 후 모달 오픈
+    // (고갈 대여소 핀에서 넘어온 경우 role=to이므로 배치 대여소로, 그 외는 role=from이므로 수거 대여소로 선택된다.)
     var params = new URLSearchParams(window.location.search);
     if (params.get('writeOrder') === '1' && params.get('stationId')) {
-        openWriteModal({ fromStationId: params.get('stationId') });
+        if (params.get('role') === 'to') {
+            openWriteModal({ toStationId: params.get('stationId') });
+        } else {
+            openWriteModal({ fromStationId: params.get('stationId') });
+        }
     }
 });
