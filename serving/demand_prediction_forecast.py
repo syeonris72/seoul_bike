@@ -39,6 +39,11 @@ logger = logging.getLogger(__name__)
 _SAMPLE_STATIONS_PER_DISTRICT = 8  # 클수록 근사치가 정확해지지만 배치 시간이 늘어난다
 _RENT_TARGETS = ("general_rent_cnt", "sprout_rent_cnt")  # "총 대여량" = 이 둘의 합 (다른 analytics 엔드포인트와 동일한 정의)
 
+# 스케줄러 기본 수집 주기(30분)의 1.5배. 서버 재시작 등으로 수집 공백이 생기면 그사이 몇 시간치
+# 누적 변화량이 통째로 한 시간 버킷에 잡혀 스파이크가 생긴다 - 이 폭 밖의 간격은 신뢰할 수 없는
+# 구간으로 보고 건너뛴다(과대집계보다 과소집계가 안전하다는 판단).
+_MAX_SNAPSHOT_GAP = timedelta(minutes=45)
+
 
 def _real_actual_by_hour_per_station(
     session: Session, target_date, district_name: str | None
@@ -62,6 +67,8 @@ def _real_actual_by_hour_per_station(
     result: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
     for station_id, snapshots in snapshots_by_station.items():
         for (t0, c0), (t1, c1) in zip(snapshots, snapshots[1:]):
+            if (t1 - t0) > _MAX_SNAPSHOT_GAP:
+                continue  # 수집 공백 구간 - 이 구간의 변화량은 신뢰할 수 없어 건너뛴다
             delta = c1 - c0
             if delta < 0:
                 result[station_id][t0.hour] += -delta
