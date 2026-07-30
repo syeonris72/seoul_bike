@@ -357,7 +357,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   document.getElementById('sdWriteOrderBtn').addEventListener('click', function () {
     if (!currentDetailStationId) return;
-    window.location.href = 'admin-dispatch.html?writeOrder=1&stationId=' + currentDetailStationId;
+    var st = getStation(currentDetailStationId);
+    // 고갈(부족) 대여소는 따릉이를 채워 넣어야 하는 배치 대여소(도착지)로, 그 외는 수거 대여소(출발지)로 지시서에 자동 반영한다.
+    var role = (st && classifyStation(st).level === 'danger') ? 'to' : 'from';
+    window.location.href = 'admin-dispatch.html?writeOrder=1&stationId=' + currentDetailStationId + '&role=' + role;
   });
 
   var statusPanel = document.getElementById('statusPanel');

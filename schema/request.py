@@ -41,6 +41,7 @@ class RentalCreateRequest(BaseModel):
 
 class ReturnRequest(BaseModel):
     return_station_id: str
+    bike_id: str
 
 
 class ReportCreateRequest(BaseModel):

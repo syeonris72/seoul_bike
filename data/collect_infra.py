@@ -18,7 +18,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.append(_SCRIPT_DIR)
 
 from common_utils import init_db, get_session, fetch_api_json, os, BASE_DIR, TARGET_DISTRICTS, engine
-from models.models import InfraPark, InfraSchool, InfraUniv, InfraBusiness, InfraMaster
+from models.models import InfraPark, InfraSchool, InfraUniv, InfraBusiness, InfraMaster, InfraRiver
 
 RIVER_PATH = os.path.join(BASE_DIR, "seoul_bike/data/infra_river_SHP/seoul_rivers_filtered.shp")
 BUSINESS_PATH = os.path.join(BASE_DIR, "seoul_bike/data/infra_business.csv")
@@ -275,7 +275,7 @@ def collect_subway():
 
 
 if __name__ == "__main__":
-    init_db(engine, models=[InfraPark, InfraSchool, InfraUniv, InfraBusiness, InfraMaster])
+    init_db(engine, models=[InfraPark, InfraSchool, InfraRiver, InfraUniv, InfraBusiness, InfraMaster])
     collect_park()
     collect_school()
     collect_univ()

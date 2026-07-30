@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/header.css">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
-  <link rel="stylesheet" href="css/user-dashboard.css?v=20260728c">
+  <link rel="stylesheet" href="css/user-dashboard.css?v=20260728f">
 </head>
 <body>
 
@@ -111,7 +111,43 @@
         <div class="sd-stat-item"><span class="label">새싹 자전거</span><strong id="sdSprout">0대</strong></div>
         <div class="sd-stat-item"><span class="label">거치대 수</span><strong id="sdCapacity">0면</strong></div>
       </div>
+      <button type="button" class="sd-rent-btn" id="sdRentBtn"><i class="bi bi-bicycle me-2"></i>대여하기</button>
       <button type="button" class="sd-report-btn" id="sdReportBtn"><i class="bi bi-exclamation-triangle me-2"></i>고장 신고</button>
+    </div>
+  </div>
+
+  <!-- 대여 / 반납 팝업: 대여 중이 아니면 대여하기, 대여 중이면 반납하기로 동작이 바뀐다 -->
+  <div class="report-modal-backdrop" id="rentModalBackdrop"></div>
+  <div class="report-modal" id="rentModal" role="dialog" aria-hidden="true" aria-label="대여 반납">
+    <div class="report-modal-header">
+      <span class="report-modal-title" id="rentModalTitle"><i class="bi bi-bicycle text-success me-2"></i>따릉이 대여</span>
+      <button type="button" class="sd-close-btn" id="rentModalCloseBtn"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="report-modal-body">
+      <!-- 아이패드 정도 크기(1400px)까지: 카메라로 QR 스캔 -->
+      <div class="d-xxl-none mb-3">
+        <label class="report-label">따릉이 QR 스캔</label>
+        <div id="rentQrReader" class="scan-qr-reader"></div>
+        <p class="scan-camera-status text-muted mb-0" id="rentCameraStatus">따릉이의 QR 코드를 카메라 화면 안에 비춰주세요.</p>
+      </div>
+
+      <!-- 데스크탑(1400px 초과): 따릉이 ID 직접 입력 -->
+      <div class="mb-3 d-none d-xxl-block">
+        <label class="report-label">따릉이 ID 입력</label>
+        <input type="text" class="form-control" id="rentBikeIdInput" placeholder="따릉이 ID 입력 (예: BIKE-0012)">
+      </div>
+
+      <div class="mb-3" id="rentBikeTypeGroup">
+        <label class="report-label">자전거 종류</label>
+        <div class="btn-group w-100" role="group">
+          <input type="radio" class="btn-check" name="rentBikeType" id="rentBikeTypeGeneral" value="general" checked>
+          <label class="btn btn-outline-secondary" for="rentBikeTypeGeneral">일반 자전거</label>
+          <input type="radio" class="btn-check" name="rentBikeType" id="rentBikeTypeSprout" value="sprout">
+          <label class="btn btn-outline-secondary" for="rentBikeTypeSprout">새싹 자전거</label>
+        </div>
+      </div>
+
+      <button type="button" class="report-submit-btn rent-submit-btn" id="rentSubmitBtn">대여하기</button>
     </div>
   </div>
 
@@ -230,6 +266,6 @@
   <script src="js/kakao-map.js"></script>
   <!-- 공용 헤더 렌더링 (실제 헤더 그리기 로직은 js/user-dashboard.js 상단에 있음) -->
   <script src="js/header.js"></script>
-  <script src="js/user-dashboard.js"></script>
+  <script src="js/user-dashboard.js?v=20260728d"></script>
 </body>
 </html>

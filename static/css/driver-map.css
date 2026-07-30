@@ -2,7 +2,7 @@
 :root {
   --bg: #fcfcfc; --card: #ffffff; --accent: #00965e; --accent-dark: #00965e;
   --accent-soft: #f3f4f6; --ink: #131a29; --muted: #767676; --line: #e5e7eb;
-  --start: #ef4545; --end: #00965e;
+  --start: #ef4545; --end: #00965e; --report: #f59e0b;
   --radius-lg: 22px; --radius-md: 14px;
 }
 * { box-sizing: border-box; }
@@ -41,6 +41,7 @@ body { margin: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, 
 .station-marker:hover { transform: translate(-50%, -50%) scale(1.25); box-shadow: 0 2px 8px rgba(20,60,35,0.35); }
 .station-marker.start { background: var(--start); }
 .station-marker.end { background: var(--end); }
+.station-marker.report { background: var(--report); }
 
 .station-marker.circle { border-radius: 50%; }
 .station-marker.square { border-radius: 3px; }
@@ -75,6 +76,7 @@ body { margin: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, 
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .legend-dot.start { background: var(--start); }
 .legend-dot.end { background: var(--end); }
+.legend-dot.report { background: var(--report); }
 
 /* 대여소 마커 클릭 시 뜨는 팝업 */
 .pin-popup-backdrop {
@@ -101,6 +103,7 @@ body { margin: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, 
 .pin-popup-role-tag { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-bottom: 10px; }
 .pin-popup-role-tag.start { background: #fdf1f1; color: var(--start); }
 .pin-popup-role-tag.end { background: #eef8f3; color: var(--end); }
+.pin-popup-role-tag.report { background: #fef6e7; color: var(--report); }
 
 .pin-popup-station-name { margin: 0 0 4px; font-size: 18px; font-weight: 800; color: var(--ink); padding-right: 22px; }
 .pin-popup-addr { margin: 0 0 18px; font-size: 13px; color: var(--muted); }

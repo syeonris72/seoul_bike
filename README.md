@@ -220,10 +220,28 @@
 특정 날짜/시간과 대여소를 입력하면 **일반 자전거 / 새싹 자전거의 대여량과 반납량**을 각각 예측하고, 이를 바탕으로 해당 대여소의 과포화 및 고갈 여부를 판별합니다.
 
 ### 데이터 및 전처리 파이프라인
-- **데이터 출처**: 서울 열린데이터광장 (따릉이 이력, 인구, 인프라), 기상청 (날씨)
+
+**1. 방대한 다중 도메인 데이터 수집 (Data Sources)**
+총 14종 이상의 외부 공공 API 및 오픈 데이터를 직접 수집하여, 자전거 수요에 영향을 미치는 다차원적인 분석 기반(환경, 인구, 지리적 요인)을 구축했습니다.
+
+*   **🚲 따릉이 데이터**
+    *   [따릉이 대여 및 반납 이력 데이터](https://data.seoul.go.kr/dataList/OA-15182/F/1/datasetView.do)
+    *   [대여 위치 정보 데이터](https://data.seoul.go.kr/dataList/OA-21235/S/1/datasetView.do)
+    *   [실시간 따릉이 대여 및 거치 정보 데이터](https://data.seoul.go.kr/dataList/OA-15493/A/1/datasetView.do)
+*   **🌤️ 환경 및 기상 데이터**
+    *   [실시간 미세먼지 데이터](https://data.seoul.go.kr/dataList/OA-1200/S/1/datasetView.do) / [시간별 미세먼지 데이터](https://data.kma.go.kr/data/climate/selectDustRltmList.do?pgmNo=68)
+    *   [실시간 기상 데이터(1)](https://www.airkorea.or.kr/web/), [(2)](https://data.kma.go.kr/data/grnd/selectAsosRltmList.do) / [시간별 기상 데이터](https://apihub.kma.go.kr/)
+*   **👥 인구 데이터**
+    *   [유동 인구 데이터](https://data.seoul.go.kr/dataList/OA-22179/S/1/datasetView.do)
+    *   [생활 인구 데이터](https://data.seoul.go.kr/dataList/OA-15439/S/1/datasetView.do)
+*   **🏢 인프라 데이터**
+    *   [공원 위치 데이터](https://data.seoul.go.kr/dataList/OA-394/S/1/datasetView.do) / 하천 위치 데이터 [(1)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30603), [(2)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30207)
+    *   [학교(초, 중, 고) 위치 데이터](https://www.data.go.kr/data/15152021/fileData.do#tab-layer-openapi) / [대학교 위치 데이터](https://data.seoul.go.kr/dataList/OA-12974/S/1/datasetView.do)
+    *   [직장 위치 데이터](https://data.seoul.go.kr/dataList/OA-22243/F/1/datasetView.do) / [지하철 역 출입구 위치 데이터](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do?tab=A)
+
+**2. 데이터 전처리 최적화 (Data Preprocessing)**
 - **메모리 최적화**: 440만 건의 대여 이력을 `chunksize`로 분할 로드하고, 데이터 손실 없이 64-bit 자료형을 32-bit로 변환(Downcasting)하여 OOM(Memory Error)을 방지했습니다.
 - **순차적 무결성 확보**: 모든 데이터를 한 번에 병합 후 결측치를 처리하지 않고, **개별 파일 및 중간 데이터 병합 단계마다 순차적으로 이상치와 결측치를 즉시 제거**하여 데이터 파이프라인의 신뢰성을 극대화했습니다.
-
 ### 피처 (Feature)
 단순한 시계열 데이터를 넘어, 대여소 주변의 지리적 특성, 성별·연령별 이용 성향, 실시간 유동/생활 인구, 기상 악화 요인 등 **50여 개 이상의 다차원 피처**를 종합적으로 구축하여 학습에 활용했습니다.
 
@@ -367,20 +385,7 @@ Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 �
 
 **① 실험 목록 (여러 run 비교 화면)**
 
-baseline runs
-![runs_1-1](./image/runs_1-1.png)
-![runs_1-2](./image/runs_1-2.png)
-
-tuning runs
-![runs_2-4](./image/runs_2-4.png)
-![runs_2-5](./image/runs_2-5.png)
-![runs_2-6](./image/runs_2-6.png)
-![runs_2-3](./image/runs_2-3.png)
-![runs_2-2](./image/runs_2-2.png)
-![runs_2-1](./image/runs_2-1.png)
-
-ensemble runs
-![runs_3](./image/runs_3.png)
+![runs](./image/runs.png)
 
 **② 파라미터·지표 비교**
 
