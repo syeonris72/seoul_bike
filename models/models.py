@@ -97,7 +97,7 @@ class RtBikeStatus(Base):
     shared_rate: Mapped[float | None] = mapped_column(Float, comment="거치율")
     lat: Mapped[float | None] = mapped_column(Numeric(10, 7), comment="위도")
     lon: Mapped[float | None] = mapped_column(Numeric(10, 7), comment="경도")
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), comment="데이터수집일시")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True, comment="데이터수집일시")
 
 
 class DemandPredictionMaster2024(Base):
@@ -187,6 +187,12 @@ class RtAir(Base):
     pm10: Mapped[float | None] = mapped_column(Float, comment="미세먼지(PM10)")
     pm25: Mapped[float | None] = mapped_column(Float, comment="초미세먼지(PM2.5)")
 
+    __table_args__ = (
+        # serving/env.py의 get_target_hour_weather가 (region_name, measure_date 근접치)로
+        # 조회한다 - 인덱스 없으면 이 조회가 테이블 전체 스캔이 됨.
+        Index("ix_rt_air_region_measure_date", "region_name", "measure_date"),
+    )
+
 
 class HourlyTemp2024(Base):
     __tablename__ = 'hourly_temp_2024'
@@ -220,6 +226,12 @@ class RtWeather(Base):
     temperature: Mapped[float | None] = mapped_column(Float, comment="기온(℃)")
     precipitation: Mapped[float | None] = mapped_column(Float, comment="강수량(mm)")
     humidity: Mapped[float | None] = mapped_column(Float, comment="습도(%)")
+
+    __table_args__ = (
+        # serving/env.py의 get_target_hour_weather가 (region_name, measure_date 근접치)로
+        # 조회한다 - 인덱스 없으면 이 조회가 테이블 전체 스캔이 됨.
+        Index("ix_rt_weather_region_measure_date", "region_name", "measure_date"),
+    )
 
 
 class EnvMaster2024(Base):

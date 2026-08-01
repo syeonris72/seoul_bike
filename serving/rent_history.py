@@ -1,11 +1,13 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from models.models import DemandPredictionMaster2024
+from models.models import DemandPredictionMaster2024, RtBikeStatus
 from serving.constant import TARGET_COLUMNS
+from serving.rt_flow import MAX_SNAPSHOT_GAP, snapshot_delta
 
 _MAX_LOOKBACK_HOURS = 169  # lag168h + 여유 1시간(roll24h_mean 등에서 T-24h..T-1h 커버)
 
@@ -13,6 +15,99 @@ _MAX_LOOKBACK_HOURS = 169  # lag168h + 여유 1시간(roll24h_mean 등에서 T-2
 # 타깃 lag/rolling 계산에 쓰는 컬럼 + 인구 트렌드(pop_spike_ratio/population_dynamic_flux)
 # 계산에 쓰는 flwpop_tot/lvgpop_tot까지 한 번의 range 쿼리로 같이 가져온다.
 _WINDOW_EXTRA_COLUMNS = ["flwpop_tot", "lvgpop_tot"]
+
+# demand_prediction_master_2024는 2024년치뿐이라 그 이후 날짜(실시간 예측 대상)는 항상
+# 비어 lag/rolling 피처가 전부 0이 됐다 - 모델이 가장 크게 의존하는 피처 그룹(전체 중요도의
+# 약 40%, admin-analytics.js "예측 모델 주요 변수 중요도" 참고)이 라이브에서 통째로
+# 죽어있던 것. rt_bike_status(30분 간격 실시간 거치대 스냅샷)의 순증감으로 근사치를 만들어
+# 이 구간을 채운다 - routers/predict.py의 실시간 다음 시간 예측과 이 모듈을 함께 쓰는
+# serving/demand_prediction_forecast.py 양쪽 다 자동으로 혜택을 받는다.
+#
+# 알려진 한계: rt_bike_status는 자전거 종류(일반/새싹)나 대여/반납을 구분하지 않고 총
+# 거치대수만 준다. 감소분은 순대여, 증가분은 순반납(또는 배차 투입)으로 보고, 일반/새싹
+# 배분은 2024년 전체 평균 비율로 근사한다(대여소별 실제 비율과는 오차가 있을 수 있음).
+_rent_rtn_split_cache: dict[str, float] | None = None
+
+
+def _rent_rtn_split_ratios(session: Session) -> dict[str, float]:
+    global _rent_rtn_split_cache
+    if _rent_rtn_split_cache is not None:
+        return _rent_rtn_split_cache
+
+    g_rent, s_rent, g_rtn, s_rtn = session.execute(
+        select(
+            func.sum(DemandPredictionMaster2024.general_rent_cnt),
+            func.sum(DemandPredictionMaster2024.sprout_rent_cnt),
+            func.sum(DemandPredictionMaster2024.general_rtn_cnt),
+            func.sum(DemandPredictionMaster2024.sprout_rtn_cnt),
+        )
+    ).one()
+    g_rent, s_rent, g_rtn, s_rtn = (float(v or 0.0) for v in (g_rent, s_rent, g_rtn, s_rtn))
+    rent_total = g_rent + s_rent
+    rtn_total = g_rtn + s_rtn
+
+    _rent_rtn_split_cache = {
+        "general_rent_cnt": (g_rent / rent_total) if rent_total else 0.5,
+        "sprout_rent_cnt": (s_rent / rent_total) if rent_total else 0.5,
+        "general_rtn_cnt": (g_rtn / rtn_total) if rtn_total else 0.5,
+        "sprout_rtn_cnt": (s_rtn / rtn_total) if rtn_total else 0.5,
+    }
+    return _rent_rtn_split_cache
+
+
+def _live_rent_rtn_window(
+    session: Session, station_id: str, window_start: datetime, window_end: datetime
+) -> pd.DataFrame:
+    """[window_start, window_end] 구간을 rt_bike_status 스냅샷 순증감으로 채운
+    TARGET_COLUMNS 형태의 시간별 DataFrame. 2024 이력이 없는 실시간 구간에서만
+    의미 있는 값을 반환하고, 그 외에는 빈 DataFrame."""
+    # window_end 버킷(시 단위)에 속하는 t0는 원시각 기준 window_end+59분까지 나올 수 있고,
+    # 그 델타를 구할 t1은 그보다 늦은 시각이어야 한다. 다만 target_dt(=window_end+1h) 이후
+    # 시점은 예측 시점에서 아직 모르는 미래이므로 절대 넘어서면 안 된다(backtest leakage
+    # 방지) - MAX_SNAPSHOT_GAP만큼 더 여유를 주는 대신 target_dt에서 딱 끊는다.
+    target_dt = window_end + timedelta(hours=1)
+    rows = session.execute(
+        select(RtBikeStatus.created_at, RtBikeStatus.parked_bike_cnt)
+        .where(
+            RtBikeStatus.station_id == station_id,
+            RtBikeStatus.created_at >= window_start - MAX_SNAPSHOT_GAP,
+            RtBikeStatus.created_at <= target_dt,
+        )
+        .order_by(RtBikeStatus.created_at)
+    ).all()
+
+    by_hour: dict[datetime, dict[str, int]] = defaultdict(lambda: {"rent": 0, "rtn": 0})
+    for (t0, c0), (t1, c1) in zip(rows, rows[1:]):
+        # window 경계 판단은 t0 원시각이 아니라 t0가 속한 시간 버킷 기준이어야 한다 - 그렇지
+        # 않으면 예: t0=01:09가 버킷상 01:00(=window_end)에 귀속돼야 하는데도 원시각이
+        # window_end(01:00:00)보다 늦다는 이유로 걸러져 lag1h 버킷이 통째로 비게 된다.
+        bucket = t0.replace(minute=0, second=0, microsecond=0)
+        if bucket < window_start or bucket > window_end:
+            continue
+        delta = snapshot_delta(t0, c0, t1, c1)
+        if delta is None:
+            continue
+        if delta < 0:
+            by_hour[bucket]["rent"] += -delta
+        elif delta > 0:
+            by_hour[bucket]["rtn"] += delta
+
+    if not by_hour:
+        return pd.DataFrame()
+
+    ratios = _rent_rtn_split_ratios(session)
+    data = {
+        bucket: {
+            "general_rent_cnt": v["rent"] * ratios["general_rent_cnt"],
+            "sprout_rent_cnt": v["rent"] * ratios["sprout_rent_cnt"],
+            "general_rtn_cnt": v["rtn"] * ratios["general_rtn_cnt"],
+            "sprout_rtn_cnt": v["rtn"] * ratios["sprout_rtn_cnt"],
+        }
+        for bucket, v in by_hour.items()
+    }
+    df = pd.DataFrame.from_dict(data, orient="index")
+    df.index.name = "datetime_hr"
+    return df.sort_index()
 
 
 def fetch_station_window(session: Session, station_id: str, target_dt: datetime) -> pd.DataFrame:
@@ -46,6 +141,18 @@ def fetch_station_window(session: Session, station_id: str, target_dt: datetime)
     if not df.empty:
         df["datetime_hr"] = pd.to_datetime(df["datetime_hr"])
         df = df.set_index("datetime_hr")
+
+    # 2024 이력에 없는 실시간 구간(target_dt가 2024 이후)은 rt_bike_status 기반 라이브
+    # 추정치로 보강한다 - 위 모듈 docstring 참고. 인구(flwpop_tot/lvgpop_tot)는 실시간
+    # 소스가 없어 NaN으로 두고(extract_population_trend가 결측을 0으로 처리), lag/rolling
+    # 피처만 살린다.
+    live_df = _live_rent_rtn_window(session, station_id, window_start, window_end)
+    if not live_df.empty:
+        for col in _WINDOW_EXTRA_COLUMNS:
+            live_df[col] = float("nan")
+        live_only = live_df.loc[~live_df.index.isin(df.index)] if not df.empty else live_df
+        df = pd.concat([df, live_only]).sort_index() if not df.empty else live_only.sort_index()
+
     return df
 
 

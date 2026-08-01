@@ -139,11 +139,6 @@ class HourlyPointOut(BaseModel):
     value: int
 
 
-class HourlyTempPointOut(BaseModel):
-    hour: int
-    avg_temp: float | None
-
-
 class WeeklyPointOut(BaseModel):
     day_of_week: int
     value: int
@@ -189,27 +184,6 @@ class PublicSummaryOut(BaseModel):
     total_bikes: int
     today_rentals: int
     as_of_label: str
-
-
-class GenderBreakdownOut(BaseModel):
-    male: int
-    female: int
-    unknown: int
-
-
-class AgeBreakdownOut(BaseModel):
-    age_10: int
-    age_20: int
-    age_30: int
-    age_40: int
-    age_50: int
-    age_60: int
-    unknown: int
-
-
-class DemographicsOut(BaseModel):
-    gender: GenderBreakdownOut
-    age: AgeBreakdownOut
 
 
 class CarbonSummaryOut(BaseModel):

@@ -1,4 +1,6 @@
-from datetime import date, timedelta
+from collections import defaultdict
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
@@ -15,19 +17,14 @@ from models.models import (
     RtWeather,
     StationStock,
     StationLoc,
-    DemandPredictionMaster2024,
 )
 from schema.response import (
-    AgeBreakdownOut,
     CarbonSummaryOut,
-    DemographicsOut,
     DispatchEfficiencyOut,
     DistrictRankingPointOut,
     FeatureImportanceOut,
     FlowEdgeOut,
-    GenderBreakdownOut,
     HourlyPointOut,
-    HourlyTempPointOut,
     ModelMonitoringOut,
     StockDistributionOut,
     TodaySummaryOut,
@@ -35,15 +32,17 @@ from schema.response import (
     WeeklyPointOut,
 )
 from serving.district import DISTRICTS
-from serving.analytics_utils import latest_available_date, total_rentals_on
 from serving.deps import get_champion_models
 from serving.district import district_name, district_id as district_id_of
 from serving.feature_group import grouped_feature_importance
+from serving.rt_flow import estimated_flow_edges, estimated_rentals
 from serving.station_lookup import get_station_names
-from serving.station_stock import classify_stock_level
+from serving.station_stock import classify_stock_level, hourly_net_outflow_by_station
 from serving.env_history import fetch_daily_avg
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+_KST = ZoneInfo("Asia/Seoul")
 
 
 @router.get("/hourly-demand", response_model=list[HourlyPointOut])
@@ -52,30 +51,15 @@ def hourly_demand(
     session: Session = Depends(get_session),
     _admin: Account = Depends(require_role("admin")),
 ) -> list[HourlyPointOut]:
-    hour_expr = func.hour(DemandPredictionMaster2024.datetime_hr)
-    stmt = select(hour_expr, func.sum(DemandPredictionMaster2024.general_rent_cnt + DemandPredictionMaster2024.sprout_rent_cnt)).group_by(hour_expr)
+    """rt_bike_status(30분 간격 실시간 거치대 스냅샷) 순감소분 기반 추정 대여량을 시(hour)별로
+    합산한다 (기간 제한 없이 수집 시작 이후 전체). 앱 자체 트랜잭션(Rental)은 서비스 초기라
+    표본이 거의 없어, 계속 쌓이는 이 실시간 스냅샷이 실제 이용 패턴을 보여줄 수 있는 사실상
+    유일한 소스다 (serving/rt_flow.py의 estimated_rentals 참고)."""
     name = district_name(district_id) if district_id else None
-    if name:
-        stmt = stmt.where(DemandPredictionMaster2024.district == name)
-    rows = session.execute(stmt).all()
-    by_hour = {int(h): int(v or 0) for h, v in rows}
+    by_hour: dict[int, int] = defaultdict(int)
+    for _station_id, t0, cnt in estimated_rentals(session, name):
+        by_hour[t0.hour] += cnt
     return [HourlyPointOut(hour=h, value=by_hour.get(h, 0)) for h in range(24)]
-
-
-@router.get("/hourly-temperature", response_model=list[HourlyTempPointOut])
-def hourly_temperature(
-    district_id: int | None = None,
-    session: Session = Depends(get_session),
-    _admin: Account = Depends(require_role("admin")),
-) -> list[HourlyTempPointOut]:
-    hour_expr = func.hour(DemandPredictionMaster2024.datetime_hr)
-    stmt = select(hour_expr, func.avg(DemandPredictionMaster2024.temperature)).group_by(hour_expr)
-    name = district_name(district_id) if district_id else None
-    if name:
-        stmt = stmt.where(DemandPredictionMaster2024.district == name)
-    rows = session.execute(stmt).all()
-    by_hour = {int(h): (round(float(v), 1) if v is not None else None) for h, v in rows}
-    return [HourlyTempPointOut(hour=h, avg_temp=by_hour.get(h)) for h in range(24)]
 
 
 @router.get("/weekly-demand", response_model=list[WeeklyPointOut])
@@ -84,15 +68,12 @@ def weekly_demand(
     session: Session = Depends(get_session),
     _admin: Account = Depends(require_role("admin")),
 ) -> list[WeeklyPointOut]:
-    stmt = select(
-        DemandPredictionMaster2024.day_of_week,
-        func.sum(DemandPredictionMaster2024.general_rent_cnt + DemandPredictionMaster2024.sprout_rent_cnt),
-    ).group_by(DemandPredictionMaster2024.day_of_week)
+    """rt_bike_status 기반 추정 대여량을 요일별로 합산한다. datetime.weekday()는
+    0=월요일~6=일요일이라 기존 day_of_week 규약과 그대로 맞는다."""
     name = district_name(district_id) if district_id else None
-    if name:
-        stmt = stmt.where(DemandPredictionMaster2024.district == name)
-    rows = session.execute(stmt).all()
-    by_dow = {int(d): int(v or 0) for d, v in rows}
+    by_dow: dict[int, int] = defaultdict(int)
+    for _station_id, t0, cnt in estimated_rentals(session, name):
+        by_dow[t0.weekday()] += cnt
     return [WeeklyPointOut(day_of_week=d, value=by_dow.get(d, 0)) for d in range(7)]
 
 
@@ -107,11 +88,12 @@ def stock_distribution(
     if name:
         stmt = stmt.where(StationLoc.district == name)
     rows = session.execute(stmt).all()
+    net_outflow_by_id = hourly_net_outflow_by_station(session)
 
     counts = {"과포화": 0, "고갈": 0, "부족": 0, "적정": 0}
     for inv, _district in rows:
         total = inv.general_bike_cnt + inv.sprout_bike_cnt
-        level = classify_stock_level(total, inv.capacity)
+        level = classify_stock_level(total, inv.capacity, net_outflow_by_id.get(inv.station_id, 0.0))
         counts[level] += 1
 
     return StockDistributionOut(
@@ -125,9 +107,16 @@ def today_summary(
     session: Session = Depends(get_session),
     _admin: Account = Depends(require_role("admin")),
 ) -> TodaySummaryOut:
+    """'금일'을 서버 OS 타임존이 아니라 항상 서울 시각(KST) 기준으로 고정한다
+    (serving/demand_prediction_forecast.py의 _KST와 동일한 이유)."""
     name = district_name(district_id) if district_id else None
-    latest_date = latest_available_date(session)
-    rentals = total_rentals_on(session, latest_date, name)
+    today = datetime.now(_KST).date()
+    day_start = datetime.combine(today, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
+
+    # rt_bike_status 순감소분 기반 추정치 - Rental(앱 자체 트랜잭션)은 서비스 초기라
+    # 표본이 거의 없어 "금일 총 대여량"이 사실상 항상 0으로 보이는 문제가 있었다.
+    rentals = sum(cnt for _sid, _t0, cnt in estimated_rentals(session, name, start=day_start, end=day_end))
 
     urgent_stmt = select(func.count()).select_from(Dispatch).where(
         Dispatch.status != "완료", Dispatch.is_emergency.is_(True)
@@ -142,15 +131,21 @@ def today_summary(
     if name:
         inv_stmt = inv_stmt.where(StationLoc.district == name)
     inv_rows = session.execute(inv_stmt).scalars().all()
+    net_outflow_by_id = hourly_net_outflow_by_station(session)
     full_count = sum(
-        1 for inv in inv_rows if classify_stock_level(inv.general_bike_cnt + inv.sprout_bike_cnt, inv.capacity) == "과포화"
+        1
+        for inv in inv_rows
+        if classify_stock_level(
+            inv.general_bike_cnt + inv.sprout_bike_cnt, inv.capacity, net_outflow_by_id.get(inv.station_id, 0.0)
+        )
+        == "과포화"
     )
 
     return TodaySummaryOut(
         today_rentals=rentals,
         urgent_dispatch_count=urgent_count,
         full_station_count=full_count,
-        as_of_label=latest_date.isoformat() if latest_date else "",
+        as_of_label=today.isoformat(),
     )
 
 
@@ -218,18 +213,25 @@ def flow_edges(
     _admin: Account = Depends(require_role("admin")),
 ) -> list[FlowEdgeOut]:
     """
-    실제 완료된 대여(Rental.rent_station_id -> return_station_id)를 대여소 쌍으로
-    집계한 이동 흐름. 과거 CSV 이력(rent_history/demand_predict_master)에는 출발-도착
-    쌍이 없어(대여소별 집계만 존재) 이 지표는 우리 앱 자체 이용 트랜잭션에서만 산출
-    가능하다 - 서비스 초기에는 표본이 적어 흐름이 드문드문 보일 수 있다는 한계가 있다.
-    같은 대여소로 반납한 건(이동이 아님)은 집계에서 제외한다.
+    대여소 쌍 간 이동 흐름 = (1) 완료된 실제 대여(Rental.rent_station_id ->
+    return_station_id, 정확한 실측치) + (2) rt_bike_status 순감소/순증가역을 같은 수집
+    버킷 안에서 최근접 거리로 짝지은 근사 추정치(serving/rt_flow.py의
+    estimated_flow_edges)를 station 쌍 단위로 합산한 값이다.
+
+    서울시 공공 API(bikeList)는 대여소별 재고 스냅샷만 제공하고 자전거 개별 이동 경로
+    (출발-도착 쌍)는 주지 않으므로, (2)는 실제 이동 경로가 아니라 "비슷한 시각에 감소한
+    역과 증가한 역을 가깝다는 이유로 엮은" 통계적 추정일 뿐이다 - Rental만으로는 표본이
+    적어 보이지 않는 서울시 전체 이용 규모를 함께 보여주기 위한 근사치다. 같은 대여소로
+    반납한 건(이동이 아님)은 두 소스 모두 집계에서 제외한다.
     """
-    stmt = (
-        select(
-            Rental.rent_station_id,
-            Rental.return_station_id,
-            func.count().label("flow"),
-        )
+    name = district_name(district_id) if district_id else None
+
+    flow_counts: dict[tuple[str, str], int] = defaultdict(int)
+    for (from_id, to_id), cnt in estimated_flow_edges(session, name).items():
+        flow_counts[(from_id, to_id)] += cnt
+
+    rental_stmt = (
+        select(Rental.rent_station_id, Rental.return_station_id, func.count())
         .where(
             Rental.status == "완료",
             Rental.return_station_id.is_not(None),
@@ -237,14 +239,16 @@ def flow_edges(
         )
         .group_by(Rental.rent_station_id, Rental.return_station_id)
     )
-    name = district_name(district_id) if district_id else None
     if name:
-        stmt = stmt.join(StationLoc, StationLoc.station_id == Rental.rent_station_id).where(
+        rental_stmt = rental_stmt.join(StationLoc, StationLoc.station_id == Rental.rent_station_id).where(
             StationLoc.district == name
         )
-    rows = session.execute(stmt.order_by(func.count().desc()).limit(limit)).all()
+    for from_id, to_id, cnt in session.execute(rental_stmt).all():
+        flow_counts[(from_id, to_id)] += int(cnt)
 
-    station_ids = {sid for row in rows for sid in (row.rent_station_id, row.return_station_id)}
+    top = sorted(flow_counts.items(), key=lambda kv: kv[1], reverse=True)[:limit]
+
+    station_ids = {sid for pair, _cnt in top for sid in pair}
     names = get_station_names(session, station_ids)
     districts_by_station = dict(
         session.execute(
@@ -254,43 +258,14 @@ def flow_edges(
 
     return [
         FlowEdgeOut(
-            from_station_id=row.rent_station_id,
-            from_station_name=names.get(row.rent_station_id),
-            to_station_id=row.return_station_id,
-            to_station_name=names.get(row.return_station_id),
-            district_id=district_id_of(districts_by_station.get(row.rent_station_id)),
-            flow=int(row.flow),
+            from_station_id=from_id,
+            from_station_name=names.get(from_id),
+            to_station_id=to_id,
+            to_station_name=names.get(to_id),
+            district_id=district_id_of(districts_by_station.get(from_id)),
+            flow=cnt,
         )
-        for row in rows
-    ]
-
-
-@router.get("/foot-traffic-demand", response_model=list[HourlyPointOut])
-def foot_traffic_demand(
-    district_id: int | None = None,
-    session: Session = Depends(get_session),
-    _admin: Account = Depends(require_role("admin")),
-) -> list[HourlyPointOut]:
-    """
-    챔피언 ML 모델의 실제 예측값이 아니라, 시간대별 유동인구 비중을 해당 범위의
-    전체 실제 대여량에 곱한 규칙 기반 근사 수요선이다 (콤보 차트의 점선).
-    '유동인구가 몰리는 시간대에 대여도 몰릴 것'이라는 가정을 시각화하는 지표.
-    """
-    hour_expr = func.hour(DemandPredictionMaster2024.datetime_hr)
-    flwpop_stmt = select(hour_expr, func.avg(DemandPredictionMaster2024.flwpop_tot)).group_by(hour_expr)
-    total_stmt = select(func.sum(DemandPredictionMaster2024.general_rent_cnt + DemandPredictionMaster2024.sprout_rent_cnt))
-    name = district_name(district_id) if district_id else None
-    if name:
-        flwpop_stmt = flwpop_stmt.where(DemandPredictionMaster2024.district == name)
-        total_stmt = total_stmt.where(DemandPredictionMaster2024.district == name)
-
-    flwpop_by_hour = {int(h): float(v or 0.0) for h, v in session.execute(flwpop_stmt).all()}
-    total_flwpop = sum(flwpop_by_hour.values()) or 1.0
-    total_actual = int(session.execute(total_stmt).scalar_one_or_none() or 0)
-
-    return [
-        HourlyPointOut(hour=h, value=round(flwpop_by_hour.get(h, 0.0) / total_flwpop * total_actual))
-        for h in range(24)
+        for (from_id, to_id), cnt in top
     ]
 
 
@@ -302,33 +277,39 @@ def weather_index(
 ) -> list[HourlyPointOut]:
     """
     기온/강수량/미세먼지를 하나의 '자전거 타기 좋은 날씨 지수'(0~100)로 합성한다.
+    실시간 관측 테이블(RtWeather/RtAir, KMA 초단기실황 수집분)을 시(hour)별로 평균낸 값을
+    쓴다 - district 필터는 serving/env.py의 get_target_hour_weather와 동일하게 region_name을
+    자치구명으로 취급해 조회한다.
     - 기온: 22도(체감상 자전거 타기 좋은 기준)에서 최고점, 멀어질수록 4점/도 감점
     - 강수: 비/눈이 있으면 mm당 20점 감점 (0mm면 만점)
     - 미세먼지: pm10 수치에 비례해 감점
     가중치(기온 40% : 강수 35% : 미세먼지 25%)는 자전거 이용 결정에 기온이 가장
     크게 작용한다는 도메인 가정에 따른 근사치이며, 정교한 회귀식이 아니다.
     """
-    hour_expr = func.hour(DemandPredictionMaster2024.datetime_hr)
-    stmt = select(
-        hour_expr,
-        func.avg(DemandPredictionMaster2024.temperature),
-        func.avg(DemandPredictionMaster2024.precipitation),
-        func.avg(DemandPredictionMaster2024.pm10),
-    ).group_by(hour_expr)
     name = district_name(district_id) if district_id else None
+
+    w_hour_expr = func.hour(RtWeather.measure_date)
+    w_stmt = select(w_hour_expr, func.avg(RtWeather.temperature), func.avg(RtWeather.precipitation)).group_by(w_hour_expr)
     if name:
-        stmt = stmt.where(DemandPredictionMaster2024.district == name)
+        w_stmt = w_stmt.where(RtWeather.region_name == name)
+
+    a_hour_expr = func.hour(RtAir.measure_date)
+    a_stmt = select(a_hour_expr, func.avg(RtAir.pm10)).group_by(a_hour_expr)
+    if name:
+        a_stmt = a_stmt.where(RtAir.region_name == name)
+
+    temp_rain_by_hour = {int(h): (float(t or 0.0), float(r or 0.0)) for h, t, r in session.execute(w_stmt).all()}
+    pm10_by_hour = {int(h): float(p or 0.0) for h, p in session.execute(a_stmt).all()}
 
     by_hour: dict[int, int] = {}
-    for h, temp, rain, pm10 in session.execute(stmt).all():
-        temp = float(temp or 0.0)
-        rain = float(rain or 0.0)
-        pm10 = float(pm10 or 0.0)
+    for h in range(24):
+        temp, rain = temp_rain_by_hour.get(h, (0.0, 0.0))
+        pm10 = pm10_by_hour.get(h, 0.0)
         temp_score = max(0.0, 100.0 - abs(temp - 22.0) * 4.0)
         rain_score = 100.0 if rain <= 0 else max(0.0, 100.0 - rain * 20.0)
         pm10_score = max(0.0, min(100.0, 100.0 - pm10 * 0.5))
         index = temp_score * 0.4 + rain_score * 0.35 + pm10_score * 0.25
-        by_hour[int(h)] = round(index)
+        by_hour[h] = round(index)
 
     return [HourlyPointOut(hour=h, value=by_hour.get(h, 0)) for h in range(24)]
 
@@ -389,41 +370,6 @@ def model_monitoring(
         actual=[HourlyPointOut(hour=h, value=by_hour[h].actual_total if h in by_hour else 0) for h in range(24)],
         predicted=[HourlyPointOut(hour=h, value=by_hour[h].predicted_total if h in by_hour else 0) for h in range(24)],
         sample_station_cnt=rows[0].sample_station_cnt if rows else 0,
-    )
-
-
-@router.get("/demographics", response_model=DemographicsOut)
-def demographics(
-    district_id: int | None = None,
-    session: Session = Depends(get_session),
-    _admin: Account = Depends(require_role("admin")),
-) -> DemographicsOut:
-    """
-    demand_prediction_master_2024에 누적된 대여 건수를 성별/연령대별로 합산한다.
-    실시간 대여(Rental)는 개인정보상 성별/연령을 수집하지 않으므로, 과거 이력
-    데이터(공공데이터 기반 집계치)로 이용자 구성을 근사한다.
-    """
-    stmt = select(
-        func.sum(DemandPredictionMaster2024.rent_male_cnt),
-        func.sum(DemandPredictionMaster2024.rent_female_cnt),
-        func.sum(DemandPredictionMaster2024.rent_gender_unk_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_10_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_20_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_30_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_40_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_50_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_60_cnt),
-        func.sum(DemandPredictionMaster2024.rent_age_unk_cnt),
-    )
-    name = district_name(district_id) if district_id else None
-    if name:
-        stmt = stmt.where(DemandPredictionMaster2024.district == name)
-    row = session.execute(stmt).one()
-    male, female, gender_unk, a10, a20, a30, a40, a50, a60, age_unk = (int(v or 0) for v in row)
-
-    return DemographicsOut(
-        gender=GenderBreakdownOut(male=male, female=female, unknown=gender_unk),
-        age=AgeBreakdownOut(age_10=a10, age_20=a20, age_30=a30, age_40=a40, age_50=a50, age_60=a60, unknown=age_unk),
     )
 
 
@@ -495,12 +441,20 @@ def district_ranking(
     session: Session = Depends(get_session),
     _admin: Account = Depends(require_role("admin")),
 ) -> list[DistrictRankingPointOut]:
-    """자치구별 누적 대여량 랭킹 (전체 자치구 뷰에서 구간 비교용)."""
-    stmt = select(
-        DemandPredictionMaster2024.district,
-        func.sum(DemandPredictionMaster2024.general_rent_cnt + DemandPredictionMaster2024.sprout_rent_cnt),
-    ).group_by(DemandPredictionMaster2024.district)
-    by_name = {name: int(v or 0) for name, v in session.execute(stmt).all()}
+    """자치구별 rt_bike_status 기반 추정 대여량 랭킹 (전체 자치구 뷰에서 구간 비교용)."""
+    events = estimated_rentals(session)
+    station_ids = {sid for sid, _t0, _cnt in events}
+    districts_by_station = dict(
+        session.execute(
+            select(StationLoc.station_id, StationLoc.district).where(StationLoc.station_id.in_(station_ids))
+        ).all()
+    ) if station_ids else {}
+
+    by_name: dict[str, int] = defaultdict(int)
+    for station_id, _t0, cnt in events:
+        d = districts_by_station.get(station_id)
+        if d:
+            by_name[d] += cnt
 
     points = [
         DistrictRankingPointOut(district_id=d["id"], district_name=d["name"], value=by_name.get(d["name"], 0))

@@ -121,7 +121,7 @@ function taskCardHtml(t) {
     var footer = '';
     if (t.status === '대기') {
         var blockedByActiveOrder = hasActiveDispatch();
-        footer = '<button type="button" class="btn btn-start w-100 fw-bold py-3 rounded-3" ' + (blockedByActiveOrder ? 'disabled title="수행 중인 지시서를 완료한 후 처리할 수 있습니다."' : '') + ' onclick="startTask(\'' + t.key + '\')"><i class="bi bi-play-fill me-2"></i>지시 시작</button>';
+        footer = '<button type="button" class="btn btn-start w-100 fw-bold py-3 rounded-3" ' + (blockedByActiveOrder ? 'disabled title="수행 중인 지시서를 완료한 후 처리할 수 있습니다."' : '') + ' onclick="startTask(\'' + t.key + '\')"><i class="bi bi-play-fill me-2"></i>수행 시작</button>';
     } else if (t.status === '진행중') {
         // 완료 처리는 팝업 안(완료 버튼)에서만 하고, 카드에는 항상 "지시 수행 중"만 보여준다.
         // 이 지시서의 QR/ID 스캔 팝업이 열려 있는 동안에는(=팝업 뒤에 보이는 동안) 회색으로, 닫히면 다시 초록색으로 표시한다.

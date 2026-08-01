@@ -74,11 +74,9 @@ async function safeGet(path, fallback) {
 
 // 1. 흐름 시각화 (전체 자치구: 가로 막대 Top 10 / 특정 자치구: Sankey)
 async function renderFlowChart() {
-    var subtitleEl = document.getElementById('flowChartSubtitle');
     var edges = await safeGet(withDistrict('/analytics/flow?limit=30'), []);
 
     if (!filterState.districtId) {
-        if (subtitleEl) subtitleEl.textContent = '서울시 전체 대여량이 가장 많은 주요 이동 경로 (Top 10, 완료된 실제 대여 기준)';
         var globalData = edges.slice().sort(function (a, b) { return b.flow - a.flow; }).slice(0, 10);
         var fromLabels = globalData.map(function (d) { return d.from_station_name || d.from_station_id; });
         var toLabels = globalData.map(function (d) { return d.to_station_name || d.to_station_id; });
@@ -145,9 +143,6 @@ async function renderFlowChart() {
             });
         });
     } else {
-        var districtName = getDistrict(filterState.districtId)?.name || '';
-        if (subtitleEl) subtitleEl.textContent = districtName + ' 내 주요 거점 간 이동 경로 (선의 굵기가 이동량을 나타냅니다, 완료된 실제 대여 기준)';
-
         var sankeyData = edges.map(function (item) {
             return { from: item.from_station_name || item.from_station_id, to: item.to_station_name || item.to_station_id, flow: item.flow };
         });
@@ -181,18 +176,13 @@ async function renderFlowChart() {
     }
 }
 
-// 2. 콤보 차트: 실제 대여량(막대) vs 유동인구 기반 예측 수요(점선)
+// 2. 콤보 차트: 시간대별 실제 대여량 (누적 실시간 데이터)
 async function renderComboChart() {
-    var results = await Promise.all([
-        safeGet(withDistrict('/analytics/hourly-demand'), []),
-        safeGet(withDistrict('/analytics/foot-traffic-demand'), [])
-    ]);
-    var actualByHour = results[0], predByHour = results[1];
+    var actualByHour = await safeGet(withDistrict('/analytics/hourly-demand'), []);
     var hasData = actualByHour.length > 0;
 
     renderChartOrEmpty('comboChart', hasData, function (el) {
         var actualDemand = actualByHour.map(function (d) { return d.value; });
-        var predDemand = predByHour.map(function (d) { return d.value; });
         var labels = actualByHour.map(function (d) { return (d.hour < 10 ? '0' : '') + d.hour + '시'; });
 
         new Chart(el, {
@@ -200,11 +190,6 @@ async function renderComboChart() {
             data: {
                 labels: labels,
                 datasets: [
-                    {
-                        type: 'line', label: '예측 수요 (유동인구 기반)', data: predDemand,
-                        borderColor: CHART_COLORS.red, backgroundColor: CHART_COLORS.red,
-                        borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0
-                    },
                     {
                         type: 'bar', label: '실제 대여량', data: actualDemand,
                         backgroundColor: CHART_COLORS.green, borderRadius: 4
@@ -259,20 +244,23 @@ async function renderLagImportanceChart() {
 // 4. 어제(달력 기준) 실시간 재고 변화 기반 실제 이용 추정치 vs AI 예측량 비교
 // (야간 배치가 rt_bike_status 순감소량으로 채워둔 demand_prediction_forecast를 그대로 읽음)
 async function renderActualVsPredChart() {
-    var districtName = filterState.districtId ? (getDistrict(filterState.districtId)?.name || '서울시 전체') : '서울시 전체';
+    var requestedDistrictId = filterState.districtId;
+    var districtName = requestedDistrictId ? (getDistrict(requestedDistrictId)?.name || '서울시 전체') : '서울시 전체';
     var titleEl = document.getElementById('actualVsPredTitle');
-    var subtitleEl = document.getElementById('actualVsPredSubtitle');
+    var dateEl = document.getElementById('actualVsPredDate');
 
     var monitoring = await safeGet(withDistrict('/analytics/model-monitoring'), null);
+    // await 도중 자치구 필터가 바뀌었으면(전체→마포구를 빠르게 전환하는 등) 이 응답은 이미
+    // 낡은 요청이다 - 그대로 반영하면 나중에 도착한 이전 필터의 응답이 최신 필터의 제목/차트를
+    // 덮어써버린다.
+    if (filterState.districtId !== requestedDistrictId) return;
     var hasData = !!(monitoring && (monitoring.actual || []).some(function (d) { return d.value > 0; }));
 
     if (titleEl) {
-        titleEl.textContent = monitoring
-            ? districtName + ' ' + monitoring.as_of_label + '(어제) 실제 이용 vs AI 예측량 비교'
-            : districtName + ' 실제 이용 vs AI 예측량 비교';
+        titleEl.textContent = districtName + ' 실제 이용 vs AI 예측량 비교';
     }
-    if (subtitleEl && monitoring) {
-        subtitleEl.textContent = '실시간 거치대 재고 변화(rt_bike_status, 30분 간격 수집)로 추정한 ' + monitoring.as_of_label + ' 실제 이용량과 AI 예측 비교 · 배차 재배치 물량이 섞여 순수 대여량과 오차가 있을 수 있고, 수집이 짧게 쌓인 시간대는 비어 보일 수 있습니다';
+    if (dateEl) {
+        dateEl.textContent = monitoring ? monitoring.as_of_label + ' 기준' : '';
     }
 
     renderChartOrEmpty('actualVsPredChart', hasData, function (el) {
@@ -332,7 +320,7 @@ function renderHeatmapChart() {
                         callbacks: {
                             label: function (ctx) {
                                 var p = ctx.raw;
-                                var status = p.diff < 0 ? '부족' : '과잉';
+                                var status = p.diff < 0 ? '고갈' : '과포화';
                                 return p.name + ' (' + Math.abs(p.diff) + '대 ' + status + ')';
                             }
                         }
@@ -462,58 +450,6 @@ async function renderStockDistChart() {
     });
 }
 
-// 이용자 성별/연령대 구성 (과거 대여 이력 데이터 기반 근사)
-async function renderDemographicsCharts() {
-    var demo = await safeGet(withDistrict('/analytics/demographics'), null);
-    var hasGenderData = !!demo && (demo.gender.male + demo.gender.female + demo.gender.unknown) > 0;
-    var hasAgeData = !!demo && Object.keys(demo.age).some(function (k) { return demo.age[k] > 0; });
-
-    renderChartOrEmpty('genderChart', hasGenderData, function (el) {
-        new Chart(el, {
-            type: 'doughnut',
-            data: {
-                labels: ['남성', '여성', '미상'],
-                datasets: [{
-                    data: [demo.gender.male, demo.gender.female, demo.gender.unknown],
-                    backgroundColor: [CHART_COLORS.blue, CHART_COLORS.red, CHART_COLORS.gray],
-                    borderWidth: 2, borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } } }
-            }
-        });
-    });
-
-    renderChartOrEmpty('ageChart', hasAgeData, function (el) {
-        var ageLabels = ['10대 이하', '20대', '30대', '40대', '50대', '60대 이상'];
-        var ageValues = demo ? [demo.age.age_10, demo.age.age_20, demo.age.age_30, demo.age.age_40, demo.age.age_50, demo.age.age_60] : [];
-
-        new Chart(el, {
-            type: 'bar',
-            data: {
-                labels: ageLabels,
-                datasets: [{
-                    label: '대여 건수',
-                    data: ageValues,
-                    backgroundColor: CHART_COLORS.orange,
-                    borderRadius: 6,
-                    barPercentage: 0.65
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: function (ctx) { return fmtNum(ctx.parsed.y) + '건'; } } }
-                },
-                scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' } } }
-            }
-        });
-    });
-}
-
 // 자치구별 대여량 랭킹 (전체 자치구 보기에서만 노출)
 async function renderDistrictRankingChart() {
     var card = document.getElementById('districtRankingCard');
@@ -562,26 +498,6 @@ async function renderDispatchEfficiency() {
     document.getElementById('statEmergencyCnt').textContent = eff ? fmtNum(eff.emergency_cnt) : '-';
     document.getElementById('statCompletedCnt').textContent = eff ? fmtNum(eff.completed_cnt) : '-';
     document.getElementById('statPendingCnt').textContent = eff ? fmtNum(eff.pending_cnt) : '-';
-}
-
-// 만성 불균형 리스트 CSV 내보내기 (현재 화면에 표시된 고갈/과포화 대여소 기준)
-function exportChronicListCsv() {
-    var stations = getScopedStations();
-    var rows = stations.filter(function (s) { return s.stock_level === '고갈' || s.stock_level === '과포화'; });
-    var header = ['대여소명', '자치구', '행정동', '상태', '보유대수', '거치대수'];
-    var lines = [header.join(',')].concat(rows.map(function (s) {
-        return [s.name, s.district_name || '', s.neighborhood_name || '', s.stock_level, s.total_bikes, s.capacity]
-            .map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
-    }));
-    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = '만성불균형_대여소_' + new Date().toISOString().slice(0, 10) + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 }
 
 // 만성 불균형 대여소 리스트 (실제 stock_level 기준)
@@ -684,7 +600,6 @@ async function renderAll() {
         renderActualVsPredChart(),
         renderWeeklyChart(),
         renderStockDistChart(),
-        renderDemographicsCharts(),
         renderDistrictRankingChart(),
         renderDispatchEfficiency()
     ]);
@@ -712,9 +627,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         allStations = [];
         districts = [];
     }
-
-    var csvBtn = document.getElementById('chronicCsvBtn');
-    if (csvBtn) csvBtn.addEventListener('click', exportChronicListCsv);
 
     renderAll();
 });

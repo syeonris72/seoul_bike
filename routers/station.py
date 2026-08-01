@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select, update
@@ -21,18 +22,22 @@ from schema.response import (
     StationDetailOut,
     StationOut,
 )
-from serving.analytics_utils import latest_available_date, total_rentals_on
 from serving.district import DISTRICTS, district_id as district_name_to_id, district_name
 from serving.mapping import haversine_km, project_latlon_to_canvas
+from serving.rt_flow import estimated_rentals
 from serving.station_lookup import get_station_names, resolve_neighborhood
-from serving.station_stock import classify_stock_level
+from serving.station_stock import classify_stock_level, hourly_net_outflow_by_station
 
 router = APIRouter(prefix="/station", tags=["station"])
+
+_KST = ZoneInfo("Asia/Seoul")
 
 _CARBON_KG_PER_KM = 0.21  # 승용차 대비 km당 평균 CO2 절감량 근사치
 
 
-def _station_out(station: StationLoc, inv: StationStock | None, name: str | None) -> StationOut:
+def _station_out(
+    station: StationLoc, inv: StationStock | None, name: str | None, expected_net_outflow: float = 0.0
+) -> StationOut:
     capacity = inv.capacity if inv else 0
     general = inv.general_bike_cnt if inv else 0
     sprout = inv.sprout_bike_cnt if inv else 0
@@ -56,7 +61,7 @@ def _station_out(station: StationLoc, inv: StationStock | None, name: str | None
         sprout_bike_cnt=sprout,
         broken_bike_cnt=broken,
         total_bikes=total,
-        stock_level=classify_stock_level(total, capacity),
+        stock_level=classify_stock_level(total, capacity, expected_net_outflow),
     )
 
 
@@ -66,12 +71,22 @@ def public_summary(session: Session = Depends(get_session)) -> PublicSummaryOut:
     total_bikes = session.execute(
         select(func.coalesce(func.sum(StationStock.general_bike_cnt + StationStock.sprout_bike_cnt), 0))
     ).scalar_one()
-    latest_date = latest_available_date(session)
+
+    # 관리자 데이터 분석 페이지의 "금일 총 대여량"(routers/analytics.py today_summary)과
+    # 같은 rt_bike_status 기반 실시간 추정치를 써야 랜딩 페이지 "일일 대여" 수치와
+    # 어긋나지 않는다 - 예전엔 여기만 demand_prediction_master_2024의 최근 가용
+    # 날짜(2024년 데이터)를 썼는데, 그 값은 실제 오늘(KST)과 무관해 두 화면의 숫자가
+    # 서로 맞지 않는 문제가 있었다.
+    today = datetime.now(_KST).date()
+    day_start = datetime.combine(today, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
+    today_rentals = sum(cnt for _sid, _t0, cnt in estimated_rentals(session, None, start=day_start, end=day_end))
+
     return PublicSummaryOut(
         station_count=station_count,
         total_bikes=int(total_bikes),
-        today_rentals=total_rentals_on(session, latest_date),
-        as_of_label=latest_date.isoformat() if latest_date else "",
+        today_rentals=today_rentals,
+        as_of_label=today.isoformat(),
     )
 
 
@@ -92,8 +107,12 @@ def list_stations(
     inv_rows = session.execute(select(StationStock)).scalars().all()
     inv_by_id = {row.station_id: row for row in inv_rows}
     names = get_station_names(session, [s.station_id for s in stations])
+    net_outflow_by_id = hourly_net_outflow_by_station(session)
 
-    result = [_station_out(s, inv_by_id.get(s.station_id), names.get(s.station_id)) for s in stations]
+    result = [
+        _station_out(s, inv_by_id.get(s.station_id), names.get(s.station_id), net_outflow_by_id.get(s.station_id, 0.0))
+        for s in stations
+    ]
     if stock_level:
         wanted = set(stock_level.split(","))
         result = [r for r in result if r.stock_level in wanted]
@@ -111,7 +130,8 @@ def get_station(
         raise HTTPException(404, f"Unknown station_id: {station_id}")
     inv = session.get(StationStock, station_id)
     names = get_station_names(session, [station_id])
-    base = _station_out(station, inv, names.get(station_id))
+    net_outflow = hourly_net_outflow_by_station(session, station_ids=[station_id]).get(station_id, 0.0)
+    base = _station_out(station, inv, names.get(station_id), net_outflow)
     # neighborhood_name은 이제 address_1에서 뽑아낸 값이라(serving/station_lookup.extract_neighborhood)
     # 다시 이어붙이면 중복된다 - address_1 자체가 이미 완전한 주소.
     return StationDetailOut(**base.model_dump(), address=station.address_1)

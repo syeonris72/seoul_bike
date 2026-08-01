@@ -2,7 +2,7 @@
 전일(실제 달력 기준 어제) 실시간 대여소 재고 변화량과 챔피언 모델의 backtest 예측치를
 시간대별로 비교해 demand_prediction_forecast에 적재하는 야간 배치.
 
-"실제"는 more_prediction_master_2024(2024년 고정 이력)가 아니라 rt_bike_status - 30분
+"실제"는 demand_prediction_master_2024(2024년 고정 이력)가 아니라 rt_bike_status - 30분
 간격으로 serving/scheduler.py가 계속 쌓는 실시간 거치대 스냅샷 - 에서 뽑는다. 같은 대여소의
 연속된 두 스냅샷 사이에 parked_bike_cnt가 줄었으면 그만큼 대여가 일어난 것으로 추정한다
 (반대로 늘었으면 반납/배차 재배치). 배차 트럭이 자전거를 옮기는 경우도 같은 방식으로 카운트돼
@@ -15,63 +15,53 @@ N개 대여소만 실제로 backtest하고, (자치구 실제 합계 / 표본 �
 자치구 전체 예측치를 근사한다. serving/scheduler.py가 매일 새벽 한 번 이 함수를 호출해
 결과를 테이블에 저장해두면, /analytics/model-monitoring은 그 결과만 읽어 즉시 응답한다.
 
-예측치 쪽 알려진 한계: build_feature_row는 demand_prediction_master_2024에 정확히 일치하는
-행이 있을 때만(2024년 날짜) 과거 대여 이력(lag1h~lag168h) 피처를 채운다. 어제(2026년 이후
-날짜)는 그 테이블에 없으므로 lag 계열 피처가 전부 0으로 근사된다 - routers/predict.py의
+예측치 쪽 알려진 한계: build_feature_row/fetch_station_window(serving/rent_history.py)는
+demand_prediction_master_2024에 없는 날짜(2024년 이후, 즉 이 배치가 다루는 "어제")의 lag/
+rolling 피처를 rt_bike_status 기반 라이브 추정치로 채운다. 다만 lag24h/lag168h처럼 하루/
+일주일 전 정확한 시각이 필요한 값은 그만큼 연속 수집 이력이 쌓이기 전까지는 여전히 0이고,
+일반/새싹 자전거 배분도 2024년 전체 평균 비율로 근사한 값이다 - routers/predict.py의
 실시간 다음 시간 예측과 완전히 동일한 경로/한계이며, 이 배치가 새로 만든 문제가 아니다.
 """
 import logging
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from database.db_connection import engine
-from models.models import DemandPredictionForecast, RtBikeStatus, StationLoc
+from models.models import DemandPredictionForecast
 from serving.district import DISTRICTS
 from serving.feature import StationNotFoundError, build_feature_row
+from serving.rt_flow import estimated_rentals
 from serving.target_encoding import TargetEncodingCache
 
 logger = logging.getLogger(__name__)
 
+# 서버 OS 타임존이 KST가 아닐 수 있어(배포 환경은 대개 UTC) date.today()에 기대면 "어제"가
+# 하루 밀리거나 당겨질 수 있다. 이 배치는 항상 서울 시각 기준으로 날짜를 계산한다
+# (serving/scheduler.py의 cron도 이미 timezone="Asia/Seoul"로 고정돼 있어 실행 시각 자체는
+# 맞지만, 그 안에서 "오늘이 며칠인지"는 별도로 KST로 고정해야 한다).
+_KST = ZoneInfo("Asia/Seoul")
+
 _SAMPLE_STATIONS_PER_DISTRICT = 8  # 클수록 근사치가 정확해지지만 배치 시간이 늘어난다
 _RENT_TARGETS = ("general_rent_cnt", "sprout_rent_cnt")  # "총 대여량" = 이 둘의 합 (다른 analytics 엔드포인트와 동일한 정의)
-
-# 스케줄러 기본 수집 주기(30분)의 1.5배. 서버 재시작 등으로 수집 공백이 생기면 그사이 몇 시간치
-# 누적 변화량이 통째로 한 시간 버킷에 잡혀 스파이크가 생긴다 - 이 폭 밖의 간격은 신뢰할 수 없는
-# 구간으로 보고 건너뛴다(과대집계보다 과소집계가 안전하다는 판단).
-_MAX_SNAPSHOT_GAP = timedelta(minutes=45)
 
 
 def _real_actual_by_hour_per_station(
     session: Session, target_date, district_name: str | None
 ) -> dict[str, dict[int, int]]:
-    """target_date 하루 동안 rt_bike_status 스냅샷의 연속 감소분을 대여소별/시간대별로 합산한다."""
-    stmt = (
-        select(RtBikeStatus.station_id, RtBikeStatus.created_at, RtBikeStatus.parked_bike_cnt)
-        .where(func.date(RtBikeStatus.created_at) == target_date)
-        .order_by(RtBikeStatus.station_id, RtBikeStatus.created_at)
-    )
-    if district_name:
-        stmt = stmt.join(StationLoc, StationLoc.station_id == RtBikeStatus.station_id).where(
-            StationLoc.district == district_name
-        )
-    rows = session.execute(stmt).all()
-
-    snapshots_by_station: dict[str, list[tuple[datetime, int]]] = defaultdict(list)
-    for station_id, created_at, parked_cnt in rows:
-        snapshots_by_station[station_id].append((created_at, int(parked_cnt or 0)))
+    """target_date 하루 동안의 실제 대여량을 대여소별/시간대별로 합산한다. rt_bike_status
+    스냅샷의 연속 감소분(외부 공공 API 기준)에, 같은 날 우리 앱에서 직접 발생한 대여
+    (Rental, serving/rt_flow.py의 estimated_rentals가 병합)까지 더한 값이다."""
+    day_start = datetime.combine(target_date, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
 
     result: dict[str, dict[int, int]] = defaultdict(lambda: defaultdict(int))
-    for station_id, snapshots in snapshots_by_station.items():
-        for (t0, c0), (t1, c1) in zip(snapshots, snapshots[1:]):
-            if (t1 - t0) > _MAX_SNAPSHOT_GAP:
-                continue  # 수집 공백 구간 - 이 구간의 변화량은 신뢰할 수 없어 건너뛴다
-            delta = c1 - c0
-            if delta < 0:
-                result[station_id][t0.hour] += -delta
+    for station_id, t0, cnt in estimated_rentals(session, district_name, start=day_start, end=day_end):
+        result[station_id][t0.hour] += cnt
 
     return {sid: dict(hours) for sid, hours in result.items()}
 
@@ -130,7 +120,7 @@ def run_model_monitoring_backfill(champion_models: dict[str, Any], encoding_cach
     """
     try:
         with Session(engine) as session:
-            target_date = date.today() - timedelta(days=1)
+            target_date = (datetime.now(_KST) - timedelta(days=1)).date()
 
             already_done = session.execute(
                 select(func.count()).select_from(DemandPredictionForecast)

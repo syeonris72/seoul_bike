@@ -153,8 +153,8 @@
           </a>
           <div class="brand-subtext d-none d-sm-block d-lg-none d-xl-block">따릉이<br><span class="brand-district">실시간 현황</span></div>
           <nav class="sh-nav ms-4 d-none d-lg-flex" aria-label="일반 회원 메뉴">
-            <a href="user-dashboard.html" class="nav-menu-item ${activeTab === 'dashboard' || activeTab === 'home' ? 'active' : ''}"><i class="bi bi-house"></i> 홈</a>
-            <a href="user-rental.html" class="nav-menu-item ${activeTab === 'rental' || activeTab === 'history' ? 'active' : ''}"><i class="bi bi-clock-history"></i> 대여 · 반납</a>
+            <a href="user-dashboard.html" class="nav-menu-item ${activeTab === 'dashboard' || activeTab === 'home' ? 'active' : ''}"><i class="bi bi-geo-alt"></i> 대여소 지도</a>
+            <a href="user-rental.html" class="nav-menu-item ${activeTab === 'rental' || activeTab === 'history' ? 'active' : ''}"><i class="bi bi-clock-history"></i> 대여 · 반납 이력</a>
           </nav>
         </div>
 
