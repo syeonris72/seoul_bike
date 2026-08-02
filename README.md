@@ -419,9 +419,9 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 ### 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)
 단순 Voting을 넘어 성능을 한계까지 끌어올리기 위해 Stacking 앙상블 적용
 
-- 일반 `StackingRegressor`를 시계열 분할(`TimeSeriesSplit`)과 결합 시 미래 데이터가 과거에 끼어드는 **데이터 누수(Leakage)** 발생.
-- `TimeSeriesSplit` 폴드를 직접 순회하며 OOF(Out-Of-Fold) 예측을 수행하고 누수를 완벽히 차단하는 커스텀 클래스(`ManualStackingRegressor`)를 구현.
-- Base 모델(LGBM, XGB)의 예측값을 바탕으로 `Ridge` 선형 회귀를 최종 추론 모델로 사용.
+- 일반 `StackingRegressor`를 시계열 분할(`TimeSeriesSplit`)과 결합 시 미래 데이터가 과거에 끼어드는 **데이터 누수(Leakage)** 발생
+- `TimeSeriesSplit` 폴드를 직접 순회하며 OOF(Out-Of-Fold) 예측을 수행하고 누수를 완벽히 차단하는 커스텀 클래스(`ManualStackingRegressor`)를 구현
+- Base 모델(LGBM, XGB)의 예측값을 바탕으로 `Ridge` 선형 회귀를 최종 추론 모델로 사용
 
 | 타깃 | Voting RMSLE | Stacking RMSLE | 개선 |
 | :--- | :--- | :--- | :--- |
@@ -445,7 +445,7 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 ### 최종 모델 및 Test 데이터셋 검증
 
-`general_rent_cnt` 기준 Baseline(Voting `0.50631`) → 튜닝(XGBoost `0.50504`) → Custom Stacking(`0.50337`)까지 단계적으로 RMSLE 개선 (자세한 수치는 [3️⃣ 모델 선정 과정](#3️⃣--모델-선정-과정) 참고)
+- `general_rent_cnt` 기준 Baseline(Voting `0.50631`) → 튜닝(XGBoost `0.50504`) → Custom Stacking(`0.50337`)까지 단계적으로 RMSLE 개선 ([3️⃣ 모델 선정 과정](#3️⃣--모델-선정-과정) 참고)
 
 | 타깃 | 최종 모델                 | RMSLE   | RMSE | MAE |
 | :--- |:----------------------|:--------| :--- | :--- |
@@ -487,66 +487,34 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 > **MLflow 실험 화면**
 
-**실험 목록**
-
-![runs](./image/runs.png)
-
-**파라미터·지표 비교**
-
-- rmsle 파라미터 지표
 ![rmsle_graph](./image/rmsle_graph.png)
 
-- rmse 파라미터 지표
 ![rmse_graph](./image/rmse_graph.png)
 
-- mae 파라미터 지표
 ![mae_graph](./image/mae_graph.png)
 
-**최고 성능 모델 상세**
-
-- 일반 따릉이 대여 최종 테스트
 ![FinalTest_general_rent_cnt](./image/FinalTest_general_rent_cnt.png)
 
-- 일반 따릉이 반납 최종 테스트
 ![FinalTest_general_rtn_cnt](./image/FinalTest_general_rtn_cnt.png)
 
-- 새싹 따릉이 대여 최종 테스트
 ![FinalTest_sprout_rent_cnt](./image/FinalTest_sprout_rent_cnt.png)
 
-- 새싹 따릉이 반납 최종 테스트
 ![FinalTest_sprout_rtn_cnt](./image/FinalTest_sprout_rtn_cnt.png)
 
 ---
 
 ## 화면 구현
 
-이 서비스는 **사용자(User), 관리자(Admin), 배송 기사(Driver)** 세 가지 역할에 맞춘 전용 대시보드와 UI 제공
-
-| 대상 | 화면 | 설명 |
-| :--- | :--- | :--- |
-| **사용자** | **메인 (지도)** | 사용자 로그인 후 현재 위치 기반 주변 대여소 및 실시간 자전거 현황 확인 |
-| | **대여 (QR 스캔)** | 카메라를 이용한 QR 코드 스캔 및 따릉이(일반/새싹) 대여 진행 |
-| **관리자** | **관제 대시보드 (전체)** | 관리자 로그인 후 전체 대여소의 거치 현황을 한눈에 파악하는 지도 |
-| | **대시보드 (과포화 필터링)** | 수용 한도를 초과하여 자전거가 과도하게 거치된 '과포화' 대여소 집중 모니터링 |
-| | **대시보드 (고갈 필터링)** | 대여할 자전거가 없어 텅 빈 '고갈' 대여소를 파악하여 재배치 우선순위 파악 |
-| **기사** | **지시서 관리** | 배송 기사에게 할당된 재배치(수거/배치) 및 고장 수거 업무 지시서 목록 확인 |
-| | **경로 안내 (카카오내비)** | 지시서 수행 시 이동해야 할 최적 경로 확인 및 카카오내비 앱 연동을 통한 길 안내 |
-
-<br>
-
-### 1. 사용자 화면 (User)
-사용자 주변의 대여소를 확인하고 QR 코드로 손쉽게 자전거 대여
+### 일반 회원(`user`)
 ![사용자 메인 지도](./image/map1.png)
 ![사용자 QR 대여](./image/map2.png)
 
-### 2. 관리자 대시보드 (Admin)
-전체 대여소의 현황을 파악하고, ML 예측을 기반으로 재배치가 시급한 과포화/고갈 대여소 필터링
+### 관리자(`admin`)
 ![관리자 대시보드 전체](./image/dashboard1.png)
 ![관리자 대시보드 과포화](./image/dashboard2.png)
 ![관리자 대시보드 고갈](./image/dashboard3.png)
 
-### 3. 배송 기사 화면 (Driver)
-할당된 업무 지시서를 확인하고, 카카오내비 연동을 통해 효율적으로 자전거 재배치
+### 기사(`driver`)
 ![기사 지시서 관리](./image/dispatch.png)
 ![기사 경로 카카오내비](./image/kakao.png)
 
@@ -575,59 +543,47 @@ uvicorn main:app --reload
 # → http://127.0.0.1:8000
 ```
 
-> ML 챔피언 모델(`.pkl`)은 서버 가동 시 Supabase S3 클라우드 스토리지에서 자동으로 Fetching 되므로 별도의 모델 파일 로컬 다운로드 불필요
+> 머신러닝 최종 모델(`.pkl`)은 서버 가동 시 Supabase S3 클라우드 스토리지에서 자동으로 Fetching 되므로 별도의 모델 파일 로컬 다운로드 불필요
 
 ---
 
-## 트러블슈팅 (ML 학습 및 데이터 파이프라인)
-
-- **데이터 정제 병목 & 메모리 초과(OOM)**: 전체 데이터를 한 번에 병합한 뒤 결측치·이상치를 처리하려다 메모리 초과와 에러 전파 발생 → 개별 파일·중간 병합 단계마다 즉시 정제하는 방식으로 전환 (해결 로직: [데이터 전처리](#데이터-전처리))
-- **시계열 데이터 누수(Data Leakage)**: 기본 `StackingRegressor`를 `TimeSeriesSplit`과 결합 시 미래 데이터가 과거 폴드에 섞이는 현상 발견 → `ManualStackingRegressor` 직접 구현으로 차단 (해결 로직: [시계열 맞춤형 커스텀 스태킹](#시계열-맞춤형-커스텀-스태킹-manual-oof-stacking))
-- **예측값이 음수로 떨어지는 문제**: 회귀 모델 특성상 저수요 구간의 예측값이 음수로 도출 → `np.log1p`/`np.expm1` 변환에 0 하한 클램프를 더한 커스텀 역변환 함수 적용 (해결 로직: [평가지표 및 타깃 변환](#평가지표-및-타깃-변환))
-
----
-
-## 배포
-
-<details>
-<summary>배포 환경 및 설정 (접었다 펼치기)</summary>
+## 배포 환경 및 설정
 
 - **서버 환경**: Railway
 - **데이터베이스**: MySQL
 - **모델 스토리지**: Supabase Storage
-</details>
 
 ---
 
-## 프로젝트 소감
+## 프로젝트 정리
 
-### 장수연 (팀장)
+### 기대효과
+
+### 개선사항
+
+### 프로젝트 회고
+
+> 장수연(PM)
 -
 
-### 박은비 (부팀장)
+> 박은비(Deputy PM)
 -
 
-### 김세호 (팀원)
+> 김세호
 -
 
-### 권덕윤 (팀원)
+> 권덕윤
 -
 
-### 전지혜 (팀원)
+> 전지혜
 -
 
----
 
-## 팀 전체 회고
+### 트러블슈팅
 
-**잘한 점**
--
-
-**아쉬운 점 / 개선하고 싶은 점**
--
-
-**다음 프로젝트에 적용할 것**
--
+- **데이터 정제 병목 & 메모리 초과(OOM)**: 전체 데이터를 한 번에 병합한 뒤 결측치·이상치를 처리하려다 메모리 초과와 에러 전파 발생 → 개별 파일·중간 병합 단계마다 즉시 정제하는 방식으로 전환 (해결 로직: [데이터 전처리](#데이터-전처리))
+- **시계열 데이터 누수(Data Leakage)**: 기본 `StackingRegressor`를 `TimeSeriesSplit`과 결합 시 미래 데이터가 과거 폴드에 섞이는 현상 발견 → `ManualStackingRegressor` 직접 구현으로 차단 (해결 로직: [시계열 맞춤형 커스텀 스태킹](#시계열-맞춤형-커스텀-스태킹-manual-oof-stacking))
+- **예측값이 음수로 떨어지는 문제**: 회귀 모델 특성상 저수요 구간의 예측값이 음수로 도출 → `np.log1p`/`np.expm1` 변환에 0 하한 클램프를 더한 커스텀 역변환 함수 적용 (해결 로직: [평가지표 및 타깃 변환](#평가지표-및-타깃-변환))
 
 ---
 
