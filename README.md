@@ -1,38 +1,37 @@
-# 서울시 따릉이 대여 수요 예측 및 재배치 운영 지원 시스템
+# 🚲 서울시 따릉이 데이터 분석 및 대여소 배치 예측 웹사이트
 
-> **서울시 공공자전거(따릉이)의 수요를 AI로 예측하고, 관리자·배송 기사·사용자를 위한 맞춤형 웹 대시보드와 최적의 재배치(Dispatch) 운영을 지원하는 풀스택 웹 서비스**
+![main-visual](./static/img/main-visual.png)
+
+> **서울시 공공자전거 따릉이의 수요 예측 및 관리자·기사·일반 회원 맞춤형 대시보드와 재배치 최적화 운영 지원 서비스**
 
 * **배포 주소**: [https://web-production-xxxx.up.railway.app](https://web-production-xxxx.up.railway.app)
 * **API 문서(Swagger)**: [/docs](http://localhost:8000/docs)
 
-<!-- 대표 이미지 1장 (메인 화면 스크린샷) 넣으면 좋습니다 -->
-<!-- ![메인 화면](docs/images/main.png) -->
-
 ---
+# 프로젝트 개요
 
-## 프로젝트 소개
-
-### 프로젝트 목적
-서울시 공공자전거 '따릉이'는 시민들의 발이 되어주고 있지만, 출퇴근 시간이나 주말 등 특정 시간대에 **"빌릴 자전거가 없거나(만성 고갈), 반납할 거치대가 없는(과포화)"** 불균형 문제가 지속적으로 발생하고 있습니다.
-
-단순히 과거 데이터를 보여주는 것을 넘어, 머신러닝(ML)을 통해 **대여소별 미래 수요를 예측**하고, 이를 바탕으로 관리자와 배송 기사가 가장 효율적으로 자전거를 재배치(Dispatch)할 수 있도록 돕는 **종합 운영 지원 시스템**을 구축했습니다.
+## 1️⃣  분석 기획
 
 ### 주제 선정 배경
-서울시 따릉이 이용량이 증가하면서 대여소 간 수급 불균형 문제가 발생하고 있습니다. 특정 시간대·지역에서 반복되는 따릉이 부족(고갈) 또는 초과(과포화) 현상을 해소할 필요가 있었습니다.
+**서울시 공공자전거 따릉이** 이용량이 증가하면서 대여소 간 수급 불균형 문제가 발생하고 있음
+
+⇒ 특정 시간대, 지역에서 반복되는 따릉이 고갈 또는 과포화 현상 해소 필요
+
+⇒ 머신러닝(ML) 기반 **대여소별 미래 수요 예측** 및 효율적인 자전거 재배치를 위한 웹사이트 구축
 
 ### 분석 범위 설정
 - **분석 대상 데이터**: 2024년 따릉이 대여 및 반납 이력 데이터 약 2,820만 행
 - **지역 범위**: 집중 분석을 위해 서울시 주요 4개 자치구로 한정 — 마포구, 강서구(마곡지구), 송파구, 영등포구(여의도)
-- **이용권 정제**: 따릉이 대여 이용권의 종류가 다양한 점을 고려해, 이용 패턴 최적화를 위해 1인 이용권 중심으로 데이터를 정제
+- **이용권 정제**: 따릉이 대여 이용권의 종류가 다양한 점 고려 ⇒ 이용 패턴 최적화를 위해 1인 이용권 중심으로 데이터 정제
 
 ### 분석 전략
-1. 2024년 따릉이 대여 및 반납 이력 데이터와 환경, 인구, 인프라 등 여러 외부 요인 데이터 결합
-2. 시간대별 수요 예측 머신러닝 모델 학습 및 최적화
-3. 실시간 데이터 기반 대여소별 수요 예측 및 재배치 최적화
+2024년 따릉이 대여 및 반납 이력 데이터와 환경, 인구, 인프라 등 여러 외부 요인 데이터 결합
 
----
+⇒ 시간대별 수요 예측 머신러닝 모델 학습 및 최적화
 
-## 주요 기능
+⇒ 실시간 데이터 기반 대여소별 수요 예측 및 재배치 최적화
+
+## 2️⃣ 주요 기능
 
 AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대별 대여 수요를 예측하고, 기상·인구 등 외부 데이터를 주기적으로 수집해 예측을 갱신합니다. 이를 기반으로 **일반 회원, 기사, 관리자** 세 가지 역할별 화면과 공통 헤더 기능을 제공합니다.
 
@@ -53,13 +52,13 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 > **지시서 목록**
 - 본인에게 배정된 지시서 조회
-- 카메라 QR 스캔 또는 입력으로 작업 처리 및 업무 수행
+- 작업 처리 및 업무 수행 (카메라 QR 스캔 또는 수동 입력)
 
 > **경로 지도**
 - 수거 및 배치 위치, 고장 따릉이 수거 대여소 지도 시각화
 - 마커 클릭 시 카카오내비 길 안내 연동
 
-### 관리자
+### 🧑‍💻 관리자
 
 > **관제 지도**
 - 자치구 및 행정동 상세 필터
@@ -77,159 +76,191 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 > **데이터 분석**
 - 자치구 상세 필터
-- Sankey, 콤보, 히트맵 등 시각화
+- Sankey, 콤보, 히트맵 등 데이터 시각화
 
-### 공통 헤더
+### 🚩 공통 헤더
 - 날씨 요약 팝업 (현 시각 날씨와 1시간 전 날씨 비교)
 - 실시간 맞춤 알림
 - 프로필, 설정, 로그아웃
 
----
-
-## 팀원 소개
+## 3️⃣  팀원 및 역할
 
 | 이름 | 역할 | 담당 업무 | GitHub |
-|:----|:------| :--- |:-------------------------------------|
-| 장수연 | 팀장 | | https://github.com/syeonris72        |
-| 박은비 | 부팀장 | | https://github.com/eunbipark0223-max |
-| 전지혜 | 팀원 | | https://github.com/jihye-jeon2       |
-| 김세호 | 팀원 | | https://github.com/ccanna95168-hash  |
-| 권덕윤 | 팀원 | | https://github.com/dukyoon13         |
+|:---|:---|:---|:---|
+| **장수연** | PM | <ul><li>전체 총괄 및 일정 관리</li><li>GitHub 형상 관리</li><li>ORM 데이터베이스 설계</li><li>데이터 수집/전처리</li><li>ML 베이스라인 구축</li><li>하이퍼파라미터 튜닝</li><li>앙상블 모델링</li><li>백엔드 전체 구축(FastAPI)</li><li>Kakao Maps API 연동</li><li>ML 모델 서빙</li><li>UI/UX 디자인 및 구현</li><li>프론트엔드-백엔드 연동</li><li>전체 시스템 통합 및 배포</li></ul> | https://github.com/syeonris72 |
+| **박은비** | Deputy PM | <ul><li>PM 부재 시 팀 리딩 및 일정 관리 지원</li><li>인프라 데이터 수집/전처리</li><li>하천/공원 공간 데이터 전처리</li><li>인프라 데이터 통합</li><li>ML 베이스라인 구축 지원</li><li>피처 엔지니어링</li><li>하이퍼파라미터 튜닝</li><li>UI/UX 디자인 및 구현</li><li>디버깅 및 사용성 개선 지원</li></ul> | https://github.com/eunbipark0223-max |
+| **전지혜** | 팀원 | <ul><li>인구 데이터 수집/전처리</li><li>인구 데이터 통합</li><li>ML 베이스라인 구축 지원</li><li>피처 엔지니어링</li><li>데이터 탐색 및 시각화</li><li>주요 변수 상관관계 분석</li><li>UI/UX 디자인 및 구현</li></ul> | https://github.com/jihye-jeon2 |
+| **김세호** | 팀원 | <ul><li>환경 데이터 수집/전처리</li><li>환경 데이터 통합</li><li>ML 베이스라인 구축 지원</li><li>피처 엔지니어링</li><li>하이퍼파라미터 튜닝</li><li>앙상블 모델링 지원</li><li>UI/UX 디자인 및 구현</li></ul> | https://github.com/ccanna95168-hash |
+| **권덕윤** | 팀원 | <ul><li>인프라 데이터 수집</li><li>환경 데이터 수집/전처리</li><li>ML 베이스라인 구축 지원</li><li>피처 엔지니어링</li><li>하이퍼파라미터 튜닝</li><li>백엔드 구축(FastAPI) 보조</li><li>UI/UX 디자인 및 구현</li><li>디버깅 및 사용성 개선 지원</li></ul> | https://github.com/dukyoon13 |
 
----
+## 4️⃣  기술 스택
 
-## 기술 스택
+### **백엔드(Backend)**
 
-**Backend**
-- FastAPI + Uvicorn — REST API 서버
-- Pydantic — 데이터 검증
-- SQLAlchemy + Alembic — ORM / DB 마이그레이션
-- MySQL (PyMySQL) — 관계형 데이터베이스
-- JWT (PyJWT) + pwdlib(argon2) — 인증/보안
-- APScheduler — 실시간 데이터 수집·예측 갱신 스케줄링
+- ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) ![Uvicorn](https://img.shields.io/badge/Uvicorn-2C3E50?style=flat-square) — REST API 서버
+- ![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=flat-square&logo=pydantic&logoColor=white) — 데이터 검증
+- ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=flat-square) ![Alembic](https://img.shields.io/badge/Alembic-4B8BBE?style=flat-square) — ORM / DB 마이그레이션
+- ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) (PyMySQL) — 관계형 데이터베이스
+- ![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white) (PyJWT) + pwdlib(argon2) — 인증 및 보안
+- ![APScheduler](https://img.shields.io/badge/APScheduler-2E8B57?style=flat-square) — 실시간 데이터 수집·예측 갱신 스케줄링
 
-**Machine Learning / MLOps**
-- scikit-learn, XGBoost, LightGBM — 수요예측 모델
-- Optuna — 하이퍼파라미터 튜닝
-- MLflow — 실험 관리 및 Champion 모델 서빙
-- pandas, numpy, scipy, geopandas — 데이터 전처리/분석
+### **머신러닝 및 MLOps**
 
-**Data Collection (외부 Open API 연동)**
-- 서울 열린데이터광장 (Open API) — 대여소 정보, 대여이력, 실시간 자전거 현황, 인프라(공원/대학/지하철) 데이터
-- 기상청 API허브(KMA) — 기온·미세먼지(PM10) 등 기상 데이터
-- 공공데이터포털(data.go.kr) — 실시간 초단기예보, 대기오염 측정 데이터
-- BeautifulSoup4, requests — 크롤링/API 호출
+- ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white) ![XGBoost](https://img.shields.io/badge/XGBoost-black?style=flat-square) ![LightGBM](https://img.shields.io/badge/LightGBM-3877A5?style=flat-square) — 수요 예측 모델
+- ![Optuna](https://img.shields.io/badge/Optuna-0078D4?style=flat-square) — 하이퍼파라미터 튜닝
+- ![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=flat-square&logo=mlflow&logoColor=white) — 실험 관리 및 모델 서빙
+- ![pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white) ![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white) ![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white) ![GeoPandas](https://img.shields.io/badge/GeoPandas-139C5A?style=flat-square) — 데이터 전처리 및 분석
+
+### **데이터 수집 및 외부 API**
+- [서울 열린데이터광장](https://data.seoul.go.kr) — 대여소 정보, 대여이력, 실시간 자전거 현황, 인프라(공원/대학/지하철) 데이터
+- [기상청 API허브](https://apihub.kma.go.kr) — 기온, 미세먼지 (PM10) 등 기상 데이터
+- [공공데이터포털](https://www.data.go.kr) — 실시간 초단기예보, 대기오염 측정 데이터
+- BeautifulSoup4, requests — 크롤링 및 API 호출
 - holidays — 공휴일 피처
 
-**Frontend**
-- Vanilla JS / HTML / CSS
-- Bootstrap 5.3.3 + Bootstrap Icons — UI 컴포넌트
-- Pretendard — 웹폰트
-- Chart.js (+ chartjs-chart-sankey) — 데이터 시각화 (관리자 분석 대시보드)
-- Kakao Map API — 대여소/배차 지도 시각화
-- html5-qrcode — QR코드 스캔 (자전거 대여/반납)
+### **프론트엔드(Frontend)**
 
-**Infra**
-- Supabase Storage — MLflow 아티팩트 저장소 (S3 호환)
-- boto3 — Supabase Storage 연동 클라이언트
+- ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap_5.3.3-7952B3?style=flat-square&logo=bootstrap&logoColor=white) — UI 컴포넌트
+- ![Pretendard](https://img.shields.io/badge/Pretendard-000000?style=flat-square) — 웹폰트
+- ![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=flat-square&logo=chartdotjs&logoColor=white) — 데이터 시각화
+- ![Kakao Map API](https://img.shields.io/badge/Kakao_Map_API-FFCD00?style=flat-square) — 대여소/배차 지도 시각화
+- ![html5-qrcode](https://img.shields.io/badge/html5--qrcode-4B8BBE?style=flat-square) — QR코드 스캔
 
----
+### **인프라(Infra)**
 
-## 시스템 아키텍처
-
-```text
-┌────────────────┐      HTTP       ┌────────────────────────┐
-│  사용자 / 기사 │ ───────────▶  │      FastAPI 서버      │
-│ (웹 브라우저)  │ ◀───────────  │    (REST API & 라우터) │
-└────────────────┘    JSON       └────────────────────────┘
-                                     │                │
-                        ┌────────────┘                └─────────────┐
-                        ▼                                           ▼
-              ┌───────────────────┐                       ┌────────────────────┐
-              │     MySQL DB      │                       │ ML 추론 (serving/) │
-              │ (회원, 대여소, 이력) │                       │ (로컬 pkl / MLflow)│
-              └───────────────────┘                       └────────────────────┘
-                        ▲                                           ▲
-                        │                                           │
-                        └───────────────────────────────────────────┘
-                                데이터 수집 및 스케줄러 (APScheduler)
-                                (기상청, 서울 열린데이터광장 API 연동)
-```
-
-**전체 흐름**
-1. 사용자가 대여소를 조회하거나 관리자가 디스패치 화면에 접속
-2. 프론트엔드가 /predict API 호출
-3. FastAPI가 DB를 조회하여 실시간 피처(기상·인구·인프라 등) 계산
-4. ML 모델이 해당 대여소의 시간대별 대여/반납 수요 예측
-5. 고갈 및 과포화 여부 계산 후 응답 → 대시보드 및 지도 화면 표시
-6. 배송 기사가 최적 경로로 자전거 재배치(Dispatch) 완료 시 DB 상태 업데이트
+- ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white) — MLflow 아티팩트 저장소 (S3 호환)
+- ![boto3](https://img.shields.io/badge/boto3-232F3E?style=flat-square) — Supabase Storage 연동 클라이언트
 
 ---
+# API 설계 및 데이터베이스
 
-## DB ERD (Entity-Relationship Diagram)
+## 1️⃣ 시스템 아키텍처
 
-![DB ERD](./image/DB_ERD.png)
+![system-architecture-diagram](./image/system-architecture-diagram.png)
 
-**주요 핵심 테이블**
+### **시스템 전체 흐름**
 
-| 테이블 | 설명 | 주요 컬럼 |
-| :--- | :--- | :--- |
-| `account` | 회원 (관리자/기사/사용자) | `id`, `login_id`, `role`, `district_id`, `created_at` |
-| `station_loc` | 대여소 기본 정보 | `station_id`, `address_1`, `lat`, `lon`, `district` |
-| `station_stock` | 실시간 자전거 재고 관리 | `station_id`(FK), `general_bike_cnt`, `sprout_bike_cnt`, `broken_bike_cnt` |
-| `rental` | 자전거 대여/반납 이력 | `id`, `user_id`(FK), `bike_id`, `rent_station_id`, `return_station_id`, `status` |
-| `dispatch` | 재배치(디스패치) 지시 내역 | `id`, `from_station_id`, `to_station_id`, `driver_id`, `status`, `order_type` |
-| `report` | 고장/이슈 신고 내역 | `id`, `bike_id`, `station_id`(FK), `reported_by`, `status` |
-| `demand_prediction_master_2024` | ML 수요 예측용 마스터 데이터 | `datetime_hr`, `station_id`, `general_rent_cnt`, `temperature`, `flwpop_tot` 등 |
+> **접속 → API 호출 → 판정/추론 → 화면 표시 → 지시서 발송 → 재배치 완료 → DB 반영**
 
-**주요 테이블 관계 (Relationships)**
+1. **접속**: 일반 회원(`user`)이 대여소 지도를 조회하거나, 관리자(`admin`)가 관제 지도에 접속
+2. **API 호출**: 프론트엔드가 두 갈래로 동시 호출
+   - 재고 상태 → `GET /station/*` → 실시간 재고 × 정원 대비 비율 × 이력 기반 시간대별 평균 순감소량 → 고갈 및 과포화 판정
+   - 수요 예측 → `GET /predict/stations/{station_id}` → 실시간 피처(기상·인구·인프라) × MLflow 챔피언 모델 → 다음 1시간 대여·반납 건수 추론
+3. **화면 표시**: 두 결과 모두 대시보드 및 지도 화면에 표시
+4. **지시서 발송**: 관리자(`admin`)가 결과를 참고해 AI 추천 기반 또는 수동으로 재배치 지시서 발송
+5. **재배치 완료**: 기사(`driver`)가 지시서 확인 → 카카오내비 경로 안내 → 재배치 완료
+6. **DB 반영**: 대여소 재고와 지시서 상태가 데이터베이스에 갱신 (실시간 로그 수집 스케줄러 = 덮어쓰기 X, 대여 및 반납 트랜잭션으로만 갱신)
+
+## 2️⃣  ERD(Entity-Relationship Diagram)
+
+![database-erd](./image/database-erd.png)
+
+### **주요 핵심 테이블**
+
+| 테이블 | 설명                  | 주요 컬럼 |
+| :--- |:--------------------| :--- |
+| `account` | 회원(관리자/기사/일반 회원)    | `id`, `login_id`, `role`, `district_id`, `created_at` |
+| `station_loc` | 대여소 기본 정보           | `station_id`, `address_1`, `lat`, `lon`, `district` |
+| `station_stock` | 실시간 자전거 재고 관리       | `station_id`(FK), `general_bike_cnt`, `sprout_bike_cnt`, `broken_bike_cnt` |
+| `rental` | 자전거 대여 및 반납 이력      | `id`, `user_id`(FK), `bike_id`, `rent_station_id`, `return_station_id`, `status` |
+| `dispatch` | 재배치 지시 내역           | `id`, `from_station_id`, `to_station_id`, `driver_id`, `status`, `order_type` |
+| `report` | 고장 신고 내역            | `id`, `bike_id`, `station_id`(FK), `reported_by`, `status` |
+| `demand_prediction_master_2024` | 머신러닝 수요 예측용 마스터 데이터 | `datetime_hr`, `station_id`, `general_rent_cnt`, `temperature`, `flwpop_tot` 등 |
+
+### **주요 테이블 관계**
 - `account` **1 : N** `rental` (한 사용자가 여러 번 대여 가능)
 - `account` **1 : N** `dispatch` (관리자가 지시하고, 특정 기사가 여러 배치 업무를 수행)
 - `station_loc` **1 : 1** `station_stock` (각 대여소는 하나의 실시간 재고 상태를 가짐)
 - `station_loc` **1 : N** `rental` (한 대여소에서 여러 번의 대여/반납 발생)
 - `station_loc` **1 : N** `dispatch` (한 대여소가 재배치의 출발지 또는 도착지가 됨)
 
----
+## 3️⃣  API 문서
 
-## API 문서
-
-> FastAPI가 자동 생성하는 Swagger 문서: **`/docs`** 에서 전체 확인 가능
+**`/docs`** 에서 전체 확인 가능
 
 ### 주요 엔드포인트
 
-**인증 및 권한 (`auth.py`)**
-| 메서드 | 경로 | 설명 |
-| :--- | :--- | :--- |
-| <!-- 내용 추가 예정 --> | | |
+> **인증 및 권한 (`auth.py`)**
 
-**대여소 및 기본 정보 (`station.py`)**
 | 메서드 | 경로 | 설명 |
 | :--- | :--- | :--- |
-| <!-- 내용 추가 예정 --> | | |
+| POST | `/auth/login` | 역할(일반 회원/기사/관리자)별 로그인, JWT 액세스 토큰 발급 |
+| POST | `/auth/signup` | 일반 회원 가입 |
+| GET | `/auth/me` | 내 계정 정보 조회 |
 
-**AI 수요 예측 (`predict.py`)**
-| 메서드 | 경로 | 설명 |
-| :--- | :--- | :--- |
-| <!-- 내용 추가 예정 --> | | |
+> **대여소 및 기본 정보 (`station.py`)**
 
-**일반 사용자 전용 (`user.py`)**
 | 메서드 | 경로 | 설명 |
 | :--- | :--- | :--- |
-| <!-- 내용 추가 예정 --> | | |
+| GET | `/station/public/summary` | 비로그인 공개 요약 (대여소 수, 총 자전거 수, 금일 대여량) |
+| GET | `/station/stations` | 대여소 목록 조회 (자치구/재고 상태 필터) |
+| GET | `/station/stations/{station_id}` | 대여소 상세 조회 |
+| GET | `/station/districts` | 자치구별 목록 및 보유 대수 |
+| POST | `/station/rentals` | 자전거 대여 (QR 스캔 또는 수동 입력) |
+| PATCH | `/station/rentals/{rental_id}/return` | 자전거 반납, 이동 거리·소요 시간·탄소 절감량 계산 |
+| GET | `/station/rentals/active` | 현재 대여 중인 자전거 조회 |
+| GET | `/station/rentals/me` | 내 대여/반납 이력 조회 (연/월 필터) |
+| GET | `/station/favorites` | 즐겨찾기 대여소 목록 |
+| POST | `/station/favorites` | 즐겨찾기 추가 |
+| DELETE | `/station/favorites/{station_id}` | 즐겨찾기 삭제 |
+| POST | `/station/reports` | 고장 신고 등록 |
 
-**배송 기사 전용 (`driver.py`)**
-| 메서드 | 경로 | 설명 |
-| :--- | :--- | :--- |
-| <!-- 내용 추가 예정 --> | | |
+> **AI 수요 예측 (`predict.py`)**
 
-**관리자 대시보드 및 통계 (`admin.py`, `analytics.py`)**
 | 메서드 | 경로 | 설명 |
 | :--- | :--- | :--- |
-| <!-- 내용 추가 예정 --> | | |
+| GET | `/predict/stations/{station_id}` | 서버 시작 시 MLflow에서 로드한 챔피언 모델로 해당 대여소의 다음 1시간 일반/새싹 대여·반납 건수 예측 |
+
+> **일반 회원 전용 (`user.py`)**
+
+| 메서드 | 경로 | 설명 |
+| :--- | :--- | :--- |
+| PATCH | `/user/login-id` | 아이디 변경 |
+| PATCH | `/user/password` | 비밀번호 변경 |
+| DELETE | `/user/me` | 회원 탈퇴 (soft delete) |
+
+> **기사 전용 (`driver.py`)**
+
+| 메서드 | 경로 | 설명 |
+| :--- | :--- | :--- |
+| GET | `/driver/orders` | 내게 배정된 지시서 목록 조회 (상태 필터) |
+| PATCH | `/driver/orders/batch` | 같은 대여소의 고장 수거 지시서 일괄 시작/완료 처리 |
+| PATCH | `/driver/orders/{order_id}` | 단일 지시서 시작/완료 처리, 완료 시 대여소 재고 갱신 |
+
+> **관리자 대시보드 및 통계 (`admin.py`, `analytics.py`)**
+
+| 메서드 | 경로 | 설명 |
+| :--- | :--- | :--- |
+| GET | `/admin/drivers` | 기사 목록 조회 (자치구 필터) |
+| GET | `/admin/dispatch` | 재배치 지시서 목록 조회 (상태/자치구 필터) |
+| POST | `/admin/dispatch` | 재배치 지시서 수동 생성 및 기사 지정 |
+| GET | `/admin/reports` | 고장 신고 목록 조회 (연결된 지시서 상태 포함) |
+| POST | `/admin/reports/dispatch` | 대여소 단위 미배정 고장 신고를 하나의 수거 지시서로 묶어 발송 |
+| GET | `/analytics/hourly-demand` | 실시간 거치대 스냅샷 기반 시간대별 추정 대여량 |
+| GET | `/analytics/weekly-demand` | 요일별 추정 대여량 |
+| GET | `/analytics/stock-distribution` | 과포화/고갈/부족/적정 대여소 분포 |
+| GET | `/analytics/today-summary` | 금일 대여량, 긴급 지시서 수, 과포화 대여소 수 요약 |
+| GET | `/analytics/weather-summary` | 헤더 날씨 팝업용 오늘 vs 1시간 전(전일) 날씨 비교 |
+| GET | `/analytics/flow` | 대여소 간 이동 흐름 (Sankey 시각화용) |
+| GET | `/analytics/weather-index` | 시간대별 자전거 이용 적합도 지수(0~100) |
+| GET | `/analytics/feature-importance` | 챔피언 모델의 피처 중요도 (의미 그룹별 집계) |
+| GET | `/analytics/model-monitoring` | 전일 실제 대여량 vs 모델 예측치 비교 (야간 배치 결과) |
+| GET | `/analytics/carbon-summary` | 누적 탄소 절감량·이동 거리·평균 이용 시간 |
+| GET | `/analytics/dispatch-efficiency` | 지시서 평균 처리 시간, 긴급/일반 건수 등 배차 효율 지표 |
+| GET | `/analytics/district-ranking` | 자치구별 추정 대여량 랭킹 |
+
+> **기타 (`config.py`)**
+
+| 메서드 | 경로 | 설명 |
+| :--- | :--- | :--- |
+| GET | `/config/kakao-js-key` | Kakao Map JS SDK 로드용 앱 키 제공 |
 
 ---
 
-## ML 학습 파트 및 데이터 파이프라인
+# 데이터 분석 및 머신러닝
+
+## 머신러닝 학습 파트 및 데이터 파이프라인
 
 이 프로젝트의 핵심 — **시간대별 대여소 수요 예측 모델 및 최적화 파이프라인**
 
