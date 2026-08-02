@@ -487,13 +487,13 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 > **MLflow 실험 화면**
 
-![rmsle_graph](./image/rmsle_graph.png)
+![rmsle-graph](./image/rmsle-graph.png)
 
-![rmse_graph](./image/rmse_graph.png)
+![rmse-graph](./image/rmse-graph.png)
 
-![mae_graph](./image/mae_graph.png)
+![mae-graph](./image/mae-graph.png)
 
-![FinalTest_general_rent_cnt](./image/FinalTest_general_rent_cnt.png)
+![mlflow-ensemble-1](./image/mlflow-ensemble-1.png)
 
 ![FinalTest_general_rtn_cnt](./image/FinalTest_general_rtn_cnt.png)
 
