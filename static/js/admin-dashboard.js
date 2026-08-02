@@ -41,7 +41,7 @@ async function initKakaoMap() {
     level: 8
   });
   kakao.maps.event.addListener(kakaoMap, 'idle', applySidebarOcclusion);
-  // 지도를 옮기거나 확대/축소한 뒤(idle) "스테이션 현황" 목록을 현재 화면 기준으로 갱신.
+  // 지도를 옮기거나 확대/축소한 뒤(idle) "대여소 현황" 목록을 현재 화면 기준으로 갱신.
   kakao.maps.event.addListener(kakaoMap, 'idle', renderStationList);
   return kakao;
 }
@@ -67,7 +67,7 @@ function getFilteredStations() {
 
 // getFilteredStations() 결과 중 현재 지도 화면(viewport)에 실제로 보이는 대여소만 남긴다.
 // 지도 핀은 필터 조건에만 반응하고(패닝마다 오버레이를 재생성하지 않기 위해), 좌측
-// "스테이션 현황" 목록만 지도를 옮기거나 확대/축소할 때(idle 이벤트)마다 이걸로 다시 그린다.
+// "대여소 현황" 목록만 지도를 옮기거나 확대/축소할 때(idle 이벤트)마다 이걸로 다시 그린다.
 function getVisibleFilteredStations() {
   var filtered = getFilteredStations();
   if (!kakaoMap || !window.kakao) return filtered;
@@ -149,7 +149,7 @@ function fillDongDropdown() {
   document.getElementById('selectedDongLabel').textContent = filterState.dong || '전체 행정동';
 }
 
-// 스테이션 상태 필터칩은 실제 등장하는 상태값만 구성
+// 대여소 상태 필터칩은 실제 등장하는 상태값만 구성
 function renderStatusChips() {
   var container = document.getElementById('mapStatusFilter');
   container.innerHTML = '';
@@ -216,7 +216,7 @@ function renderStationList() {
   document.querySelectorAll('.mobile-total-count').forEach(function (el) { el.textContent = countText; });
 }
 
-// ── 지도 위 스테이션 핀 ────────────────────────────────
+// ── 지도 위 대여소 핀 ────────────────────────────────
 function renderMapPins() {
   if (!kakaoMap || !window.kakao) return;
 
@@ -252,7 +252,7 @@ function renderMapPins() {
   applySidebarOcclusion();
 }
 
-// ── 좌측 패널(데스크탑)이나 하단 시트(모바일)에 가려지는 스테이션 핀은 클릭되지 않도록 처리 (user-dashboard와 동일한 패턴) ────────────────────────────────
+// ── 좌측 패널(데스크탑)이나 하단 시트(모바일)에 가려지는 대여소 핀은 클릭되지 않도록 처리 (user-dashboard와 동일한 패턴) ────────────────────────────────
 function applySidebarOcclusion() {
   var sidebarEl = document.getElementById('sidebar');
   var mapCard = document.querySelector('.map-card');
@@ -346,6 +346,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     districts = [];
   }
 
+  // 관리자가 지시한 재배치를 기사가 수행 완료하면 대여소 재고(StationStock)가 즉시 바뀌므로,
+  // 이 화면을 계속 보고 있어도 새로고침 없이 최신 현황이 반영되도록 주기적으로 다시 불러온다.
+  setInterval(async function () {
+    try {
+      allStations = await api.get('/station/stations');
+    } catch (e) {
+      return;
+    }
+    renderAll();
+    if (currentDetailStationId) openStationDetail(currentDetailStationId);
+  }, 15000);
+
   // 실시간 현황 목록 클릭 → 상세 팝업 (지도 핀은 자체 클릭 리스너를 가짐)
   document.addEventListener('click', function (e) {
     var stationRow = e.target.closest('.station-list .status-row');
@@ -398,4 +410,16 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   syncFilterToggles();
   renderAll();
+
+  // 데이터 분석 페이지의 "만성 불균형 대여소" 리스트에서 넘어온 경우, 해당 대여소로 지도 이동 + 상세 팝업 오픈
+  var focusStationId = new URLSearchParams(window.location.search).get('stationId');
+  if (focusStationId) {
+    var focusStation = getStation(focusStationId);
+    if (focusStation && focusStation.lat && focusStation.lon && kakaoMap && window.kakao) {
+      hasFitBounds = true; // 전체 범위 자동 맞춤이 아래 center 지정을 덮어쓰지 않도록
+      kakaoMap.setLevel(4);
+      kakaoMap.setCenter(new kakao.maps.LatLng(focusStation.lat, focusStation.lon));
+      openStationDetail(focusStationId);
+    }
+  }
 });

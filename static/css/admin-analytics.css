@@ -15,9 +15,11 @@ body {
     color: #333;
 }
 
-.imbalance-pill { font-size: 0.85rem; font-weight: 700; border-radius: 999px; padding: 0.4rem 1.2rem; color: #888; background-color: #f8f9fa; transition: 0.2s; border: none; }
+.imbalance-pill { font-size: 0.85rem; font-weight: 700; border-radius: 8px !important; padding: 0.4rem 1.2rem; color: #888; background-color: #f8f9fa; transition: 0.2s; border: none; }
 .imbalance-pill.danger-pill.active { background-color: var(--busy-bg); color: var(--busy); }
 .imbalance-pill.full-pill.active { background-color: var(--full-bg); color: var(--full); }
+.imbalance-pill:not(.active):hover,
+.imbalance-pill:not(.active):focus { background-color: var(--accent-bg); color: var(--accent); }
 
 .page-header { margin-top: 2rem; margin-bottom: 1.5rem; }
 .page-title { font-weight: 800; font-size: 1.4rem; margin-bottom: 0.4rem; }
@@ -68,7 +70,8 @@ body {
 .chart-container--heatmap { height: 410px; background-color: #f8f9fa; border-radius: 8px; }
 
 .analytics-container { max-width: 1600px; }
-.imbalance-tab-content { overflow-y: auto; max-height: 310px; }
+.imbalance-tab-content { overflow-y: auto; overflow-x: hidden; flex: 1 1 0; min-height: 0; padding: 0.5rem 0.75rem; }
+.imbalance-tab-content .tab-pane { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.75rem; }
 
 /* 범례: 사이트 전반의 배지(.badge/.filter-chip) 패턴과 동일한 점(dot) + 알약형 라벨 */
 .chart-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
@@ -78,22 +81,25 @@ body {
 }
 .legend-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-.list-card { background-color: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 1.5rem; margin-bottom: 3rem; }
-.list-header-flex { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; }
-.list-title { font-weight: 800; font-size: 1.1rem; }
+.list-card { background-color: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 1.5rem; margin-bottom: 3rem; max-width: 100%; }
+.list-header-flex { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+.list-title { font-weight: 800; font-size: 1.1rem; min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-header-flex #imbalanceTabs { flex-shrink: 0; }
 
-.list-item { display: flex; align-items: center; padding: 1rem 0; border-bottom: 1px solid #f0f0f0; }
-.list-item:last-child { border-bottom: none; padding-bottom: 0; }
+.list-item { display: flex; align-items: center; padding: 1rem 0.75rem; margin: 0 -0.75rem; border-bottom: 1px solid #f0f0f0; border-radius: 10px; transition: background-color 0.15s ease; cursor: pointer; }
+.list-item:last-child { border-bottom: none; }
+.list-item:hover { background-color: var(--accent-bg); }
 
 .item-number {
     width: 28px; height: 28px; background-color: var(--busy-bg); color: var(--busy);
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.85rem; margin-right: 1rem;
+    font-weight: 800; font-size: 0.85rem; margin-right: 1rem; flex-shrink: 0;
 }
-.item-name { font-weight: 800; font-size: 1rem; margin-bottom: 0.2rem; }
-.item-district { color: #888; font-size: 0.75rem; }
+.list-item > .flex-grow-1 { min-width: 0; }
+.item-name { font-weight: 800; font-size: 1rem; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-district { color: #888; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.item-stats { display: flex; gap: 1rem; margin-right: 1.5rem; text-align: center; }
+.item-stats { display: flex; gap: 1rem; margin-left: 0.75rem; text-align: center; flex-shrink: 0; }
 .stat-danger { color: var(--busy); font-weight: 800; font-size: 0.9rem; }
 .stat-warning { color: var(--mid); font-weight: 800; font-size: 0.9rem; }
 .stat-sub { color: #888; font-size: 0.7rem; display: block; font-weight: normal;}

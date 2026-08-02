@@ -2,7 +2,7 @@
 
 > **서울시 공공자전거(따릉이)의 수요를 AI로 예측하고, 관리자·배송 기사·사용자를 위한 맞춤형 웹 대시보드와 최적의 재배치(Dispatch) 운영을 지원하는 풀스택 웹 서비스**
 
-* **배포 주소**: [https://web-production-xxxx.up.railway.app](https://web-production-xxxx.up.railway.app) 
+* **배포 주소**: [https://web-production-xxxx.up.railway.app](https://web-production-xxxx.up.railway.app)
 * **API 문서(Swagger)**: [/docs](http://localhost:8000/docs)
 
 <!-- 대표 이미지 1장 (메인 화면 스크린샷) 넣으면 좋습니다 -->
@@ -17,36 +17,88 @@
 
 단순히 과거 데이터를 보여주는 것을 넘어, 머신러닝(ML)을 통해 **대여소별 미래 수요를 예측**하고, 이를 바탕으로 관리자와 배송 기사가 가장 효율적으로 자전거를 재배치(Dispatch)할 수 있도록 돕는 **종합 운영 지원 시스템**을 구축했습니다.
 
+### 주제 선정 배경
+서울시 따릉이 이용량이 증가하면서 대여소 간 수급 불균형 문제가 발생하고 있습니다. 특정 시간대·지역에서 반복되는 따릉이 부족(고갈) 또는 초과(과포화) 현상을 해소할 필요가 있었습니다.
+
+### 분석 범위 설정
+- **분석 대상 데이터**: 2024년 따릉이 대여 및 반납 이력 데이터 약 2,820만 행
+- **지역 범위**: 집중 분석을 위해 서울시 주요 4개 자치구로 한정 — 마포구, 강서구(마곡지구), 송파구, 영등포구(여의도)
+- **이용권 정제**: 따릉이 대여 이용권의 종류가 다양한 점을 고려해, 이용 패턴 최적화를 위해 1인 이용권 중심으로 데이터를 정제
+
 ### 분석 전략
-`사용자 이용 데이터 → ML 기반 시간대별 수요 예측 → 고갈/과포화 탐지 → 배송 기사 최적 경로 안내 및 재배치 지시`
+1. 2024년 따릉이 대여 및 반납 이력 데이터와 환경, 인구, 인프라 등 여러 외부 요인 데이터 결합
+2. 시간대별 수요 예측 머신러닝 모델 학습 및 최적화
+3. 실시간 데이터 기반 대여소별 수요 예측 및 재배치 최적화
 
 ---
 
 ## 주요 기능
 
-이 서비스는 단일 사용자가 아닌 **관리자(Admin), 배송 기사(Driver), 일반 사용자(User)** 세 가지 역할을 위한 맞춤형 기능을 제공합니다.
+AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대별 대여 수요를 예측하고, 기상·인구 등 외부 데이터를 주기적으로 수집해 예측을 갱신합니다. 이를 기반으로 **일반 회원, 기사, 관리자** 세 가지 역할별 화면과 공통 헤더 기능을 제공합니다.
 
-| 대상 | 주요 기능 | 상세 설명 |
-| :--- | :--- | :--- |
-| **🤖 AI/ML** | **수요 예측 & 자동화** | MLflow 챔피언 모델을 통한 실시간/시간대별 대여 수요 예측<br>주기적인 외부 데이터(기상, 인구 등) 수집 및 예측 갱신 스케줄링 |
-| **🏢 관리자** | **모니터링 & 디스패치** | 전체 대여소 현황 분석 및 통계 대시보드 제공<br>예측 기반의 만성 고갈/과포화 대여소 탐지 및 재배치 지시 |
-| **🚚 기사** | **최적 경로 안내** | 배송 기사용 실시간 지도 제공<br>재배치 업무 효율을 위한 최적 이동 경로 안내 |
-| **📱 사용자** | **대여 및 내역 조회** | 자전거 대여 기능 (QR코드 스캔 등)<br>개인 이용 내역 대시보드 |
+### 👤 일반 회원
+
+> **대여소 지도**
+- 대여소 위치 및 현황 파악 (핀맵과 목록, 거리순/여유순 정렬)
+- 대여소 검색
+- 따릉이 대여 및 반납 (카메라 QR 스캔 또는 수동 입력)
+- 고장 신고 (카메라 QR 스캔 또는 수동 입력)
+- 대여소 즐겨찾기
+
+> **대여 · 반납 이력**
+- 연/월별 대여 및 반납 이력 상세 조회
+- 탄소 저감량 시각화
+
+### 🚚 기사
+
+> **지시서 목록**
+- 본인에게 배정된 지시서 조회
+- 카메라 QR 스캔 또는 입력으로 작업 처리 및 업무 수행
+
+> **경로 지도**
+- 수거 및 배치 위치, 고장 따릉이 수거 대여소 지도 시각화
+- 마커 클릭 시 카카오내비 길 안내 연동
+
+### 관리자
+
+> **관제 지도**
+- 자치구 및 행정동 상세 필터
+- 전체 대여소 현황 목록
+- 마커 클릭 시 해당 대여소 지시서 작성
+
+> **지시서 관리**
+- 지시서 상태별 조회
+- AI 추천 기반 지시서 일괄 발송
+- 수동 지시서 작성 및 기사 지정
+
+> **고장 신고 관리**
+- 지시서 상태별 조회
+- 다중 신고 내역을 하나로 변환 후 발송
+
+> **데이터 분석**
+- 자치구 상세 필터
+- Sankey, 콤보, 히트맵 등 시각화
+
+### 공통 헤더
+- 날씨 요약 팝업 (현 시각 날씨와 1시간 전 날씨 비교)
+- 실시간 맞춤 알림
+- 프로필, 설정, 로그아웃
 
 ---
-## 👥 팀원 소개
 
-| 이름  | 역할    | 담당 업무 | GitHub                              |
-|:----|:------| :--- |:------------------------------------|
-| 장수연 | 팀장    | | https://github.com/syeonris72       |
-| 박은비 | 부팀장   | | https://github.com/eunbipark0223-max                                    |
-| 김세호 | 팀원    | | https://github.com/ccanna95168-hash |
-| 권덕윤 | 팀원    | | https://github.com/dukyoon13        |
-| 전지혜 | 팀원    | | [@아이디](https://github.com/아이디)      |
+## 팀원 소개
+
+| 이름 | 역할 | 담당 업무 | GitHub |
+|:----|:------| :--- |:-------------------------------------|
+| 장수연 | 팀장 | | https://github.com/syeonris72        |
+| 박은비 | 부팀장 | | https://github.com/eunbipark0223-max |
+| 전지혜 | 팀원 | | https://github.com/jihye-jeon2       |
+| 김세호 | 팀원 | | https://github.com/ccanna95168-hash  |
+| 권덕윤 | 팀원 | | https://github.com/dukyoon13         |
 
 ---
 
-## 🛠️ 기술 스택
+## 기술 스택
 
 **Backend**
 - FastAPI + Uvicorn — REST API 서버
@@ -83,7 +135,7 @@
 
 ---
 
-## 🏗️ 시스템 아키텍처
+## 시스템 아키텍처
 
 ```text
 ┌────────────────┐      HTTP       ┌────────────────────────┐
@@ -113,7 +165,8 @@
 6. 배송 기사가 최적 경로로 자전거 재배치(Dispatch) 완료 시 DB 상태 업데이트
 
 ---
-## 🗄️ DB ERD (Entity-Relationship Diagram)
+
+## DB ERD (Entity-Relationship Diagram)
 
 ![DB ERD](./image/DB_ERD.png)
 
@@ -121,25 +174,27 @@
 
 | 테이블 | 설명 | 주요 컬럼 |
 | :--- | :--- | :--- |
-| `account` | 회원 (관리자/기사/사용자)[cite: 5] | `id`, `login_id`, `role`, `district_id`, `created_at`[cite: 5] |
-| `station_loc` | 대여소 기본 정보[cite: 5] | `station_id`, `address_1`, `lat`, `lon`, `district`[cite: 5] |
-| `station_stock` | 실시간 자전거 재고 관리[cite: 5] | `station_id`(FK), `general_bike_cnt`, `sprout_bike_cnt`, `broken_bike_cnt`[cite: 5] |
-| `rental` | 자전거 대여/반납 이력[cite: 5] | `id`, `user_id`(FK), `bike_id`, `rent_station_id`, `return_station_id`, `status`[cite: 5] |
-| `dispatch` | 재배치(디스패치) 지시 내역[cite: 5] | `id`, `from_station_id`, `to_station_id`, `driver_id`, `status`, `order_type`[cite: 5] |
-| `report` | 고장/이슈 신고 내역[cite: 5] | `id`, `bike_id`, `station_id`(FK), `reported_by`, `status`[cite: 5] |
-| `demand_prediction_master_2024` | ML 수요 예측용 마스터 데이터[cite: 5] | `datetime_hr`, `station_id`, `general_rent_cnt`, `temperature`, `flwpop_tot` 등[cite: 5] |
+| `account` | 회원 (관리자/기사/사용자) | `id`, `login_id`, `role`, `district_id`, `created_at` |
+| `station_loc` | 대여소 기본 정보 | `station_id`, `address_1`, `lat`, `lon`, `district` |
+| `station_stock` | 실시간 자전거 재고 관리 | `station_id`(FK), `general_bike_cnt`, `sprout_bike_cnt`, `broken_bike_cnt` |
+| `rental` | 자전거 대여/반납 이력 | `id`, `user_id`(FK), `bike_id`, `rent_station_id`, `return_station_id`, `status` |
+| `dispatch` | 재배치(디스패치) 지시 내역 | `id`, `from_station_id`, `to_station_id`, `driver_id`, `status`, `order_type` |
+| `report` | 고장/이슈 신고 내역 | `id`, `bike_id`, `station_id`(FK), `reported_by`, `status` |
+| `demand_prediction_master_2024` | ML 수요 예측용 마스터 데이터 | `datetime_hr`, `station_id`, `general_rent_cnt`, `temperature`, `flwpop_tot` 등 |
 
 **주요 테이블 관계 (Relationships)**
-- `account` **1 : N** `rental` (한 사용자가 여러 번 대여 가능)[cite: 5]
-- `account` **1 : N** `dispatch` (관리자가 지시하고, 특정 기사가 여러 배치 업무를 수행)[cite: 5]
-- `station_loc` **1 : 1** `station_stock` (각 대여소는 하나의 실시간 재고 상태를 가짐)[cite: 5]
-- `station_loc` **1 : N** `rental` (한 대여소에서 여러 번의 대여/반납 발생)[cite: 5]
-- `station_loc` **1 : N** `dispatch` (한 대여소가 재배치의 출발지 또는 도착지가 됨)[cite: 5]
+- `account` **1 : N** `rental` (한 사용자가 여러 번 대여 가능)
+- `account` **1 : N** `dispatch` (관리자가 지시하고, 특정 기사가 여러 배치 업무를 수행)
+- `station_loc` **1 : 1** `station_stock` (각 대여소는 하나의 실시간 재고 상태를 가짐)
+- `station_loc` **1 : N** `rental` (한 대여소에서 여러 번의 대여/반납 발생)
+- `station_loc` **1 : N** `dispatch` (한 대여소가 재배치의 출발지 또는 도착지가 됨)
 
 ---
-## 📡 API 문서
+
+## API 문서
 
 > FastAPI가 자동 생성하는 Swagger 문서: **`/docs`** 에서 전체 확인 가능
+
 ### 주요 엔드포인트
 
 **인증 및 권한 (`auth.py`)**
@@ -173,7 +228,8 @@
 | <!-- 내용 추가 예정 --> | | |
 
 ---
-## 🤖 ML 학습 파트 및 데이터 파이프라인
+
+## ML 학습 파트 및 데이터 파이프라인
 
 이 프로젝트의 핵심 — **시간대별 대여소 수요 예측 모델 및 최적화 파이프라인**
 
@@ -224,24 +280,25 @@
 **1. 방대한 다중 도메인 데이터 수집 (Data Sources)**
 총 14종 이상의 외부 공공 API 및 오픈 데이터를 직접 수집하여, 자전거 수요에 영향을 미치는 다차원적인 분석 기반(환경, 인구, 지리적 요인)을 구축했습니다.
 
-*   **🚲 따릉이 데이터**
-    *   [따릉이 대여 및 반납 이력 데이터](https://data.seoul.go.kr/dataList/OA-15182/F/1/datasetView.do)
-    *   [대여 위치 정보 데이터](https://data.seoul.go.kr/dataList/OA-21235/S/1/datasetView.do)
-    *   [실시간 따릉이 대여 및 거치 정보 데이터](https://data.seoul.go.kr/dataList/OA-15493/A/1/datasetView.do)
-*   **🌤️ 환경 및 기상 데이터**
-    *   [실시간 미세먼지 데이터](https://data.seoul.go.kr/dataList/OA-1200/S/1/datasetView.do) / [시간별 미세먼지 데이터](https://data.kma.go.kr/data/climate/selectDustRltmList.do?pgmNo=68)
-    *   [실시간 기상 데이터(1)](https://www.airkorea.or.kr/web/), [(2)](https://data.kma.go.kr/data/grnd/selectAsosRltmList.do) / [시간별 기상 데이터](https://apihub.kma.go.kr/)
-*   **👥 인구 데이터**
-    *   [유동 인구 데이터](https://data.seoul.go.kr/dataList/OA-22179/S/1/datasetView.do)
-    *   [생활 인구 데이터](https://data.seoul.go.kr/dataList/OA-15439/S/1/datasetView.do)
-*   **🏢 인프라 데이터**
-    *   [공원 위치 데이터](https://data.seoul.go.kr/dataList/OA-394/S/1/datasetView.do) / 하천 위치 데이터 [(1)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30603), [(2)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30207)
-    *   [학교(초, 중, 고) 위치 데이터](https://www.data.go.kr/data/15152021/fileData.do#tab-layer-openapi) / [대학교 위치 데이터](https://data.seoul.go.kr/dataList/OA-12974/S/1/datasetView.do)
-    *   [직장 위치 데이터](https://data.seoul.go.kr/dataList/OA-22243/F/1/datasetView.do) / [지하철 역 출입구 위치 데이터](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do?tab=A)
+* **따릉이 데이터**
+    * [따릉이 대여 및 반납 이력 데이터](https://data.seoul.go.kr/dataList/OA-15182/F/1/datasetView.do)
+    * [대여 위치 정보 데이터](https://data.seoul.go.kr/dataList/OA-21235/S/1/datasetView.do)
+    * [실시간 따릉이 대여 및 거치 정보 데이터](https://data.seoul.go.kr/dataList/OA-15493/A/1/datasetView.do)
+* **환경 및 기상 데이터**
+    * [실시간 미세먼지 데이터](https://data.seoul.go.kr/dataList/OA-1200/S/1/datasetView.do) / [시간별 미세먼지 데이터](https://data.kma.go.kr/data/climate/selectDustRltmList.do?pgmNo=68)
+    * [실시간 기상 데이터(1)](https://www.airkorea.or.kr/web/), [(2)](https://data.kma.go.kr/data/grnd/selectAsosRltmList.do) / [시간별 기상 데이터](https://apihub.kma.go.kr/)
+* **인구 데이터**
+    * [유동 인구 데이터](https://data.seoul.go.kr/dataList/OA-22179/S/1/datasetView.do)
+    * [생활 인구 데이터](https://data.seoul.go.kr/dataList/OA-15439/S/1/datasetView.do)
+* **인프라 데이터**
+    * [공원 위치 데이터](https://data.seoul.go.kr/dataList/OA-394/S/1/datasetView.do) / 하천 위치 데이터 [(1)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30603), [(2)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30207)
+    * [학교(초, 중, 고) 위치 데이터](https://www.data.go.kr/data/15152021/fileData.do#tab-layer-openapi) / [대학교 위치 데이터](https://data.seoul.go.kr/dataList/OA-12974/S/1/datasetView.do)
+    * [직장 위치 데이터](https://data.seoul.go.kr/dataList/OA-22243/F/1/datasetView.do) / [지하철 역 출입구 위치 데이터](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do?tab=A)
 
 **2. 데이터 전처리 최적화 (Data Preprocessing)**
 - **메모리 최적화**: 440만 건의 대여 이력을 `chunksize`로 분할 로드하고, 데이터 손실 없이 64-bit 자료형을 32-bit로 변환(Downcasting)하여 OOM(Memory Error)을 방지했습니다.
 - **순차적 무결성 확보**: 모든 데이터를 한 번에 병합 후 결측치를 처리하지 않고, **개별 파일 및 중간 데이터 병합 단계마다 순차적으로 이상치와 결측치를 즉시 제거**하여 데이터 파이프라인의 신뢰성을 극대화했습니다.
+
 ### 피처 (Feature)
 단순한 시계열 데이터를 넘어, 대여소 주변의 지리적 특성, 성별·연령별 이용 성향, 실시간 유동/생활 인구, 기상 악화 요인 등 **50여 개 이상의 다차원 피처**를 종합적으로 구축하여 학습에 활용했습니다.
 
@@ -284,8 +341,9 @@
 | `pop_spike_ratio` | 하루 평균 유동인구 대비 특정 시간대 유동인구 비율 (일시적 인구 밀집 반영) |
 | `population_dynamic_flux` | 특정 시간대와 1시간 전 생활인구의 차분값 (인구의 유입/유출 동적 흐름 반영) |
 
-> 💡 **통합 피처 중요도(Unified Feature Importance) 기반 노이즈 제거**
+> **통합 피처 중요도(Unified Feature Importance) 기반 노이즈 제거**
 > 50개가 넘는 방대한 변수로 인한 차원의 저주를 막기 위해, 8개 알고리즘의 중요도를 정규화 및 평균 내어 통합 중요도 0.01 미만의 하위 변수는 모델 성능을 저해하는 노이즈로 규정하고 과감히 소거했습니다.
+
 ### 평가지표 및 타깃 변환
 자전거 수요 데이터는 편차가 극심하여(비 오는 날 0대, 주말 수천 대), 모델이 큰 값의 오차에만 과도하게 페널티를 받는 것을 막기 위해 타깃 스케일링을 적용했습니다.
 
@@ -295,7 +353,7 @@
 | **RMSE** | 평균 제곱근 오차 | 실제 대여/반납 대수 단위의 직관적인 절대 오차 크기 |
 | **MAE** | 평균 절대 오차 | 이상치에 덜 민감한 평균 오차 |
 
-> 💡 **타깃 변환 로직 적용 (`TransformedTargetRegressor`)**
+> **타깃 변환 로직 적용 (`TransformedTargetRegressor`)**
 > 학습 시 타깃 변수에 `np.log1p`를 씌워 정규분포화하고, 예측 후 `np.expm1`로 복원 시 음수 값이 나오지 않도록 하한선을 0으로 고정하는 커스텀 역변환 함수(`inverse_log_clip`)를 구현하여 적용했습니다.
 
 ### 모델 선정 (3단계)
@@ -322,7 +380,7 @@ Baseline 구성 모델들을 Optuna로 튜닝하여 성능을 극대화했습니
 - 탐색한 주요 파라미터: `n_estimators`, `max_depth`, `learning_rate`, `min_samples_split` 등
 - 탐색 횟수(trials): 각 모델별 최적화 트라이 진행
 
-**🎛️ 주요 모델 최적 하이퍼파라미터 요약 (Best Params)**
+**주요 모델 최적 하이퍼파라미터 요약 (Best Params)**
 Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 튜닝 목적(과적합 제어, 밸런스 등)을 설정하고, 수십 회의 Trials를 거쳐 도출된 최적의 튜닝 전략입니다.
 
 | 모델 | 탐색한 주요 하이퍼파라미터 | 최적 성능을 낸 튜닝 전략 및 탐색 범위 |
@@ -345,9 +403,10 @@ Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 �
 ### 최종 챔피언 모델 선정
 - 4가지 타깃(일반 대여, 새싹 대여, 일반 반납, 새싹 반납)별로 **단일 모델, Voting, Custom Stacking 전체를 교차 비교하여 가장 우수한 모델을 각각 챔피언으로 선정**했습니다.
 - 과적합을 철저히 검증하기 위해 파이프라인 전체에서 단 한 번도 쓰지 않은 **격리된 Test Set으로 딱 한 번만 최종 평가**를 수행했습니다.
+
 ---
 
-### 📊 MLflow 및 Supabase 기반 MLOps 및 모델 관리
+### MLflow 및 Supabase 기반 MLOps 및 모델 관리
 
 여러 모델과 파라미터를 실험하다 보면 **"어떤 설정에서 성능이 가장 좋았는지"** 기억하기 어렵습니다. 그래서 **MLflow**로 모든 실험을 자동 기록·비교하고, 대용량 모델 파일 공유 문제를 해결하기 위해 **Supabase**(**클라우드 스토리지**)를 연동했습니다.
 
@@ -413,44 +472,46 @@ rmsle 파라미터 지표
 ![FinalTest_sprout_rtn_cnt](./image/FinalTest_sprout_rtn_cnt.png)
 
 ---
-## 🖥️ 화면 구성
+
+## 화면 구성
 
 이 서비스는 **사용자(User), 관리자(Admin), 배송 기사(Driver)** 세 가지 역할에 맞춘 전용 대시보드와 UI를 제공합니다.
 
 | 대상 | 화면 | 설명 |
 | :--- | :--- | :--- |
-| **📱 사용자** | **메인 (지도)** | 사용자 로그인 후 현재 위치 기반 주변 대여소 및 실시간 자전거 현황 확인 |
+| **사용자** | **메인 (지도)** | 사용자 로그인 후 현재 위치 기반 주변 대여소 및 실시간 자전거 현황 확인 |
 | | **대여 (QR 스캔)** | 카메라를 이용한 QR 코드 스캔 및 따릉이(일반/새싹) 대여 진행 |
-| **🏢 관리자** | **관제 대시보드 (전체)** | 관리자 로그인 후 전체 대여소의 거치 현황을 한눈에 파악하는 지도 |
+| **관리자** | **관제 대시보드 (전체)** | 관리자 로그인 후 전체 대여소의 거치 현황을 한눈에 파악하는 지도 |
 | | **대시보드 (과포화 필터링)** | 수용 한도를 초과하여 자전거가 과도하게 거치된 '과포화' 대여소 집중 모니터링 |
 | | **대시보드 (고갈 필터링)** | 대여할 자전거가 없어 텅 빈 '고갈' 대여소를 파악하여 재배치 우선순위 파악 |
-| **🚚 기사** | **지시서 관리** | 배송 기사에게 할당된 재배치(수거/배치) 및 고장 수거 업무 지시서 목록 확인 |
+| **기사** | **지시서 관리** | 배송 기사에게 할당된 재배치(수거/배치) 및 고장 수거 업무 지시서 목록 확인 |
 | | **경로 안내 (카카오내비)** | 지시서 수행 시 이동해야 할 최적 경로 확인 및 카카오내비 앱 연동을 통한 길 안내 |
 
 <br>
 
-### 📱 1. 사용자 화면 (User)
+### 1. 사용자 화면 (User)
 사용자 주변의 대여소를 확인하고 QR 코드로 손쉽게 자전거를 대여합니다.
 ![사용자 메인 지도](./image/map1.png)
 ![사용자 QR 대여](./image/map2.png)
 
-### 🏢 2. 관리자 대시보드 (Admin)
+### 2. 관리자 대시보드 (Admin)
 전체 대여소의 현황을 파악하고, ML 예측을 기반으로 재배치가 시급한 과포화/고갈 대여소를 필터링합니다.
 ![관리자 대시보드 전체](./image/dashboard1.png)
 ![관리자 대시보드 과포화](./image/dashboard2.png)
 ![관리자 대시보드 고갈](./image/dashboard3.png)
 
-### 🚚 3. 배송 기사 화면 (Driver)
+### 3. 배송 기사 화면 (Driver)
 할당된 업무 지시서를 확인하고, 카카오내비 연동을 통해 효율적으로 자전거를 재배치합니다.
 ![기사 지시서 관리](./image/dispatch.png)
 ![기사 경로 카카오내비](./image/kakao.png)
+
 ---
 
-## 🚀 설치 및 실행
+## 설치 및 실행
 
 ```bash
 # 1. 저장소 복제
-git clone [https://github.com/팀계정/seoul_bike.git](https://github.com/팀계정/seoul_bike.git)
+git clone https://github.com/팀계정/seoul_bike.git
 cd seoul_bike
 
 # 2. 가상환경 생성 및 활성화
@@ -466,14 +527,14 @@ pip install -r requirements.txt
 
 # 5. 서버 실행
 uvicorn main:app --reload
-# → [http://127.0.0.1:8000](http://127.0.0.1:8000)
+# → http://127.0.0.1:8000
 ```
 
-> 💡 ML 챔피언 모델(`.pkl`)은 서버 가동 시 Supabase S3 클라우드 스토리지에서 자동으로 Fetching 되므로 별도의 모델 파일 로컬 다운로드가 필요하지 않습니다.
+> ML 챔피언 모델(`.pkl`)은 서버 가동 시 Supabase S3 클라우드 스토리지에서 자동으로 Fetching 되므로 별도의 모델 파일 로컬 다운로드가 필요하지 않습니다.
 
 ---
 
-## 🔧 트러블슈팅 (ML 학습 및 데이터 파이프라인)
+## 트러블슈팅 (ML 학습 및 데이터 파이프라인)
 
 - **데이터 정제 병목 현상과 메모리 초과 (OOM)**: 초기에는 모든 데이터를 하나로 병합한 후 마지막에 결측치와 이상치를 한 번에 처리하려 했으나, 메모리 초과와 에러 전파 문제가 발생했습니다. 이를 해결하기 위해 파이프라인을 수정하여, **각 개별 데이터 및 중간 병합 단계마다 순차적으로 이상치와 결측치를 즉시 제거**하도록 로직을 변경하여 데이터 무결성을 확보했습니다.
 - **시계열 데이터 누수 (Data Leakage)**: 기본 StackingRegressor를 시계열 분할(TimeSeriesSplit)과 결합할 때, 미래의 데이터가 과거 폴드에 끼어드는 현상을 발견했습니다. 이를 완벽히 차단하기 위해 **직접 OOF(Out-Of-Fold)를 순회하며 검증하는 커스텀 클래스(`ManualStackingRegressor`)를 직접 구현**하여 모델의 실제 예측 신뢰도를 높였습니다.
@@ -481,51 +542,51 @@ uvicorn main:app --reload
 
 ---
 
-## 🚀 배포 
+## 배포
 
 <details>
 <summary>배포 환경 및 설정 (접었다 펼치기)</summary>
 
-- **서버 환경**: 
+- **서버 환경**:
 - **데이터베이스**: MySQL
 - **모델 스토리지**: Supabase Storage
 </details>
 
 ---
 
-## 📝 프로젝트 소감
+## 프로젝트 소감
 
-### 👤 장수연 (팀장)
-- 
+### 장수연 (팀장)
+-
 
-### 👤 박은비 (부팀장)
-- 
+### 박은비 (부팀장)
+-
 
-### 👤 김세호 (팀원)
-- 
+### 김세호 (팀원)
+-
 
-### 👤 권덕윤 (팀원)
-- 
+### 권덕윤 (팀원)
+-
 
-### 👤 전지혜 (팀원)
-- 
+### 전지혜 (팀원)
+-
 
 ---
 
-## 🔍 팀 전체 회고
+## 팀 전체 회고
 
 **잘한 점**
-- 
+-
 
 **아쉬운 점 / 개선하고 싶은 점**
-- 
+-
 
 **다음 프로젝트에 적용할 것**
-- 
+-
 
 ---
 
-## 📁 프로젝트 구조 (Project Structure)
+## 프로젝트 구조 (Project Structure)
 
 ```text
 seoul_bike/
@@ -558,4 +619,4 @@ seoul_bike/
 └── README.md                   # 프로젝트 소개 문서
 ```
 
-> ⚠️ `.env` (보안 키), `models_pkl/` (대용량 모델 파일), `data/` (원본 데이터) 등은 보안 및 용량 문제로 GitHub에 업로드하지 않고 서버 및 클라우드(Supabase) 환경에서 개별 관리합니다.
+> `.env` (보안 키), `models_pkl/` (대용량 모델 파일), `data/` (원본 데이터) 등은 보안 및 용량 문제로 GitHub에 업로드하지 않고 서버 및 클라우드(Supabase) 환경에서 개별 관리합니다.

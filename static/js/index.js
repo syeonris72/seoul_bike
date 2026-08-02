@@ -157,13 +157,13 @@ function switchTab(tabType) {
         tabLogin.classList.add('tab-active');
         tabSignup.classList.remove('tab-active');
         mainTitle.innerText = '로그인';
-        mainSubtitle.innerText = '부여받은 계정 정보로 로그인해 주세요.';
+        mainSubtitle.innerText = '부여받은 계정 정보로 로그인';
         actionBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2 text-white"></i>로그인';
     } else if (tabType === 'signup') {
         tabSignup.classList.add('tab-active');
         tabLogin.classList.remove('tab-active');
         mainTitle.innerText = '회원가입';
-        mainSubtitle.innerText = '서비스 이용을 위한 정보를 입력해 주세요.';
+        mainSubtitle.innerText = '서비스 이용을 위한 정보 입력';
         actionBtn.innerHTML = '<i class="bi bi-person-plus me-2 text-white"></i>회원가입';
     }
 

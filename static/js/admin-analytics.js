@@ -535,6 +535,9 @@ function renderChronicList() {
             '<div class="item-stats d-none d-sm-flex">' +
                 '<div class="' + statClass + '">' + st.total_bikes + '/' + st.capacity + '대 <span class="stat-sub">' + statLabel + ' (' + percent + '%)</span></div>' +
             '</div>';
+        div.addEventListener('click', function () {
+            window.location.href = 'admin-dashboard.html?stationId=' + encodeURIComponent(st.station_id);
+        });
         return div;
     }
 

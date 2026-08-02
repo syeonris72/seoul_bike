@@ -712,7 +712,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('openWriteModalBtn').addEventListener('click', function () { openWriteModal(); });
     document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
 
-    // 관제 지도 페이지에서 "지시서 쓰기"로 넘어온 경우: 해당 스테이션을 role에 따라 출발지(수거) 또는 도착지(배치)로 자동 선택 후 모달 오픈
+    // 관제 지도 페이지에서 "지시서 쓰기"로 넘어온 경우: 해당 대여소를 role에 따라 출발지(수거) 또는 도착지(배치)로 자동 선택 후 모달 오픈
     // (고갈 대여소 핀에서 넘어온 경우 role=to이므로 배치 대여소로, 그 외는 role=from이므로 수거 대여소로 선택된다.)
     var params = new URLSearchParams(window.location.search);
     if (params.get('writeOrder') === '1' && params.get('stationId')) {

@@ -12,7 +12,7 @@
     <!-- 공통 헤더 CSS -->
     <link rel="stylesheet" href="css/header.css" />
     <!-- 데이터 분석 전용 CSS -->
-    <link rel="stylesheet" href="css/admin-analytics.css?v=20260801b" />
+    <link rel="stylesheet" href="css/admin-analytics.css?v=20260802h" />
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <!-- Chart.js Sankey Plugin CDN (흐름 시각화용) -->
@@ -168,17 +168,17 @@
                 <div class="list-card h-100 mb-0 d-flex flex-column">
                     <div class="list-header-flex mb-2">
                         <div class="list-title">만성 불균형 대여소</div>
-                    </div>
 
-                    <!-- 커스텀 탭 메뉴 (고갈 / 과포화) -->
-                    <ul class="nav nav-pills gap-2 mb-2" id="imbalanceTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active imbalance-pill danger-pill" id="danger-tab" data-bs-toggle="pill" data-bs-target="#dangerList" type="button" role="tab">고갈</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link imbalance-pill full-pill" id="full-tab" data-bs-toggle="pill" data-bs-target="#fullList" type="button" role="tab">과포화</button>
-                        </li>
-                    </ul>
+                        <!-- 커스텀 탭 메뉴 (고갈 / 과포화) -->
+                        <ul class="nav nav-pills gap-2 mb-0" id="imbalanceTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active imbalance-pill danger-pill" id="danger-tab" data-bs-toggle="pill" data-bs-target="#dangerList" type="button" role="tab">고갈</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link imbalance-pill full-pill" id="full-tab" data-bs-toggle="pill" data-bs-target="#fullList" type="button" role="tab">과포화</button>
+                            </li>
+                        </ul>
+                    </div>
 
                     <!-- 탭 콘텐츠 (리스트 출력 영역) -->
                     <div class="tab-content flex-grow-1 mt-2 imbalance-tab-content" id="imbalanceTabsContent">
@@ -250,6 +250,6 @@
 <!-- 공통 헤더 JS -->
 <script src="js/header.js?v=20260802a"></script>
 <!-- 데이터 분석 전용 JS -->
-<script src="js/admin-analytics.js?v=20260801a"></script>
+<script src="js/admin-analytics.js?v=20260802a"></script>
 </body>
 </html>
