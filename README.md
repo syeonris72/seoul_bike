@@ -558,10 +558,8 @@ uvicorn main:app --reload
 ## 프로젝트 정리
 
 ### 기대효과
--
 
 ### 개선사항
--
 
 ### 프로젝트 회고
 
@@ -579,6 +577,7 @@ uvicorn main:app --reload
 
 > 전지혜
 -
+
 
 ### 트러블슈팅
 
