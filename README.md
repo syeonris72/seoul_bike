@@ -398,9 +398,12 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | XGBoost | 0.51257 | 0.50504 | ▼ 0.00753 |
 | LightGBM | 0.51319 | 0.50778 | ▼ 0.00540 |
 | RandomForest | 0.52536 | 0.51667 | ▼ 0.00869 |
+| Lasso | 0.62655 | 0.59835 | ▼ 0.02820 |
+| Ridge | 0.61654 | 0.61654 | — (변화 미미) |
+| ElasticNet | 0.60624 | 0.61820 | ▲ 0.01196 (튜닝 후 오히려 소폭 악화) |
 
-- 탐색한 주요 파라미터: `n_estimators`, `max_depth`, `learning_rate`, `min_samples_split` 등
-- 탐색 횟수(trials): 각 모델별 최적화 트라이 진행
+- 탐색한 주요 파라미터: `n_estimators`, `max_depth`, `learning_rate`, `min_samples_split`, `alpha`, `l1_ratio` 등
+- 탐색 횟수(trials): XGBoost 3개 전략 × 50 trials, LightGBM 4개 전략 × 40~80 trials, Ridge/Lasso/ElasticNet 각 4개 전략 × 30 trials으로 서로 다른 목적(밸런스/과적합 방지/규제 강도 등)의 탐색 공간을 병행 실행 후 타깃별 최저 RMSLE 전략을 채택
 
 **주요 모델 최적 하이퍼파라미터 요약 (Best Params)**
 Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 튜닝 목적(과적합 제어, 밸런스 등)을 설정하고, 수십 회의 Trials를 거쳐 도출한 최적의 튜닝 전략
@@ -410,6 +413,9 @@ Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 �
 | **XGBoost** | `n_estimators`, `max_depth`, `learning_rate` | **[학습 밸런스]** n_estimators: 200~500, max_depth: 8~11, lr: 0.005~0.05 |
 | **LightGBM** | `n_estimators`, `max_depth`, `learning_rate` | **[과적합 방지]** n_estimators: 1000~5000, max_depth: 3~6, lr: 0.005~0.05 |
 | **RandomForest** | `n_estimators`, `max_depth`, `max_features`, `min_samples_split` | **[단일 최적값]** n_estimators: 500, max_depth: 19, max_features: sqrt, min_samples_split: 3 |
+| **Lasso** | `alpha` | **[강한 규제]** alpha: 0.01~5.0(log) — L1 규제를 강하게 걸어 일반화 성능 확보 |
+| **Ridge** | `alpha` | **[안정화]** alpha: 0.01~1.0(log), `max_iter=3000` 적용으로 미해결 수렴(Convergence) 에러 방지 |
+| **ElasticNet** | `alpha`, `l1_ratio` | **[안정화]** alpha: 1e-4~1.0(log), l1_ratio: 0.1~0.9, `max_iter=3000` 적용 |
 
 ### 3단계 — 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)
 단순 Voting을 넘어 성능을 한계까지 끌어올리기 위해 Stacking 앙상블 적용
