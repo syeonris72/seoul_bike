@@ -393,40 +393,44 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 ### 하이퍼파라미터 튜닝(Optuna)
 
-| 모델 | 튜닝 전 RMSLE | 튜닝 후 RMSLE | 개선 |
-| :--- | :--- | :--- | :--- |
-| XGBoost | 0.51257 | 0.50504 | ▼ 0.00753 |
-| LightGBM | 0.51319 | 0.50778 | ▼ 0.00540 |
-| RandomForest | 0.52536 | 0.51667 | ▼ 0.00869 |
-| Lasso | 0.62655 | 0.59835 | ▼ 0.02820 |
-| Ridge | 0.61654 | 0.61654 | — (변화 미미) |
-| ElasticNet | 0.60624 | 0.61820 | ▲ 0.01196 (튜닝 후 오히려 소폭 악화) |
+| 모델 | 튜닝 전 RMSLE | 튜닝 후 RMSLE | 개선                        |
+| :--- | :--- | :--- |:--------------------------|
+| XGBoost | 0.51257 | 0.50504 | ▼ 0.00753                 |
+| LightGBM | 0.51319 | 0.50778 | ▼ 0.00540                 |
+| RandomForest | 0.52536 | 0.51667 | ▼ 0.00869                 |
+| Lasso | 0.62655 | 0.59835 | ▼ 0.02820                 |
+| Ridge | 0.61654 | 0.61654 | —                         |
+| ElasticNet | 0.60624 | 0.61820 | ▲ 0.01196 |
 
-- 탐색한 주요 파라미터: `n_estimators`, `max_depth`, `learning_rate`, `min_samples_split`, `alpha`, `l1_ratio` 등
-- 탐색 횟수(trials): XGBoost 3개 전략 × 50 trials, LightGBM 4개 전략 × 40~80 trials, Ridge/Lasso/ElasticNet 각 4개 전략 × 30 trials으로 서로 다른 목적(밸런스/과적합 방지/규제 강도 등)의 탐색 공간을 병행 실행 후 타깃별 최저 RMSLE 전략을 채택
+> **탐색 횟수(trials)**
+- XGBoost 3개 전략 × 50 `trials`
+- LightGBM 4개 전략 × 40~80 `trials`
+- Ridge/Lasso/ElasticNet 각 4개 전략 × 30 `trials`
 
-**주요 모델 최적 하이퍼파라미터 요약 (Best Params)**
-Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 튜닝 목적(과적합 제어, 밸런스 등)을 설정하고, 수십 회의 Trials를 거쳐 도출한 최적의 튜닝 전략
+| 모델 | 주요 하이퍼파라미터                                                       | 최적 성능을 낸 튜닝 전략 및 탐색 범위                                                             |
+| :--- |:-----------------------------------------------------------------|:-----------------------------------------------------------------------------------|
+| **XGBoost** | `n_estimators`, `max_depth`, `learning_rate`                     | `n_estimators`: 200~500, `max_depth`: 8~11, `lr`: 0.005~0.05                       |
+| **LightGBM** | `n_estimators`, `max_depth`, `learning_rate`                     | `n_estimators`: 1000~5000, max_depth: 3~6, `lr`: 0.005~0.05                        |
+| **RandomForest** | `n_estimators`, `max_depth`, `max_features`, `min_samples_split` | `n_estimators`: 500, `max_depth`: 19, `max_features`: sqrt, `min_samples_split`: 3 |
+| **Lasso** | `alpha`                                                          | `alpha`: 0.01~5.0(log)                                                             |
+| **Ridge** | `alpha`                                                          | `alpha`: 0.01~1.0(log), `max_iter`: 3000                                           |
+| **ElasticNet** | `alpha`, `l1_ratio`                                              | `alpha`: 1e-4~1.0(log), `l1_ratio`: 0.1~0.9, `max_iter`: 3000                      |
 
-| 모델 | 탐색한 주요 하이퍼파라미터 | 최적 성능을 낸 튜닝 전략 및 탐색 범위 |
-| :--- | :--- | :--- |
-| **XGBoost** | `n_estimators`, `max_depth`, `learning_rate` | **[학습 밸런스]** n_estimators: 200~500, max_depth: 8~11, lr: 0.005~0.05 |
-| **LightGBM** | `n_estimators`, `max_depth`, `learning_rate` | **[과적합 방지]** n_estimators: 1000~5000, max_depth: 3~6, lr: 0.005~0.05 |
-| **RandomForest** | `n_estimators`, `max_depth`, `max_features`, `min_samples_split` | **[단일 최적값]** n_estimators: 500, max_depth: 19, max_features: sqrt, min_samples_split: 3 |
-| **Lasso** | `alpha` | **[강한 규제]** alpha: 0.01~5.0(log) — L1 규제를 강하게 걸어 일반화 성능 확보 |
-| **Ridge** | `alpha` | **[안정화]** alpha: 0.01~1.0(log), `max_iter=3000` 적용으로 미해결 수렴(Convergence) 에러 방지 |
-| **ElasticNet** | `alpha`, `l1_ratio` | **[안정화]** alpha: 1e-4~1.0(log), l1_ratio: 0.1~0.9, `max_iter=3000` 적용 |
-
-### 3단계 — 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)
+### 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)
 단순 Voting을 넘어 성능을 한계까지 끌어올리기 위해 Stacking 앙상블 적용
 
 - **기존 라이브러리의 한계**: 일반 `StackingRegressor`를 시계열 분할(`TimeSeriesSplit`)과 결합 시 미래 데이터가 과거에 끼어드는 **데이터 누수(Leakage)** 발생.
 - **해결책 (직접 구현)**: `TimeSeriesSplit` 폴드를 직접 순회하며 OOF(Out-Of-Fold) 예측을 수행하고 누수를 완벽히 차단하는 커스텀 클래스(`ManualStackingRegressor`)를 구현.
 - **메타 모델**: Base 모델(LGBM, XGB)의 예측값을 바탕으로 `Ridge` 선형 회귀를 최종 추론 모델로 사용.
 
-| 앙상블 방식 | 구성 모델 | RMSLE | RMSE | MAE |
-| :--- | :--- | :--- | :--- | :--- |
-| Custom Stacking | Base(LGBM, XGB) + Meta(Ridge) | **0.50337** | **2.970** | **1.721** |
+| 타깃 | Voting RMSLE | Stacking RMSLE | 개선 |
+| :--- | :--- | :--- | :--- |
+| `general_rent_cnt` | 0.50631 | **0.50337** | ▼ 0.00294 |
+| `general_rtn_cnt` | 0.48015 | **0.47799** | ▼ 0.00216 |
+| `sprout_rent_cnt` | 0.19034 | **0.19027** | ▼ 0.00007 |
+| `sprout_rtn_cnt` | **0.19307** | 0.19309 | ▲ 0.00002 (거의 동률) |
+
+`general_rent_cnt` 기준 최고 성능(Custom Stacking, Base LGBM+XGB / Meta Ridge): **RMSLE 0.50337 / RMSE 2.970 / MAE 1.721**
 
 ## 4️⃣  성능 평가
 
@@ -452,7 +456,17 @@ Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 �
 
 ### 최종 챔피언 모델 선정 및 검증
 - 4가지 타깃(일반 대여, 새싹 대여, 일반 반납, 새싹 반납)별로 **단일 모델, Voting, Custom Stacking 전체를 교차 비교하여 가장 우수한 모델을 각각 챔피언으로 선정**
+- 일반(general) 타깃은 앙상블(Custom Stacking)이 우세했지만, 새싹(sprout) 타깃은 **튜닝된 단일 모델(LightGBM/RandomForest)이 앙상블보다 더 좋은 성능**을 보여 타깃별로 다른 챔피언 채택
 - 과적합을 철저히 검증하기 위해 파이프라인 전체에서 단 한 번도 쓰지 않은 **격리된 Test Set으로 딱 한 번만 최종 평가** 수행
+
+| 타깃 | 챔피언 모델 | 검증 RMSLE | 최종 Test RMSLE | 최종 Test RMSE | 최종 Test MAE |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `general_rent_cnt` | Custom Stacking | 0.50337 | 0.48941 | 2.352 | 1.412 |
+| `general_rtn_cnt` | Custom Stacking | 0.47799 | 0.47058 | 2.242 | 1.350 |
+| `sprout_rent_cnt` | LightGBM (단일, 튜닝) | 0.19016 | 0.13473 | 0.263 | 0.060 |
+| `sprout_rtn_cnt` | RandomForest (단일, 튜닝) | 0.19207 | 0.13567 | 0.228 | 0.070 |
+
+4개 타깃 모두 격리된 최종 Test Set에서 검증 단계보다 낮은 RMSLE를 기록하여, 과적합 없이 일반화되었음을 확인
 
 ---
 
