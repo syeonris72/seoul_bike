@@ -468,39 +468,36 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 4개 타깃 모두 격리된 최종 Test Set에서 검증 단계보다 낮은 RMSLE를 기록하여, 과적합 없이 일반화되었음을 확인
 
----
+## 5️⃣  MLflow 및 Supabase 기반 MLOps 및 모델 관리
 
-### MLflow 및 Supabase 기반 MLOps 및 모델 관리
-
-여러 모델과 파라미터를 실험하다 보면 **"어떤 설정에서 성능이 가장 좋았는지"** 기억하기 어려움. 그래서 **MLflow**로 모든 실험을 자동 기록·비교하고, 대용량 모델 파일 공유 문제를 해결하기 위해 **Supabase**(**클라우드 스토리지**) 연동
-
-**1. MLflow를 통한 실험 트래킹**
+### MLflow를 통한 실험 트래킹
 머신러닝 실험을 추적·관리하는 도구로, 모델을 학습할 때마다 어떤 파라미터로 학습했고 성능(지표)이 얼마였는지를 자동으로 기록해 최적 조합 탐색
-* **Parameters**: 모델 종류, 하이퍼파라미터 (`n_estimators`, `max_depth`, `learning_rate` 등)
-* **Metrics**: RMSLE, RMSE, MAE 등 평가지표
-* **실험 비교**: 여러 run을 나란히 비교해 최고 성능 조합 선택
 
-**2. Supabase Storage (S3 호환) 연동 및 파이프라인 자동화**
-* **대용량 파일 공유 해결**: 앙상블 완료 후 생성되는 무거운 모델 파일(`.pkl`)과 중요도 시각화 이미지는 Github에 올릴 수 없으므로, AWS S3 호환 프로토콜을 지원하는 **Supabase Storage**에 분리 저장
-* **동적 아티팩트 Sync**: 서버 실행 시 또는 학습 파이프라인 구동 시, Supabase에 저장된 최적 파라미터(`best_params.json`)와 모델 아티팩트를 `boto3`를 통해 동적으로 Fetch(다운로드)하여 팀원 간 로컬 환경 불일치와 휴먼 에러 원천 차단
+- **Parameters**: 모델 종류, 하이퍼파라미터 (`n_estimators`, `max_depth`, `learning_rate` 등)
+- **Metrics**: RMSLE, RMSE, MAE 등 평가지표
+- **실험 비교**: 여러 run을 나란히 비교해 최고 성능 조합 선택
 
-**우리가 기록·관리한 항목 요약**
+### Supabase Storage(S3 호환) 연동 및 파이프라인 자동화
+
+- **대용량 파일 공유 해결**: 앙상블 완료 후 생성되는 무거운 모델 파일(`.pkl`)과 중요도 시각화 이미지는 GitHub에 올릴 수 없으므로, AWS S3 호환 프로토콜을 지원하는 **Supabase Storage**에 분리 저장
+- **동적 아티팩트 Sync**: 서버 실행 시 또는 학습 파이프라인 구동 시, Supabase에 저장된 최적 파라미터(`best_params.json`)와 모델 아티팩트를 `boto3`로 동적으로 Fetch(다운로드)하여 팀원 간 로컬 환경 불일치와 휴먼 에러 원천 차단
+
+**기록·관리 항목 요약**
 
 | 항목 | 내용 |
 | :--- | :--- |
 | **Parameters & Metrics** | Optuna 튜닝 결과 및 RMSLE/RMSE/MAE 지표 자동 기록 (MLflow) |
-| **Artifacts Storage** | 직렬화된 챔피언 모델(.pkl) 및 시각화 리소스 (Supabase S3) |
+| **Artifacts Storage** | 직렬화된 챔피언 모델(`.pkl`) 및 시각화 리소스 (Supabase S3) |
 | **Pipeline Automation** | 클라우드에 저장된 설정값 기반 모델 동적 로드 및 서빙 연동 |
 
 **팀원별 실험 기록**
-실제 MLflow 트래킹 데이터(`baseline.csv`, `tuning.csv`)에 기록된 팀원별 담당 업무 및 실험 내용
 
-| 팀원 | 담당 역할 및 실험 내용                                                                                   | 주요 발견 및 기여                                                                                      |
-| :--- |:------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------|
-| **장수연** | 베이스라인 전체 통합 및 LightGBM 모델 Optuna 하이퍼파라미터 튜닝 (`tuning(수연).ipynb`), Supabase-S3 클라우드 스토리지 아키텍처 연동 | LightGBM의 트리 구조 및 학습률 최적화를 통해 단일 모델 최고 성능 달성 및 시계열 누수 방지용 OOF Stacking 구현, Supabase 동적 파이프라인 구축 |
-| **박은비** | XGBoost 모델  Optuna 하이퍼파라미터 튜닝 (`XGBoost_tuning(은비).ipynb`)                                      | XGBoost 최적 파라미터 탐색을 통해 Baseline 대비 오차 개선율 확보                                                    |
-| **김세호** | 선형 회귀 계열 모델 Optuna 하이퍼파라미터 튜닝 (`tuning(세호).ipynb`)                                              | 선형 모델 한계 분석                            |
-| **권덕윤** | RandomForest 모델 Optuna 하이퍼파라미터 튜닝 (`tuning(덕윤).ipynb`)                                          | 숲의 깊이(`max_depth`) 및 샘플 분할 조건 최적화 수행                                                            |
+| 팀원 | 담당 역할 및 실험 내용 | 주요 발견 및 기여 |
+| :--- | :--- | :--- |
+| **장수연** | 베이스라인 전체 통합 및 LightGBM 하이퍼파라미터 튜닝(`tuning(수연).ipynb`), Supabase-S3 아키텍처 연동 | LightGBM 트리 구조·학습률 최적화로 단일 모델 최고 성능 달성, 시계열 누수 방지용 OOF Stacking 및 Supabase 동적 파이프라인 구축 |
+| **박은비** | XGBoost 하이퍼파라미터 튜닝(`XGBoost_tuning(은비).ipynb`) | XGBoost 최적 파라미터 탐색으로 Baseline 대비 오차 개선 |
+| **김세호** | 선형 회귀 계열 모델 하이퍼파라미터 튜닝(`tuning(세호).ipynb`) | 선형 모델의 한계 분석 |
+| **권덕윤** | RandomForest 하이퍼파라미터 튜닝(`tuning(덕윤).ipynb`) | 숲의 깊이(`max_depth`) 및 샘플 분할 조건 최적화 |
 
 **MLflow 실험 화면**
 
