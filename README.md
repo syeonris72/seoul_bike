@@ -419,9 +419,9 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 ### 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)
 단순 Voting을 넘어 성능을 한계까지 끌어올리기 위해 Stacking 앙상블 적용
 
-- **기존 라이브러리의 한계**: 일반 `StackingRegressor`를 시계열 분할(`TimeSeriesSplit`)과 결합 시 미래 데이터가 과거에 끼어드는 **데이터 누수(Leakage)** 발생.
-- **해결책 (직접 구현)**: `TimeSeriesSplit` 폴드를 직접 순회하며 OOF(Out-Of-Fold) 예측을 수행하고 누수를 완벽히 차단하는 커스텀 클래스(`ManualStackingRegressor`)를 구현.
-- **메타 모델**: Base 모델(LGBM, XGB)의 예측값을 바탕으로 `Ridge` 선형 회귀를 최종 추론 모델로 사용.
+- 일반 `StackingRegressor`를 시계열 분할(`TimeSeriesSplit`)과 결합 시 미래 데이터가 과거에 끼어드는 **데이터 누수(Leakage)** 발생.
+- `TimeSeriesSplit` 폴드를 직접 순회하며 OOF(Out-Of-Fold) 예측을 수행하고 누수를 완벽히 차단하는 커스텀 클래스(`ManualStackingRegressor`)를 구현.
+- Base 모델(LGBM, XGB)의 예측값을 바탕으로 `Ridge` 선형 회귀를 최종 추론 모델로 사용.
 
 | 타깃 | Voting RMSLE | Stacking RMSLE | 개선 |
 | :--- | :--- | :--- | :--- |
@@ -430,12 +430,9 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | `sprout_rent_cnt` | 0.19034 | **0.19027** | ▼ 0.00007 |
 | `sprout_rtn_cnt` | **0.19307** | 0.19309 | ▲ 0.00002 (거의 동률) |
 
-`general_rent_cnt` 기준 최고 성능(Custom Stacking, Base LGBM+XGB / Meta Ridge): **RMSLE 0.50337 / RMSE 2.970 / MAE 1.721**
-
 ## 4️⃣  성능 평가
 
 ### 평가지표 및 타깃 변환
-자전거 수요 데이터는 편차가 극심하여(비 오는 날 0대, 주말 수천 대), 모델이 큰 값의 오차에만 과도하게 페널티를 받는 것을 막기 위해 타깃 스케일링 적용
 
 | 지표 | 의미 | 특징 |
 | :--- | :--- | :--- |
@@ -446,26 +443,16 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 > **타깃 변환 로직 적용 (`TransformedTargetRegressor`)**
 > 학습 시 타깃 변수에 `np.log1p`를 씌워 정규분포화하고, 예측 후 `np.expm1`로 복원 시 음수 값이 나오지 않도록 하한선을 0으로 고정하는 커스텀 역변환 함수(`inverse_log_clip`)를 구현하여 적용
 
-### 단계별 성능 개선 요약 (`general_rent_cnt` 기준)
+### 최종 모델 및 Test 데이터셋 검증
 
-| 단계 | 최고 성능 모델 | RMSLE | 개선폭 |
-| :--- | :--- | :--- | :--- |
-| 1. Baseline | Voting Regressor | 0.50631 | — |
-| 2. 하이퍼파라미터 튜닝 | XGBoost | 0.50504 | ▼ 0.00127 |
-| 3. Custom Stacking | Base(LGBM, XGB) + Meta(Ridge) | **0.50337** | ▼ 0.00167 |
+`general_rent_cnt` 기준 Baseline(Voting `0.50631`) → 튜닝(XGBoost `0.50504`) → Custom Stacking(`0.50337`)까지 단계적으로 RMSLE 개선 (자세한 수치는 [3️⃣ 모델 선정 과정](#3️⃣--모델-선정-과정) 참고)
 
-### 최종 챔피언 모델 및 홀드아웃 검증
-- 4가지 타깃(일반/새싹 대여·반납)별로 단일 모델, Voting, Custom Stacking을 교차 비교해 챔피언 선정 — 일반(general) 계열은 **Custom Stacking**, 새싹(sprout) 계열은 오히려 **튜닝된 단일 모델(LightGBM/RandomForest)**이 앙상블을 앞서 채택
-- 파이프라인에서 단 한 번도 쓰지 않은 **격리된 Test Set**으로 딱 한 번만 최종 평가 수행
-
-| 타깃 | 챔피언 모델 | Test RMSLE | Test RMSE | Test MAE |
-| :--- | :--- | :--- | :--- | :--- |
-| `general_rent_cnt` | Custom Stacking | 0.48941 | 2.352 | 1.412 |
-| `general_rtn_cnt` | Custom Stacking | 0.47058 | 2.242 | 1.350 |
-| `sprout_rent_cnt` | LightGBM (단일, 튜닝) | 0.13473 | 0.263 | 0.060 |
+| 타깃 | 최종 모델                 | RMSLE   | RMSE | MAE |
+| :--- |:----------------------|:--------| :--- | :--- |
+| `general_rent_cnt` | Custom Stacking       | 0.48941 | 2.352 | 1.412 |
+| `general_rtn_cnt` | Custom Stacking       | 0.47058 | 2.242 | 1.350 |
+| `sprout_rent_cnt` | LightGBM (단일, 튜닝)     | 0.13473 | 0.263 | 0.060 |
 | `sprout_rtn_cnt` | RandomForest (단일, 튜닝) | 0.13567 | 0.228 | 0.070 |
-
-> 4개 타깃 모두 Test RMSLE가 검증 단계 RMSLE보다 낮게 나와, 과적합 없이 잘 일반화되었음을 확인
 
 ## 5️⃣  MLflow 및 Supabase 기반 MLOps 및 모델 관리
 
@@ -498,35 +485,35 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | **김세호** | 선형 회귀 계열 모델 하이퍼파라미터 튜닝(`tuning(세호).ipynb`) | 선형 모델의 한계 분석 |
 | **권덕윤** | RandomForest 하이퍼파라미터 튜닝(`tuning(덕윤).ipynb`) | 숲의 깊이(`max_depth`) 및 샘플 분할 조건 최적화 |
 
-**MLflow 실험 화면**
+> **MLflow 실험 화면**
 
-**① 실험 목록 (여러 run 비교 화면)**
+**실험 목록**
 
 ![runs](./image/runs.png)
 
-**② 파라미터·지표 비교**
+**파라미터·지표 비교**
 
-rmsle 파라미터 지표
+- rmsle 파라미터 지표
 ![rmsle_graph](./image/rmsle_graph.png)
 
-rmse 파라미터 지표
+- rmse 파라미터 지표
 ![rmse_graph](./image/rmse_graph.png)
 
-mae 파라미터 지표
+- mae 파라미터 지표
 ![mae_graph](./image/mae_graph.png)
 
-**③ 최고 성능 run 상세**
+**최고 성능 모델 상세**
 
-일반 따릉이 대여 최종 테스트
+- 일반 따릉이 대여 최종 테스트
 ![FinalTest_general_rent_cnt](./image/FinalTest_general_rent_cnt.png)
 
-일반 따릉이 반납 최종 테스트
+- 일반 따릉이 반납 최종 테스트
 ![FinalTest_general_rtn_cnt](./image/FinalTest_general_rtn_cnt.png)
 
-새싹 따릉이 대여 최종 테스트
+- 새싹 따릉이 대여 최종 테스트
 ![FinalTest_sprout_rent_cnt](./image/FinalTest_sprout_rent_cnt.png)
 
-새싹 따릉이 반납 최종 테스트
+- 새싹 따릉이 반납 최종 테스트
 ![FinalTest_sprout_rtn_cnt](./image/FinalTest_sprout_rtn_cnt.png)
 
 ---
@@ -594,9 +581,9 @@ uvicorn main:app --reload
 
 ## 트러블슈팅 (ML 학습 및 데이터 파이프라인)
 
-- **데이터 정제 병목 현상과 메모리 초과 (OOM)**: 초기에는 모든 데이터를 하나로 병합한 후 마지막에 결측치와 이상치를 한 번에 처리하려 했으나, 메모리 초과와 에러 전파 문제 발생. 이를 해결하기 위해 파이프라인을 수정하여, **각 개별 데이터 및 중간 병합 단계마다 순차적으로 이상치와 결측치를 즉시 제거**하도록 로직을 변경하여 데이터 무결성 확보
-- **시계열 데이터 누수 (Data Leakage)**: 기본 StackingRegressor를 시계열 분할(TimeSeriesSplit)과 결합할 때, 미래의 데이터가 과거 폴드에 끼어드는 현상 발견. 이를 완벽히 차단하기 위해 **직접 OOF(Out-Of-Fold)를 순회하며 검증하는 커스텀 클래스(`ManualStackingRegressor`)를 직접 구현**하여 모델의 실제 예측 신뢰도 향상
-- **예측값이 음수로 떨어지는 문제**: 회귀 모델 특성상 수요가 적은 시간대/대여소의 예측값이 음수로 도출되는 문제 존재. 학습 시 타깃에 `np.log1p`를 씌워 정규화하고, 추론 후 `np.expm1`로 복원할 때 **결과값을 0 이상의 하한선으로 고정(clamp)하는 커스텀 역변환 로직** 적용
+- **데이터 정제 병목 & 메모리 초과(OOM)**: 전체 데이터를 한 번에 병합한 뒤 결측치·이상치를 처리하려다 메모리 초과와 에러 전파 발생 → 개별 파일·중간 병합 단계마다 즉시 정제하는 방식으로 전환 (해결 로직: [데이터 전처리](#데이터-전처리))
+- **시계열 데이터 누수(Data Leakage)**: 기본 `StackingRegressor`를 `TimeSeriesSplit`과 결합 시 미래 데이터가 과거 폴드에 섞이는 현상 발견 → `ManualStackingRegressor` 직접 구현으로 차단 (해결 로직: [시계열 맞춤형 커스텀 스태킹](#시계열-맞춤형-커스텀-스태킹-manual-oof-stacking))
+- **예측값이 음수로 떨어지는 문제**: 회귀 모델 특성상 저수요 구간의 예측값이 음수로 도출 → `np.log1p`/`np.expm1` 변환에 0 하한 클램프를 더한 커스텀 역변환 함수 적용 (해결 로직: [평가지표 및 타깃 변환](#평가지표-및-타깃-변환))
 
 ---
 
