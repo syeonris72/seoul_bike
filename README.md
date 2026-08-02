@@ -266,7 +266,7 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 ## 2️⃣  데이터 수집 및 전처리
 
-### 데이터 소스(Data Sources)
+### 데이터 소스
 
 * **따릉이 데이터**
     * [따릉이 대여 및 반납 이력 데이터](https://data.seoul.go.kr/dataList/OA-15182/F/1/datasetView.do)
@@ -288,45 +288,44 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
     * [직장 위치 데이터](https://data.seoul.go.kr/dataList/OA-22243/F/1/datasetView.do)
     * [지하철 역 출입구 위치 데이터](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do?tab=A)
 
-### 데이터 전처리(Data Preprocessing)
-- **메모리 최적화**: 440만 건의 대여 이력 `chunksize`로 분할 로드 + 데이터 손실 없이 64-bit 자료형을 32-bit로 변환(Downcasting)하여 OOM(Memory Error) 방지
-- **순차적 무결성 확보**: 모든 데이터를 한 번에 병합 후 결측치를 처리하지 않고, **개별 파일 및 중간 데이터 병합 단계마다 순차적으로 이상치와 결측치를 즉시 제거**하여 데이터 파이프라인의 신뢰성 극대화
+### 데이터 전처리
+- 440만 건의 대여 이력 `chunksize`로 분할 로드 + 데이터 손실 없이 64-bit 자료형을 32-bit로 변환(Downcasting)하여 OOM(Memory Error) 방지
+- **개별 파일 및 중간 데이터 병합 단계마다 순차적으로 이상치와 결측치 즉시 제거** ⇒ 데이터 파이프라인의 신뢰성 극대화
 
-### 피처 엔지니어링(Feature)
-단순한 시계열 데이터를 넘어, 대여소 주변의 지리적 특성, 성별·연령별 이용 성향, 실시간 유동/생활 인구, 기상 악화 요인 등 **50여 개 이상의 다차원 피처**를 종합적으로 구축하여 학습에 활용
+### 피처 엔지니어링
 
-> **대여 이력 및 인구통계학적 타깃/특성 (Rent History & Demographics)**
+> **대여 및 반납 이력 데이터**
 
-| 피처 그룹 | 세부 컬럼 및 설명 |
-| :--- | :--- |
-| **대여/반납 건수** | `general_rent_cnt`, `sprout_rent_cnt`, `general_rtn_cnt`, `sprout_rtn_cnt` (일반/새싹 자전거 대여·반납량) |
-| **이용 시간** | `total_use_min`, `avg_use_min` (총 사용 시간 및 평균 사용 시간) |
-| **성별 이용 성향** | `rent_male_cnt`, `rent_female_cnt`, `rent_gender_unk_cnt` (대여·반납별 성별 건수) |
-| **연령대별 성향** | `rent_age_10_cnt` ~ `60_cnt`, `rtn_age_10_cnt` ~ `60_cnt` (10대 이하부터 60대 이상까지 세대별 대여·반납 패턴) |
+| 피처 그룹          | 세부 컬럼 및 설명 |
+|:---------------| :--- |
+| **대여 및 반납 건수** | `general_rent_cnt`, `sprout_rent_cnt`, `general_rtn_cnt`, `sprout_rtn_cnt` (일반/새싹 자전거 대여·반납량) |
+| **이용 시간**      | `total_use_min`, `avg_use_min` (총 사용 시간 및 평균 사용 시간) |
+| **성별 이용 성향**   | `rent_male_cnt`, `rent_female_cnt`, `rent_gender_unk_cnt` (대여·반납별 성별 건수) |
+| **연령대별 성향**    | `rent_age_10_cnt` ~ `60_cnt`, `rtn_age_10_cnt` ~ `60_cnt` (10대 이하부터 60대 이상까지 세대별 대여·반납 패턴) |
 
-> **지리적 인프라 및 공간 데이터 (Infra & Spatial)**
+> **인프라 데이터**
 
-| 피처 그룹 | 세부 컬럼 및 설명 |
-| :--- | :--- |
-| **대중교통 & 시설** | `subway_cnt_300m`, `biz_cnt_300m`, `edu_cnt_500m`, `park_cnt_500m`, `river_cnt_1km` (반경 내 지하철, 직장, 학교, 공원, 하천 수) |
+| 피처 그룹     | 세부 컬럼 및 설명 |
+|:----------| :--- |
+| **인프라**   | `subway_cnt_300m`, `biz_cnt_300m`, `edu_cnt_500m`, `park_cnt_500m`, `river_cnt_1km` (반경 내 지하철, 직장, 학교, 공원, 하천 수) |
 | **거리 지표** | `dist_subway`, `dist_river` (가장 가까운 지하철역 및 하천까지의 직선 거리) |
 | **위치 정보** | `district` (자치구), `lat`, `lon` (위경도 좌표) |
 
-> **환경 및 기상 데이터 (Weather & Environment)**
+> **환경 데이터**
 
-| 피처 그룹 | 세부 컬럼 및 설명 |
-| :--- | :--- |
+| 피처 그룹     | 세부 컬럼 및 설명 |
+|:----------| :--- |
 | **기상 요인** | `temperature` (기온), `precipitation` (강수량), `snowfall` (적설량), `pm10` (미세먼지) |
-| **시간 축** | `datetime_hr` (1시간 단위 기준 시간), `day_of_week` (요일), `is_weekend` (주말 여부), `is_holiday` (공휴일 여부) |
+| **시간 축**  | `datetime_hr` (1시간 단위 기준 시간), `day_of_week` (요일), `is_weekend` (주말 여부), `is_holiday` (공휴일 여부) |
 
-> **유동인구 및 생활인구 데이터 (Population Flow & Living)**
+> **인구 데이터**
 
 | 피처 그룹 | 세부 컬럼 및 설명 |
 | :--- | :--- |
 | **유동인구** | `flwpop_tot` 및 연령대별(`flwpop_10s` ~ `60up`) 시간대별 총 유동인구 |
 | **생활인구** | `lvgpop_tot` 및 연령대별(`lvgpop_10s` ~ `60up`) 실제 체류 인구 데이터 |
 
-> **도메인 특화 파생 변수 (Feature Engineering)**
+> **파생 변수**
 
 | 피처명 | 설명 |
 | :--- | :--- |
@@ -334,8 +333,7 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | `pop_spike_ratio` | 하루 평균 유동인구 대비 특정 시간대 유동인구 비율 (일시적 인구 밀집 반영) |
 | `population_dynamic_flux` | 특정 시간대와 1시간 전 생활인구의 차분값 (인구의 유입/유출 동적 흐름 반영) |
 
-> **통합 피처 중요도(Unified Feature Importance) 기반 노이즈 제거**
-> 50개가 넘는 방대한 변수로 인한 차원의 저주를 막기 위해, 8개 알고리즘의 중요도를 정규화 및 평균 내어 통합 중요도 0.01 미만의 하위 변수는 모델 성능을 저해하는 노이즈로 규정하고 과감히 소거
+**피처 중요도 기반 노이즈 제거**: 50개가 넘는 방대한 변수 ⇒ 8개 알고리즘의 중요도 정규화 및 평균 통합 ⇒ 중요도 0.01 미만의 하위 변수 = 노이즈로 규정 및 소거
 
 ## 3️⃣  모델 선정 과정
 
