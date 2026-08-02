@@ -354,18 +354,44 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 ## 3️⃣  모델 선정 과정
 
-### 1단계 — Baseline: 앙상블 기준선 구축
-가장 널리 쓰이는 트리 기반 모델들을 묶어 기본적인 앙상블 기준선(Soft Voting)을 세우고 단일 모델과 비교 (`general_rent_cnt` 기준)
+### 베이스라인 구축
 
-| 모델 | RMSLE | RMSE | MAE |
-| :--- | :--- | :--- | :--- |
-| RandomForest (단일) | 0.52536 | 3.167 | 1.823 |
-| LightGBM (단일) | 0.51319 | 3.153 | 1.778 |
-| XGBoost (단일) | 0.51257 | 3.113 | 1.769 |
-| **Voting Regressor (Baseline)** | **0.50631** | **3.055** | **1.750** |
+| 타깃 | 모델 | RMSLE | RMSE | MAE |
+|----| :--- | :--- | :--- | :--- |
+| `general_rent_cnt` | RandomForest | 0.52536 | 3.167 | 1.823 |
+|    | LightGBM | 0.51319 | 3.153 | 1.778 |
+|    | XGBoost | 0.51257 | 3.113 | 1.769 |
+|    | GradientBoosting | 0.51378 | 3.140 | 1.781 |
+|    | Ridge | 0.61654 | 937.071 | 8.401 |
+|    | LinearRegression | 0.61654 | 937.094 | 8.401 |
+|    | Lasso | 0.62655 | 320.013 | 5.442 |
+|    | ElasticNet | 0.60624 | 1320.024 | 10.480 |
+| `general_rtn_cnt` | RandomForest | 0.49540 | 2.975 | 1.706 |
+|    | LightGBM | 0.48288 | 2.920 | 1.653 |
+|    | XGBoost | 0.48658 | 2.952 | 1.674 |
+|    | GradientBoosting | 0.48495 | 2.947 | 1.670 |
+|    | Ridge | 0.58356 | 349.137 | 4.997 |
+|    | LinearRegression | 0.58356 | 349.135 | 4.997 |
+|    | Lasso | 0.59631 | 375.183 | 4.661 |
+|    | ElasticNet | 0.57904 | 1859.663 | 9.945 |
+| `sprout_rent_cnt` | RandomForest | 0.19451 | 0.390 | 0.116 |
+|    | LightGBM | 0.19220 | 0.391 | 0.111 |
+|    | XGBoost | 0.19181 | 0.387 | 0.110 |
+|    | GradientBoosting | 0.19222 | 0.389 | 0.111 |
+|    | Ridge | 0.19537 | 0.452 | 0.106 |
+|    | LinearRegression | 0.19537 | 0.452 | 0.106 |
+|    | Lasso | 0.21164 | 0.443 | 0.123 |
+|    | ElasticNet | 0.20849 | 0.438 | 0.122 |
+| `sprout_rtn_cnt` | RandomForest | 0.19419 | 0.340 | 0.117 |
+|    | LightGBM | 0.19352 | 0.340 | 0.115 |
+|    | XGBoost | 0.19402 | 0.338 | 0.115 |
+|    | GradientBoosting | 0.19340 | 0.340 | 0.115 |
+|    | Ridge | 0.19663 | 0.468 | 0.104 |
+|    | LinearRegression | 0.19663 | 0.468 | 0.104 |
+|    | Lasso | 0.20660 | 0.389 | 0.125 |
+|    | ElasticNet | 0.20453 | 0.386 | 0.124 |
 
-### 2단계 — 하이퍼파라미터 튜닝 (Optuna)
-Baseline 구성 모델들을 Optuna로 튜닝하여 성능 극대화
+### 하이퍼파라미터 튜닝(Optuna)
 
 | 모델 | 튜닝 전 RMSLE | 튜닝 후 RMSLE | 개선 |
 | :--- | :--- | :--- | :--- |
