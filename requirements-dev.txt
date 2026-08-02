@@ -1,6 +1,0 @@
-# 로컬 개발 및 노트북 작업 전용 (배포 환경에는 불필요)
--r requirements.txt
-
-ipykernel==7.3.0
-jupyter==1.1.1
-notebook==7.6.0
