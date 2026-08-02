@@ -330,8 +330,25 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | 피처명 | 설명 |
 | :--- | :--- |
 | `subway_last_mile_synergy` | 심야 시간대(23~01시) × 반경 300m 지하철역 수 (막차 귀가 수요 패턴 포착) |
-| `pop_spike_ratio` | 하루 평균 유동인구 대비 특정 시간대 유동인구 비율 (일시적 인구 밀집 반영) |
-| `population_dynamic_flux` | 특정 시간대와 1시간 전 생활인구의 차분값 (인구의 유입/유출 동적 흐름 반영) |
+| `pop_spike_ratio` | 최근 24시간 평균 유동인구 대비 현재 시간대 유동인구 비율 (일시적 인구 밀집 반영) |
+| `population_dynamic_flux` | 현재 시간대와 1시간 전 생활인구의 차분값 (인구의 유입/유출 동적 흐름 반영) |
+| `hour_sin`, `hour_cos` | 시(hour)를 24시간 주기로 sin/cos 변환 (23시→0시 순환 경계의 연속성 확보) |
+| `month_sin`, `month_cos` | 월(month)을 12개월 주기로 sin/cos 변환 (계절 순환성 반영) |
+| `is_rush_hour` | 출퇴근 러시아워(7~9시, 18~20시) 여부 플래그 |
+| `is_bad_weather` | 강수·강설 발생 또는 미세먼지 등급 3(나쁨) 이상 여부 (악천후 통합 플래그) |
+| `flow_to_living_ratio` | 유동인구 대비 생활인구 비율 (외부 유입 인구 비중) |
+| `infra_density_score` | 반경 내 지하철·직장·학교·공원·하천 수 합산 (대여소 주변 인프라 밀집도) |
+| `is_riverside_park` | 반경 내 공원과 하천이 모두 존재하는지 여부 (하천변 공원 입지 플래그) |
+| `is_extreme_temp` | 기온 0도 이하 또는 30도 이상 극한 기온 여부 |
+| `is_season_change` | 환절기(3·5·9·11월) 여부 |
+| `is_long_weekend`, `day_type` | 공휴일-주말 겹침 여부, 평일/주말/공휴일 3단계 구분 |
+| `synergy_biz_weekday` | 평일 업무시간(9~18시) × 반경 300m 직장 수 (오피스 통근 수요 포착) |
+| `synergy_leisure_weekend` | 주말 여부 × (반경 내 공원+하천 수) (주말 레저 수요 포착) |
+| `{target}_lag1h/24h/168h` | 1시간/24시간/168시간(1주일) 전 동일 시점 대여·반납 건수 |
+| `{target}_roll3h_mean`, `_rolling_std_3h` | 최근 3시간 대여·반납 건수의 이동평균 및 표준편차 |
+| `{target}_roll24h_mean`, `_roll24h_std` | 최근 24시간 대여·반납 건수의 이동평균 및 표준편차 |
+| `sprout_rtn_to_rent_ratio_1h`, `general_rtn_to_rent_ratio_1h` | 1시간 전 반납/대여 비율 (자전거 종류별 회전율) |
+| `sprout_net_diff_1h`, `general_net_diff_1h` | 1시간 전 반납-대여 순증감 (자전거 종류별 순유입/유출) |
 
 **피처 중요도 기반 노이즈 제거**: 50개가 넘는 방대한 변수 ⇒ 8개 알고리즘의 중요도 정규화 및 평균 통합 ⇒ 중요도 0.01 미만의 하위 변수 = 노이즈로 규정 및 소거
 
