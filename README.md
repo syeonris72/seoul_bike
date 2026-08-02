@@ -454,35 +454,34 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | 2. 하이퍼파라미터 튜닝 | XGBoost | 0.50504 | ▼ 0.00127 |
 | 3. Custom Stacking | Base(LGBM, XGB) + Meta(Ridge) | **0.50337** | ▼ 0.00167 |
 
-### 최종 챔피언 모델 선정 및 검증
-- 4가지 타깃(일반 대여, 새싹 대여, 일반 반납, 새싹 반납)별로 **단일 모델, Voting, Custom Stacking 전체를 교차 비교하여 가장 우수한 모델을 각각 챔피언으로 선정**
-- 일반(general) 타깃은 앙상블(Custom Stacking)이 우세했지만, 새싹(sprout) 타깃은 **튜닝된 단일 모델(LightGBM/RandomForest)이 앙상블보다 더 좋은 성능**을 보여 타깃별로 다른 챔피언 채택
-- 과적합을 철저히 검증하기 위해 파이프라인 전체에서 단 한 번도 쓰지 않은 **격리된 Test Set으로 딱 한 번만 최종 평가** 수행
+### 최종 챔피언 모델 및 홀드아웃 검증
+- 4가지 타깃(일반/새싹 대여·반납)별로 단일 모델, Voting, Custom Stacking을 교차 비교해 챔피언 선정 — 일반(general) 계열은 **Custom Stacking**, 새싹(sprout) 계열은 오히려 **튜닝된 단일 모델(LightGBM/RandomForest)**이 앙상블을 앞서 채택
+- 파이프라인에서 단 한 번도 쓰지 않은 **격리된 Test Set**으로 딱 한 번만 최종 평가 수행
 
-| 타깃 | 챔피언 모델 | 검증 RMSLE | 최종 Test RMSLE | 최종 Test RMSE | 최종 Test MAE |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `general_rent_cnt` | Custom Stacking | 0.50337 | 0.48941 | 2.352 | 1.412 |
-| `general_rtn_cnt` | Custom Stacking | 0.47799 | 0.47058 | 2.242 | 1.350 |
-| `sprout_rent_cnt` | LightGBM (단일, 튜닝) | 0.19016 | 0.13473 | 0.263 | 0.060 |
-| `sprout_rtn_cnt` | RandomForest (단일, 튜닝) | 0.19207 | 0.13567 | 0.228 | 0.070 |
+| 타깃 | 챔피언 모델 | Test RMSLE | Test RMSE | Test MAE |
+| :--- | :--- | :--- | :--- | :--- |
+| `general_rent_cnt` | Custom Stacking | 0.48941 | 2.352 | 1.412 |
+| `general_rtn_cnt` | Custom Stacking | 0.47058 | 2.242 | 1.350 |
+| `sprout_rent_cnt` | LightGBM (단일, 튜닝) | 0.13473 | 0.263 | 0.060 |
+| `sprout_rtn_cnt` | RandomForest (단일, 튜닝) | 0.13567 | 0.228 | 0.070 |
 
-4개 타깃 모두 격리된 최종 Test Set에서 검증 단계보다 낮은 RMSLE를 기록하여, 과적합 없이 일반화되었음을 확인
+> 4개 타깃 모두 Test RMSLE가 검증 단계 RMSLE보다 낮게 나와, 과적합 없이 잘 일반화되었음을 확인
 
 ## 5️⃣  MLflow 및 Supabase 기반 MLOps 및 모델 관리
 
-### MLflow를 통한 실험 트래킹
+### MLflow
 머신러닝 실험을 추적·관리하는 도구로, 모델을 학습할 때마다 어떤 파라미터로 학습했고 성능(지표)이 얼마였는지를 자동으로 기록해 최적 조합 탐색
 
 - **Parameters**: 모델 종류, 하이퍼파라미터 (`n_estimators`, `max_depth`, `learning_rate` 등)
 - **Metrics**: RMSLE, RMSE, MAE 등 평가지표
 - **실험 비교**: 여러 run을 나란히 비교해 최고 성능 조합 선택
 
-### Supabase Storage(S3 호환) 연동 및 파이프라인 자동화
+### Supabase Storage
 
-- **대용량 파일 공유 해결**: 앙상블 완료 후 생성되는 무거운 모델 파일(`.pkl`)과 중요도 시각화 이미지는 GitHub에 올릴 수 없으므로, AWS S3 호환 프로토콜을 지원하는 **Supabase Storage**에 분리 저장
-- **동적 아티팩트 Sync**: 서버 실행 시 또는 학습 파이프라인 구동 시, Supabase에 저장된 최적 파라미터(`best_params.json`)와 모델 아티팩트를 `boto3`로 동적으로 Fetch(다운로드)하여 팀원 간 로컬 환경 불일치와 휴먼 에러 원천 차단
+- 앙상블 완료 후 생성되는 무거운 모델 파일(`.pkl`)과 중요도 시각화 이미지는 GitHub에 올릴 수 없으므로, AWS S3 호환 프로토콜을 지원하는 **Supabase Storage**에 분리 저장
+- 서버 실행 시 또는 학습 파이프라인 구동 시, Supabase에 저장된 최적 파라미터(`best_params.json`)와 모델 아티팩트를 `boto3`로 동적으로 Fetch(다운로드)하여 팀원 간 로컬 환경 불일치와 휴먼 에러 원천 차단
 
-**기록·관리 항목 요약**
+> **기록 및 관리 항목 요약**
 
 | 항목 | 내용 |
 | :--- | :--- |
@@ -490,7 +489,7 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | **Artifacts Storage** | 직렬화된 챔피언 모델(`.pkl`) 및 시각화 리소스 (Supabase S3) |
 | **Pipeline Automation** | 클라우드에 저장된 설정값 기반 모델 동적 로드 및 서빙 연동 |
 
-**팀원별 실험 기록**
+> **팀원별 실험 기록**
 
 | 팀원 | 담당 역할 및 실험 내용 | 주요 발견 및 기여 |
 | :--- | :--- | :--- |
