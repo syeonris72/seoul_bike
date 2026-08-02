@@ -478,35 +478,25 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 > **팀원별 실험 기록**
 
-| 팀원 | 역할 및 실험 내용                                                                 | 주요 발견 및 기여 |
-| :--- |:---------------------------------------------------------------------------| :--- |
-| **장수연** | 베이스라인 전체 통합 및 LightGBM 하이퍼파라미터 튜닝(`tuning(수연).ipynb`), Supabase-S3 아키텍처 연동 | LightGBM 트리 구조·학습률 최적화로 단일 모델 최고 성능 달성, 시계열 누수 방지용 OOF Stacking 및 Supabase 동적 파이프라인 구축 |
-| **박은비** | XGBoost 하이퍼파라미터 튜닝(`XGBoost_tuning(은비).ipynb`)                             | XGBoost 최적 파라미터 탐색으로 Baseline 대비 오차 개선 |
-| **김세호** | 선형 회귀 계열 모델 하이퍼파라미터 튜닝(`tuning(세호).ipynb`)                                 | 선형 모델의 한계 분석 |
-| **권덕윤** | RandomForest 하이퍼파라미터 튜닝(`tuning(덕윤).ipynb`)                                | 숲의 깊이(`max_depth`) 및 샘플 분할 조건 최적화 |
+| 팀원 | 역할 및 실험 내용                                                                 | 주요 발견 및 기여                                                                             |
+| :--- |:---------------------------------------------------------------------------|:---------------------------------------------------------------------------------------|
+| **장수연** | 베이스라인 전체 통합 및 LightGBM 하이퍼파라미터 튜닝, Supabase-S3 아키텍처 연동 | LightGBM 트리 구조/학습률 최적화로 단일 모델 최고 성능 달성, 시계열 누수 방지용 OOF Stacking 및 Supabase 동적 파이프라인 구축 |
+| **박은비** | XGBoost 하이퍼파라미터 튜닝                           | XGBoost 최적 파라미터 탐색으로 Baseline 대비 오차 개선                                                 |
+| **김세호** | 선형 회귀 계열 모델 하이퍼파라미터 튜닝                           | 선형 모델의 한계 분석                                                                           |
+| **권덕윤** | RandomForest 하이퍼파라미터 튜닝                            | `max_depth` 및 샘플 분할 조건 최적화                                                             |
 
 > **MLflow 실험 화면**
 
 ![rmsle-graph](./image/rmsle-graph.png)
-
 ![rmse-graph](./image/rmse-graph.png)
-
 ![mae-graph](./image/mae-graph.png)
-
 ![mlflow-ensemble-1](./image/mlflow-ensemble-1.png)
-
 ![mlflow-ensemble-2](./image/mlflow-ensemble-2.png)
-
 ![mlflow-baseline-1](./image/mlflow-baseline-1.png)
-
 ![mlflow-baseline-2](./image/mlflow-baseline-2.png)
-
 ![mlflow-tuning-1](./image/mlflow-tuning-1.png)
-
 ![mlflow-tuning-2](./image/mlflow-tuning-2.png)
-
 ![mlflow-tuning-3](./image/mlflow-tuning-3.png)
-
 ![mlflow-tuning-4](./image/mlflow-tuning-4.png)
 
 ---
@@ -628,9 +618,9 @@ uvicorn main:app --reload
 
 ### 트러블슈팅
 
-- 전체 데이터를 한 번에 병합한 뒤 결측치·이상치를 처리하려다 메모리 초과와 에러 전파 발생 → 개별 파일·중간 병합 단계마다 즉시 정제하는 방식으로 전환 (해결 로직: [데이터 전처리](#데이터-전처리))
-- 기본 `StackingRegressor`를 `TimeSeriesSplit`과 결합 시 미래 데이터가 과거 폴드에 섞이는 현상 발견 → `ManualStackingRegressor` 직접 구현으로 차단 (해결 로직: [시계열 맞춤형 커스텀 스태킹](#시계열-맞춤형-커스텀-스태킹-manual-oof-stacking))
-- 회귀 모델 특성상 저수요 구간의 예측값이 음수로 도출 → `np.log1p`/`np.expm1` 변환에 0 하한 클램프를 더한 커스텀 역변환 함수 적용 (해결 로직: [평가지표 및 타깃 변환](#평가지표-및-타깃-변환))
+- 전체 데이터를 한 번에 병합한 뒤 결측치·이상치를 처리하려다 메모리 초과와 에러 전파 발생 → 개별 파일·중간 병합 단계마다 즉시 정제하는 방식으로 전환
+- 기본 `StackingRegressor`를 `TimeSeriesSplit`과 결합 시 미래 데이터가 과거 폴드에 섞이는 현상 발견 → `ManualStackingRegressor` 직접 구현으로 차단
+- 회귀 모델 특성상 저수요 구간의 예측값이 음수로 도출 → `np.log1p`/`np.expm1` 변환에 0 하한 클램프를 더한 커스텀 역변환 함수 적용
 
 ### 프로젝트 회고
 
