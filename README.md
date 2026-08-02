@@ -505,40 +505,40 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 ## 화면 구현
 
-### 일반 회원(`user`)
+### 👤 일반 회원
 ![사용자 메인 지도](./image/map1.png)
 ![사용자 QR 대여](./image/map2.png)
 
-### 관리자(`admin`)
+### 🚚 기사
+![기사 지시서 관리](./image/dispatch.png)
+![기사 경로 카카오내비](./image/kakao.png)
+
+### 🧑‍💻 관리자
 ![관리자 대시보드 전체](./image/dashboard1.png)
 ![관리자 대시보드 과포화](./image/dashboard2.png)
 ![관리자 대시보드 고갈](./image/dashboard3.png)
-
-### 기사(`driver`)
-![기사 지시서 관리](./image/dispatch.png)
-![기사 경로 카카오내비](./image/kakao.png)
 
 ---
 
 ## 설치 및 실행
 
 ```bash
-# 1. 저장소 복제
+# 저장소 복제
 git clone https://github.com/팀계정/seoul_bike.git
 cd seoul_bike
 
-# 2. 가상환경 생성 및 활성화
+# 가상환경 생성 및 활성화
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 
-# 3. 패키지 설치
+# 패키지 설치
 pip install -r requirements.txt
 
-# 4. 환경변수 설정 (.env 파일 생성)
+# 환경변수 설정 (.env 파일 생성)
 # DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 # JWT_SECRET_KEY, SUPABASE_URL, SUPABASE_KEY 등
 
-# 5. 서버 실행
+# 서버 실행
 uvicorn main:app --reload
 # → http://127.0.0.1:8000
 ```
@@ -558,8 +558,10 @@ uvicorn main:app --reload
 ## 프로젝트 정리
 
 ### 기대효과
+-
 
 ### 개선사항
+-
 
 ### 프로젝트 회고
 
@@ -577,7 +579,6 @@ uvicorn main:app --reload
 
 > 전지혜
 -
-
 
 ### 트러블슈팅
 
