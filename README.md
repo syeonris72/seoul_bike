@@ -6,6 +6,7 @@
 
 * **배포 주소**: [https://web-production-xxxx.up.railway.app](https://web-production-xxxx.up.railway.app)
 * **API 문서(Swagger)**: [/docs](http://localhost:8000/docs)
+* **Notion**: https://app.notion.com/p/3288f1a411a480cea1bce63bf223a52c?source=copy_link
 
 ---
 # 프로젝트 개요
