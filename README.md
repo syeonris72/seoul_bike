@@ -495,16 +495,14 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 **팀원별 실험 기록**
 실제 MLflow 트래킹 데이터(`baseline.csv`, `tuning.csv`)에 기록된 팀원별 담당 업무 및 실험 내용
 
-| 팀원 | 담당 역할 및 실험 내용 | 주요 발견 및 기여 |
-| :--- | :--- | :--- |
-| **장수연** | LightGBM 모델 베이스라인 및 Optuna 하이퍼파라미터 튜닝 (`tuning(수연).ipynb`) | LightGBM의 트리 구조 및 학습률 최적화를 통해 단일 모델 최고 성능군 달성 |
-| **박은비** | XGBoost 모델 베이스라인 및 Optuna 하이퍼파라미터 튜닝 (`XGBoost_tuning(은비).ipynb`) | XGBoost 최적 파라미터 탐색을 통해 Baseline 대비 오차 개선율 확보 |
-| **김세호** | 선형 회귀 계열 모델 베이스라인/튜닝 및 Supabase-S3 클라우드 스토리지 아키텍처 연동 | 선형 모델 한계 분석, 시계열 누수 방지용 OOF Stacking 구현 및 Supabase 동적 파이프라인 구축 |
-| **권덕윤** | RandomForest 모델 하이퍼파라미터 최적화 실험 (`tuning(덕윤).ipynb`) | 숲의 깊이(`max_depth`) 및 샘플 분할 조건 최적화 수행 |
+| 팀원 | 담당 역할 및 실험 내용                                                                                   | 주요 발견 및 기여                                                                                      |
+| :--- |:------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------|
+| **장수연** | 베이스라인 전체 통합 및 LightGBM 모델 Optuna 하이퍼파라미터 튜닝 (`tuning(수연).ipynb`), Supabase-S3 클라우드 스토리지 아키텍처 연동 | LightGBM의 트리 구조 및 학습률 최적화를 통해 단일 모델 최고 성능 달성 및 시계열 누수 방지용 OOF Stacking 구현, Supabase 동적 파이프라인 구축 |
+| **박은비** | XGBoost 모델  Optuna 하이퍼파라미터 튜닝 (`XGBoost_tuning(은비).ipynb`)                                      | XGBoost 최적 파라미터 탐색을 통해 Baseline 대비 오차 개선율 확보                                                    |
+| **김세호** | 선형 회귀 계열 모델 Optuna 하이퍼파라미터 튜닝 (`tuning(세호).ipynb`)                                              | 선형 모델 한계 분석                            |
+| **권덕윤** | RandomForest 모델 Optuna 하이퍼파라미터 튜닝 (`tuning(덕윤).ipynb`)                                          | 숲의 깊이(`max_depth`) 및 샘플 분할 조건 최적화 수행                                                            |
 
 **MLflow 실험 화면**
-
-<!-- ▼▼▼ MLflow 실험 화면 캡처를 여기에 넣어주세요 ▼▼▼ -->
 
 **① 실험 목록 (여러 run 비교 화면)**
 
@@ -512,13 +510,13 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 **② 파라미터·지표 비교**
 
-rmse 파라미터 지표
+rmsle 파라미터 지표
 ![rmsle_graph](./image/rmsle_graph.png)
 
-rmsle 파라미터 지표
+rmse 파라미터 지표
 ![rmse_graph](./image/rmse_graph.png)
 
-rmsle 파라미터 지표
+mae 파라미터 지표
 ![mae_graph](./image/mae_graph.png)
 
 **③ 최고 성능 run 상세**
@@ -611,7 +609,7 @@ uvicorn main:app --reload
 <details>
 <summary>배포 환경 및 설정 (접었다 펼치기)</summary>
 
-- **서버 환경**:
+- **서버 환경**: Railway
 - **데이터베이스**: MySQL
 - **모델 스토리지**: Supabase Storage
 </details>
@@ -650,7 +648,7 @@ uvicorn main:app --reload
 
 ---
 
-## 프로젝트 구조 (Project Structure)
+## 프로젝트 구조
 
 ```text
 seoul_bike/
