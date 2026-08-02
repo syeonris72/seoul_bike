@@ -208,9 +208,9 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 > **AI 수요 예측 (`predict.py`)**
 
-| 메서드 | 경로 | 설명 |
-| :--- | :--- | :--- |
-| GET | `/predict/stations/{station_id}` | 서버 시작 시 MLflow에서 로드한 챔피언 모델로 해당 대여소의 다음 1시간 일반/새싹 대여·반납 건수 예측 |
+| 메서드 | 경로 | 설명                                                              |
+| :--- | :--- |:----------------------------------------------------------------|
+| GET | `/predict/stations/{station_id}` | 서버 시작 시 MLflow에서 로드한 챔피언 모델로 해당 대여소의 다음 1시간 일반/새싹 대여 및 반납 건수 예측 |
 
 > **일반 회원 전용 (`user.py`)**
 
@@ -260,55 +260,13 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 
 # 데이터 분석 및 머신러닝
 
-## 머신러닝 학습 파트 및 데이터 파이프라인
+## ️1️⃣  전체 학습 파이프라인
 
-이 프로젝트의 핵심 — **시간대별 대여소 수요 예측 모델 및 최적화 파이프라인**
+![ml_pipeline](./image/ml_pipeline.png)
 
-### 전체 학습 로직
+## 2️⃣  데이터 수집 및 전처리
 
-<!-- 이미지 다이어그램으로 교체하면 더 좋습니다: ![ML 파이프라인](docs/images/ml_pipeline.png) -->
-
-```text
-① 모듈화 데이터 수집        ② 순차적 정제 및 병합      ③ 피처 엔지니어링 & 최적화
-┌─────────────────┐      ┌─────────────────────┐    ┌───────────────────────┐
-│ 기상청, 공공데이터 │ ───▶ │ 중간 병합 단계마다    │──▶ │ 도메인 파생 변수 생성  │
-│ 서울 열린데이터광장 │ API  │ 결측치/이상치 즉시 제거│    │ & Memory Downcasting │
-└─────────────────┘      └─────────────────────┘    └───────────────────────┘
-                                                        │ (통합 중요도 기반 노이즈 제거)
-        ┌───────────────────────────────────────────────┘
-        ▼
-④ 데이터 분할 (시계열)       ⑤ 여러 모델 학습 및 튜닝 (MLflow / Optuna)
-┌──────────────────┐          ┌─────────────────────────┐
-│ 시간순 정렬 후     │          │ LightGBM, XGBoost 등    │
-│ train / test 분할  │  ───────▶│ Optuna로 하이퍼파라미터  │
-│ (미래 참조 누수 방지)│          │ 탐색 및 MLflow 기록      │
-└──────────────────┘          └─────────────────────────┘
-                                          │
-                                          ▼
-                               ⑥ 시계열 맞춤형 커스텀 앙상블
-                               ┌──────────────────────────┐
-                               │ 수동 OOF Stacking 적용    │
-                               │ (TimeSeriesSplit 직접 순회)│
-                               └──────────────────────────┘
-                                          │
-                                          ▼
-                               ⑦ 최종 챔피언 모델 선정 및 저장
-                               ┌───────────────────────────┐
-                               │ 타깃별 최고 성능 모델 선정 │
-                               │ → Supabase(S3) 아티팩트 저장│
-                               └───────────────────────────┘
-                                          │
-                                          ▼
-                               ⑧ 서버(serving)가 동적 로드
-                                  → /predict 요청마다 실시간 추론
-```
-
-### 무엇을 예측하나
-특정 날짜/시간과 대여소를 입력하면 **일반 자전거 / 새싹 자전거의 대여량과 반납량**을 각각 예측하고, 이를 바탕으로 해당 대여소의 과포화 및 고갈 여부를 판별합니다.
-
-### 데이터 및 전처리 파이프라인
-
-**1. 방대한 다중 도메인 데이터 수집 (Data Sources)**
+### 다중 도메인 데이터 수집 (Data Sources)
 총 14종 이상의 외부 공공 API 및 오픈 데이터를 직접 수집하여, 자전거 수요에 영향을 미치는 다차원적인 분석 기반(환경, 인구, 지리적 요인)을 구축했습니다.
 
 * **따릉이 데이터**
@@ -316,24 +274,29 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
     * [대여 위치 정보 데이터](https://data.seoul.go.kr/dataList/OA-21235/S/1/datasetView.do)
     * [실시간 따릉이 대여 및 거치 정보 데이터](https://data.seoul.go.kr/dataList/OA-15493/A/1/datasetView.do)
 * **환경 및 기상 데이터**
-    * [실시간 미세먼지 데이터](https://data.seoul.go.kr/dataList/OA-1200/S/1/datasetView.do) / [시간별 미세먼지 데이터](https://data.kma.go.kr/data/climate/selectDustRltmList.do?pgmNo=68)
-    * [실시간 기상 데이터(1)](https://www.airkorea.or.kr/web/), [(2)](https://data.kma.go.kr/data/grnd/selectAsosRltmList.do) / [시간별 기상 데이터](https://apihub.kma.go.kr/)
+    * [실시간 미세먼지 데이터](https://data.seoul.go.kr/dataList/OA-1200/S/1/datasetView.do)
+    * [시간별 미세먼지 데이터](https://data.kma.go.kr/data/climate/selectDustRltmList.do?pgmNo=68)
+    * [실시간 기상 데이터(1)](https://www.airkorea.or.kr/web/), [(2)](https://data.kma.go.kr/data/grnd/selectAsosRltmList.do)
+    * [시간별 기상 데이터](https://apihub.kma.go.kr/)
 * **인구 데이터**
     * [유동 인구 데이터](https://data.seoul.go.kr/dataList/OA-22179/S/1/datasetView.do)
     * [생활 인구 데이터](https://data.seoul.go.kr/dataList/OA-15439/S/1/datasetView.do)
 * **인프라 데이터**
-    * [공원 위치 데이터](https://data.seoul.go.kr/dataList/OA-394/S/1/datasetView.do) / 하천 위치 데이터 [(1)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30603), [(2)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30207)
-    * [학교(초, 중, 고) 위치 데이터](https://www.data.go.kr/data/15152021/fileData.do#tab-layer-openapi) / [대학교 위치 데이터](https://data.seoul.go.kr/dataList/OA-12974/S/1/datasetView.do)
-    * [직장 위치 데이터](https://data.seoul.go.kr/dataList/OA-22243/F/1/datasetView.do) / [지하철 역 출입구 위치 데이터](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do?tab=A)
+    * [공원 위치 데이터](https://data.seoul.go.kr/dataList/OA-394/S/1/datasetView.do)
+    * [하천 위치 데이터(1)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30603), [(2)](https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?dsId=30207)
+    * [학교(초, 중, 고) 위치 데이터](https://www.data.go.kr/data/15152021/fileData.do#tab-layer-openapi)
+    * [대학교 위치 데이터](https://data.seoul.go.kr/dataList/OA-12974/S/1/datasetView.do)
+    * [직장 위치 데이터](https://data.seoul.go.kr/dataList/OA-22243/F/1/datasetView.do)
+    * [지하철 역 출입구 위치 데이터](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do?tab=A)
 
-**2. 데이터 전처리 최적화 (Data Preprocessing)**
+### 데이터 전처리 최적화 (Data Preprocessing)
 - **메모리 최적화**: 440만 건의 대여 이력을 `chunksize`로 분할 로드하고, 데이터 손실 없이 64-bit 자료형을 32-bit로 변환(Downcasting)하여 OOM(Memory Error)을 방지했습니다.
 - **순차적 무결성 확보**: 모든 데이터를 한 번에 병합 후 결측치를 처리하지 않고, **개별 파일 및 중간 데이터 병합 단계마다 순차적으로 이상치와 결측치를 즉시 제거**하여 데이터 파이프라인의 신뢰성을 극대화했습니다.
 
-### 피처 (Feature)
+### 피처 엔지니어링 (Feature)
 단순한 시계열 데이터를 넘어, 대여소 주변의 지리적 특성, 성별·연령별 이용 성향, 실시간 유동/생활 인구, 기상 악화 요인 등 **50여 개 이상의 다차원 피처**를 종합적으로 구축하여 학습에 활용했습니다.
 
-**1. 대여 이력 및 인구통계학적 타깃/특성 (Rent History & Demographics)**
+> **대여 이력 및 인구통계학적 타깃/특성 (Rent History & Demographics)**
 
 | 피처 그룹 | 세부 컬럼 및 설명 |
 | :--- | :--- |
@@ -342,7 +305,7 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | **성별 이용 성향** | `rent_male_cnt`, `rent_female_cnt`, `rent_gender_unk_cnt` (대여·반납별 성별 건수) |
 | **연령대별 성향** | `rent_age_10_cnt` ~ `60_cnt`, `rtn_age_10_cnt` ~ `60_cnt` (10대 이하부터 60대 이상까지 세대별 대여·반납 패턴) |
 
-**2. 지리적 인프라 및 공간 데이터 (Infra & Spatial)**
+> **지리적 인프라 및 공간 데이터 (Infra & Spatial)**
 
 | 피처 그룹 | 세부 컬럼 및 설명 |
 | :--- | :--- |
@@ -350,21 +313,21 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | **거리 지표** | `dist_subway`, `dist_river` (가장 가까운 지하철역 및 하천까지의 직선 거리) |
 | **위치 정보** | `district` (자치구), `lat`, `lon` (위경도 좌표) |
 
-**3. 환경 및 기상 데이터 (Weather & Environment)**
+> **환경 및 기상 데이터 (Weather & Environment)**
 
 | 피처 그룹 | 세부 컬럼 및 설명 |
 | :--- | :--- |
 | **기상 요인** | `temperature` (기온), `precipitation` (강수량), `snowfall` (적설량), `pm10` (미세먼지) |
 | **시간 축** | `datetime_hr` (1시간 단위 기준 시간), `day_of_week` (요일), `is_weekend` (주말 여부), `is_holiday` (공휴일 여부) |
 
-**4. 유동인구 및 생활인구 데이터 (Population Flow & Living)**
+> **유동인구 및 생활인구 데이터 (Population Flow & Living)**
 
 | 피처 그룹 | 세부 컬럼 및 설명 |
 | :--- | :--- |
 | **유동인구** | `flwpop_tot` 및 연령대별(`flwpop_10s` ~ `60up`) 시간대별 총 유동인구 |
 | **생활인구** | `lvgpop_tot` 및 연령대별(`lvgpop_10s` ~ `60up`) 실제 체류 인구 데이터 |
 
-**5. 도메인 특화 파생 변수 (Feature Engineering)**
+> **도메인 특화 파생 변수 (Feature Engineering)**
 
 | 피처명 | 설명 |
 | :--- | :--- |
@@ -375,21 +338,9 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 > **통합 피처 중요도(Unified Feature Importance) 기반 노이즈 제거**
 > 50개가 넘는 방대한 변수로 인한 차원의 저주를 막기 위해, 8개 알고리즘의 중요도를 정규화 및 평균 내어 통합 중요도 0.01 미만의 하위 변수는 모델 성능을 저해하는 노이즈로 규정하고 과감히 소거했습니다.
 
-### 평가지표 및 타깃 변환
-자전거 수요 데이터는 편차가 극심하여(비 오는 날 0대, 주말 수천 대), 모델이 큰 값의 오차에만 과도하게 페널티를 받는 것을 막기 위해 타깃 스케일링을 적용했습니다.
+## 3️⃣  모델 선정 과정
 
-| 지표 | 의미 | 특징 |
-| :--- | :--- | :--- |
-| **RMSLE** | 로그 변환 후 RMSE | 값의 범위가 넓을 때 **상대 오차**를 공평하게 평가 **(주 지표)** |
-| **RMSE** | 평균 제곱근 오차 | 실제 대여/반납 대수 단위의 직관적인 절대 오차 크기 |
-| **MAE** | 평균 절대 오차 | 이상치에 덜 민감한 평균 오차 |
-
-> **타깃 변환 로직 적용 (`TransformedTargetRegressor`)**
-> 학습 시 타깃 변수에 `np.log1p`를 씌워 정규분포화하고, 예측 후 `np.expm1`로 복원 시 음수 값이 나오지 않도록 하한선을 0으로 고정하는 커스텀 역변환 함수(`inverse_log_clip`)를 구현하여 적용했습니다.
-
-### 모델 선정 (3단계)
-
-**1단계 — Baseline: 앙상블 기준선 구축**
+### 1단계 — Baseline: 앙상블 기준선 구축
 가장 널리 쓰이는 트리 기반 모델들을 묶어 기본적인 앙상블 기준선(Soft Voting)을 세우고 단일 모델과 비교했습니다. (`general_rent_cnt` 기준)
 
 | 모델 | RMSLE | RMSE | MAE |
@@ -399,7 +350,7 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 | XGBoost (단일) | 0.51257 | 3.113 | 1.769 |
 | **Voting Regressor (Baseline)** | **0.50631** | **3.055** | **1.750** |
 
-**2단계 — 하이퍼파라미터 튜닝 (Optuna)**
+### 2단계 — 하이퍼파라미터 튜닝 (Optuna)
 Baseline 구성 모델들을 Optuna로 튜닝하여 성능을 극대화했습니다.
 
 | 모델 | 튜닝 전 RMSLE | 튜닝 후 RMSLE | 개선 |
@@ -420,7 +371,7 @@ Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 �
 | **LightGBM** | `n_estimators`, `max_depth`, `learning_rate` | **[과적합 방지]** n_estimators: 1000~5000, max_depth: 3~6, lr: 0.005~0.05 |
 | **RandomForest** | `n_estimators`, `max_depth`, `max_features`, `min_samples_split` | **[단일 최적값]** n_estimators: 500, max_depth: 19, max_features: sqrt, min_samples_split: 3 |
 
-**3단계 — 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)**
+### 3단계 — 시계열 맞춤형 커스텀 스태킹 (Manual OOF Stacking)
 단순 Voting을 넘어 성능을 한계까지 끌어올리기 위해 Stacking 앙상블을 적용했습니다.
 
 - **기존 라이브러리의 한계**: 일반 `StackingRegressor`를 시계열 분할(`TimeSeriesSplit`)과 결합 시 미래 데이터가 과거에 끼어드는 **데이터 누수(Leakage)** 발생.
@@ -431,7 +382,29 @@ Optuna를 통해 각 모델별 특성에 맞는 탐색 공간(Search Space)과 �
 | :--- | :--- | :--- | :--- | :--- |
 | Custom Stacking | Base(LGBM, XGB) + Meta(Ridge) | **0.50337** | **2.970** | **1.721** |
 
-### 최종 챔피언 모델 선정
+## 4️⃣  성능 평가
+
+### 평가지표 및 타깃 변환
+자전거 수요 데이터는 편차가 극심하여(비 오는 날 0대, 주말 수천 대), 모델이 큰 값의 오차에만 과도하게 페널티를 받는 것을 막기 위해 타깃 스케일링을 적용했습니다.
+
+| 지표 | 의미 | 특징 |
+| :--- | :--- | :--- |
+| **RMSLE** | 로그 변환 후 RMSE | 값의 범위가 넓을 때 **상대 오차**를 공평하게 평가 **(주 지표)** |
+| **RMSE** | 평균 제곱근 오차 | 실제 대여/반납 대수 단위의 직관적인 절대 오차 크기 |
+| **MAE** | 평균 절대 오차 | 이상치에 덜 민감한 평균 오차 |
+
+> **타깃 변환 로직 적용 (`TransformedTargetRegressor`)**
+> 학습 시 타깃 변수에 `np.log1p`를 씌워 정규분포화하고, 예측 후 `np.expm1`로 복원 시 음수 값이 나오지 않도록 하한선을 0으로 고정하는 커스텀 역변환 함수(`inverse_log_clip`)를 구현하여 적용했습니다.
+
+### 단계별 성능 개선 요약 (`general_rent_cnt` 기준)
+
+| 단계 | 최고 성능 모델 | RMSLE | 개선폭 |
+| :--- | :--- | :--- | :--- |
+| 1. Baseline | Voting Regressor | 0.50631 | — |
+| 2. 하이퍼파라미터 튜닝 | XGBoost | 0.50504 | ▼ 0.00127 |
+| 3. Custom Stacking | Base(LGBM, XGB) + Meta(Ridge) | **0.50337** | ▼ 0.00167 |
+
+### 최종 챔피언 모델 선정 및 검증
 - 4가지 타깃(일반 대여, 새싹 대여, 일반 반납, 새싹 반납)별로 **단일 모델, Voting, Custom Stacking 전체를 교차 비교하여 가장 우수한 모델을 각각 챔피언으로 선정**했습니다.
 - 과적합을 철저히 검증하기 위해 파이프라인 전체에서 단 한 번도 쓰지 않은 **격리된 Test Set으로 딱 한 번만 최종 평가**를 수행했습니다.
 
@@ -504,7 +477,7 @@ rmsle 파라미터 지표
 
 ---
 
-## 화면 구성
+## 화면 구현
 
 이 서비스는 **사용자(User), 관리자(Admin), 배송 기사(Driver)** 세 가지 역할에 맞춘 전용 대시보드와 UI를 제공합니다.
 
