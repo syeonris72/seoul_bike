@@ -518,6 +518,8 @@ AI/ML 파이프라인은 MLflow 챔피언 모델을 통해 실시간·시간대�
 ![관리자 대시보드 과포화](./image/dashboard2.png)
 ![관리자 대시보드 고갈](./image/dashboard3.png)
 
+### 플로우 차트
+![플로우 차트](./image/flowchart.png)
 ---
 
 ## 설치 및 실행
