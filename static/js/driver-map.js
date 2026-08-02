@@ -62,6 +62,9 @@ function renderMapMarkers(currentUser, kakao) {
     // 핀 자체를 그 모양(원/사각/삼각/마름모)으로 그린다(숫자는 우선순위처럼 보여서 제외, 선도 긋지 않음).
     var PIN_SHAPES = ['circle', 'square', 'triangle', 'diamond'];
     var pins = [];
+    // 같은 대여소에 고장 수거 지시서가 여러 건 겹치는 경우(예: 신고가 여러 건 접수돼 지시서가
+    // 나뉜 경우), 대여소별로 핀을 하나만 찍고 그 안에 지시서들을 모아 둔다.
+    var reportPinByStation = {};
     orders.forEach(function (o, idx) {
         var from = getStation(o.from_station_id), to = getStation(o.to_station_id);
         if (!from || !to) return;
@@ -69,11 +72,19 @@ function renderMapMarkers(currentUser, kakao) {
         // 고장 수거 지시서는 출발지=도착지(수거 대상 대여소 1곳)이므로, 수거/배치 핀을 둘 다 찍으면
         // 같은 위치에 배치(초록) 핀이 수거 핀을 덮어버린다. 대신 고장(노랑) 핀 하나만 찍는다.
         if (o.order_type === '고장수거') {
-            if (from.lat && from.lon) pins.push({ st: from, role: 'report', order: o, shape: shape });
+            if (!from.lat || !from.lon) return;
+            var existing = reportPinByStation[from.station_id];
+            if (existing) {
+                existing.orders.push(o);
+            } else {
+                var pin = { st: from, role: 'report', orders: [o], shape: shape, lat: from.lat, lon: from.lon };
+                reportPinByStation[from.station_id] = pin;
+                pins.push(pin);
+            }
             return;
         }
-        if (from.lat && from.lon) pins.push({ st: from, role: 'start', order: o, shape: shape });
-        if (to.lat && to.lon) pins.push({ st: to, role: 'end', order: o, shape: shape });
+        if (from.lat && from.lon) pins.push({ st: from, role: 'start', orders: [o], shape: shape, lat: from.lat, lon: from.lon });
+        if (to.lat && to.lon) pins.push({ st: to, role: 'end', orders: [o], shape: shape, lat: to.lat, lon: to.lon });
     });
 
     var countEl = document.getElementById('routeCount');
@@ -84,23 +95,70 @@ function renderMapMarkers(currentUser, kakao) {
     }
 
     var bounds = new kakao.maps.LatLngBounds();
+    pins.forEach(function (p) { bounds.extend(new kakao.maps.LatLng(p.st.lat, p.st.lon)); });
+
+    // 기사님의 현재 위치: 아직 실제 GPS 연동 전이라, 담당 자치구 대여소들의 중심에 파란 점으로 고정 표시한다.
+    var myLoc = computeDistrictCenter(currentUser.district_id);
+    var myLocPos = new kakao.maps.LatLng(myLoc.lat, myLoc.lon);
+    bounds.extend(myLocPos);
+
+    // 화면 축척(줌 레벨)이 정해져야 "화면상 몇 픽셀이나 가까운지"를 알 수 있으므로, 지도를 먼저
+    // 데이터에 맞게 이동/확대한 뒤에 겹침 여부를 계산한다.
+    if (pins.length > 0) {
+        kakaoMap.setBounds(bounds, 60, 60, 60, 60);
+    } else {
+        kakaoMap.setCenter(myLocPos);
+        kakaoMap.setLevel(6);
+    }
+
+    // 같은 대여소가 여러 지시서의 수거/배치 지점으로 등장하는 경우뿐 아니라, 한 지시서의 수거지와
+    // 배치지처럼 서로 다른 대여소라도 화면상 아주 가까이 있으면 핀이 겹쳐 보인다(예: 같은 역의 서로
+    // 다른 출구). 위경도가 아닌 실제 화면 픽셀 거리로 가까운 핀들을 묶어 원형으로 살짝 벌린다.
+    var projection = kakaoMap.getProjection();
+    var points = pins.map(function (p) { return projection.pointFromCoords(new kakao.maps.LatLng(p.st.lat, p.st.lon)); });
+    var CLUSTER_DIST_PX = 22;
+    var RADIUS_PX = 12;
+    var visited = pins.map(function () { return false; });
+    pins.forEach(function (_, i) {
+        if (visited[i]) return;
+        var group = [i];
+        visited[i] = true;
+        var grown = true;
+        while (grown) {
+            grown = false;
+            pins.forEach(function (__, j) {
+                if (visited[j]) return;
+                var near = group.some(function (gi) {
+                    var dx = points[gi].x - points[j].x, dy = points[gi].y - points[j].y;
+                    return Math.sqrt(dx * dx + dy * dy) < CLUSTER_DIST_PX;
+                });
+                if (near) { group.push(j); visited[j] = true; grown = true; }
+            });
+        }
+        if (group.length <= 1) return;
+        group.forEach(function (pinIdx, gi) {
+            var angle = (2 * Math.PI * gi) / group.length - Math.PI / 2;
+            pins[pinIdx].offsetX = RADIUS_PX * Math.cos(angle);
+            pins[pinIdx].offsetY = RADIUS_PX * Math.sin(angle);
+        });
+    });
 
     pins.forEach(function (p) {
         var pos = new kakao.maps.LatLng(p.st.lat, p.st.lon);
         var el = document.createElement('div');
         el.className = 'station-marker ' + p.role + ' ' + p.shape;
         el.title = p.st.name;
-        el.addEventListener('click', function () { openPinPopup(p.order, p.role, p.st); });
+        if (p.offsetX || p.offsetY) {
+            el.style.setProperty('--ox', p.offsetX + 'px');
+            el.style.setProperty('--oy', p.offsetY + 'px');
+        }
+        el.addEventListener('click', function () { openPinPopup(p.orders, p.role, p.st); });
 
         var overlay = new kakao.maps.CustomOverlay({ position: pos, content: el, yAnchor: 0.5, xAnchor: 0.5, zIndex: 10 });
         overlay.setMap(kakaoMap);
         mapOverlays.push(overlay);
-        bounds.extend(pos);
     });
 
-    // 기사님의 현재 위치: 아직 실제 GPS 연동 전이라, 담당 자치구 대여소들의 중심에 파란 점으로 고정 표시한다.
-    var myLoc = computeDistrictCenter(currentUser.district_id);
-    var myLocPos = new kakao.maps.LatLng(myLoc.lat, myLoc.lon);
     var myLocEl = document.createElement('div');
     myLocEl.className = 'my-location-marker';
     myLocEl.title = '내 위치';
@@ -108,14 +166,6 @@ function renderMapMarkers(currentUser, kakao) {
     var myLocOverlay = new kakao.maps.CustomOverlay({ position: myLocPos, content: myLocEl, yAnchor: 0.5, xAnchor: 0.5, zIndex: 3 });
     myLocOverlay.setMap(kakaoMap);
     mapOverlays.push(myLocOverlay);
-    bounds.extend(myLocPos);
-
-    if (pins.length > 0) {
-        kakaoMap.setBounds(bounds, 60, 60, 60, 60);
-    } else {
-        kakaoMap.setCenter(myLocPos);
-        kakaoMap.setLevel(6);
-    }
 }
 
 // 카카오내비 앱으로 바로 길안내를 연결하기 위한 링크
@@ -124,8 +174,9 @@ function buildKakaoNaviUrl(station) {
 }
 
 // 대여소 마커를 눌렀을 때: 대여소 이름/위치 + 외부 내비게이션 앱 연동 버튼만 짧게 보여준다.
-function openPinPopup(order, role, station) {
-    var qty = order.general_qty + order.sprout_qty;
+// orders는 이 핀에 겹쳐진 지시서 목록(고장 수거가 아니면 항상 1건)이며, 수량은 합산해서 보여준다.
+function openPinPopup(orders, role, station) {
+    var qty = orders.reduce(function (sum, o) { return sum + o.general_qty + o.sprout_qty; }, 0);
     var district = station ? getDistrict(station.district_id) : null;
     var roleLabel = role === 'report' ? '고장 수거' : (role === 'start' ? '수거' : '배치');
 
@@ -136,6 +187,21 @@ function openPinPopup(order, role, station) {
     document.getElementById('pinPopupStationName').textContent = station ? station.name : '알 수 없음';
     document.getElementById('pinPopupAddr').textContent =
         (district ? district.name : '') + (station && station.neighborhood_name ? ' · ' + station.neighborhood_name : '');
+
+    // 고장 수거 핀은 현장에서 바로 대상 자전거를 식별할 수 있도록 신고된 자전거 ID를 함께 보여준다.
+    var bikeIds = role === 'report'
+        ? orders.reduce(function (acc, o) { return acc.concat(o.bike_ids || []); }, [])
+        : [];
+    var bikeIdsEl = document.getElementById('pinPopupBikeIds');
+    if (bikeIds.length) {
+        bikeIdsEl.innerHTML = bikeIds.map(function (id) {
+            return '<span class="badge rounded-pill bg-light text-dark border">' + escapeHtml(id) + '</span>';
+        }).join('');
+        bikeIdsEl.classList.remove('d-none');
+    } else {
+        bikeIdsEl.innerHTML = '';
+        bikeIdsEl.classList.add('d-none');
+    }
 
     if (station) {
         document.getElementById('pinPopupKakaoBtn').setAttribute('href', buildKakaoNaviUrl(station));

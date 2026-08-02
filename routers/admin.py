@@ -8,12 +8,13 @@ from models.models import Account, Report, Dispatch, StationLoc
 from schema.request import DispatchCreateRequest, ReportDispatchCreateRequest
 from schema.response import AccountOut, ReportOut, DispatchOut
 from serving.district import district_name
+from serving.report_matching import bike_ids_by_dispatch
 from serving.station_lookup import get_station_names
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def _dispatch_out(order: Dispatch, names: dict, driver_names: dict) -> DispatchOut:
+def _dispatch_out(order: Dispatch, names: dict, driver_names: dict, bike_ids: list[str] | None = None) -> DispatchOut:
     return DispatchOut(
         id=order.id,
         from_station_id=order.from_station_id,
@@ -32,6 +33,7 @@ def _dispatch_out(order: Dispatch, names: dict, driver_names: dict) -> DispatchO
         is_emergency=order.is_emergency,
         order_type=order.order_type,
         report_id=order.report_id,
+        bike_ids=bike_ids or [],
     )
 
 
@@ -88,7 +90,8 @@ def list_dispatches(
             driver_ids.add(o.driver_id)
     names = get_station_names(session, station_ids)
     driver_names = _driver_names(session, driver_ids)
-    return [_dispatch_out(o, names, driver_names) for o in orders]
+    bike_ids_map = bike_ids_by_dispatch(session, orders)
+    return [_dispatch_out(o, names, driver_names, bike_ids_map.get(o.id)) for o in orders]
 
 
 @router.post("/dispatch", response_model=DispatchOut)
@@ -217,4 +220,5 @@ def dispatch_reports(
 
     names = get_station_names(session, [order.from_station_id])
     driver_names = _driver_names(session, {order.driver_id} if order.driver_id else set())
-    return _dispatch_out(order, names, driver_names)
+    bike_ids = [r.bike_id for r in unassigned]
+    return _dispatch_out(order, names, driver_names, bike_ids)

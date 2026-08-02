@@ -291,12 +291,12 @@
       if (st.stock_level === '고갈') {
         alerts.push({
           urgent: true,
-          html: `<div class="sh-notif-item urgent-notif"><div class="title fw-bold d-flex align-items-start"><span class="badge rounded-pill bg-danger me-2 mt-1 px-2 py-1">고갈</span><span class="text-break" style="line-height: 1.4;">${st.name} 긴급 보충 요망</span></div></div>`
+          html: `<div class="sh-notif-item urgent-notif"><div class="title fw-bold d-flex align-items-start"><span class="badge rounded-pill me-2 mt-1 px-2 py-1" style="color: #ef4545; background-color: #fef2f2;">고갈</span><span class="text-break" style="line-height: 1.4;">${st.name} 긴급 보충 요망</span></div></div>`
         });
       } else {
         alerts.push({
           urgent: false,
-          html: `<div class="sh-notif-item"><div class="title fw-bold d-flex align-items-start"><span class="badge rounded-pill bg-warning text-dark me-2 mt-1 px-2 py-1">과포화</span><span class="text-break" style="line-height: 1.4;">${st.name} 수거 요망</span></div></div>`
+          html: `<div class="sh-notif-item"><div class="title fw-bold d-flex align-items-start"><span class="badge rounded-pill me-2 mt-1 px-2 py-1" style="color: #1f2937; background-color: #eef0f2;">과포화</span><span class="text-break" style="line-height: 1.4;">${st.name} 수거 요망</span></div></div>`
         });
       }
     });
@@ -306,7 +306,7 @@
     reports.filter(r => !r.dispatch_status).forEach(r => {
       alerts.push({
         urgent: false,
-        html: `<div class="sh-notif-item"><div class="title fw-bold d-flex align-items-start"><span class="badge rounded-pill bg-secondary me-2 mt-1 px-2 py-1">고장</span><span class="text-break" style="line-height: 1.4;">${escapeHtml(r.station_name || '알 수 없는 대여소')} (${escapeHtml(r.issue)})</span></div></div>`
+        html: `<div class="sh-notif-item"><div class="title fw-bold d-flex align-items-start"><span class="badge rounded-pill bg-warning-subtle text-warning-emphasis me-2 mt-1 px-2 py-1">고장</span><span class="text-break" style="line-height: 1.4;">${escapeHtml(r.station_name || '알 수 없는 대여소')} (${escapeHtml(r.issue)})</span></div></div>`
       });
     });
 
@@ -316,14 +316,21 @@
   // [2] 기사(Driver)용 알림: 아직 완료되지 않은 내 지시서
   async function buildDriverNotifications() {
     const orders = await api.get('/driver/orders?status=' + encodeURIComponent('대기,진행중'));
+    // "긴급" 여부는 관리자가 지시서 작성 시 켠 긴급 토글(is_emergency)만을 기준으로 한다
+    // (driver-dashboard.js와 동일한 기준; 대기 상태 자체는 긴급 여부와 무관하다).
+    // 고장 자전거 수거 지시서(order_type === '고장수거')는 긴급 토글과 무관하게 "고장 수거"로 표시한다
+    // (driver-dashboard.js의 긴급/고장 수거/일반 3분류와 동일하게 맞춤).
     return orders.map(o => {
-      const isWaiting = o.status === '대기';
-      const badge = isWaiting
+      const isUrgent = !!o.is_emergency;
+      const isBrokenPickup = o.order_type === '고장수거';
+      const badge = isUrgent
         ? '<span class="badge rounded-pill bg-danger me-2 mt-1 px-2 py-1">긴급</span>'
+        : isBrokenPickup
+        ? '<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis me-2 mt-1 px-2 py-1">고장 수거</span>'
         : '<span class="badge rounded-pill bg-success me-2 mt-1 px-2 py-1">일반</span>';
       return {
-        urgent: isWaiting,
-        html: `<div class="sh-notif-item ${isWaiting ? 'urgent-notif' : ''}"><div class="title fw-bold d-flex align-items-start">${badge}<span class="text-break" style="line-height: 1.4;">${o.to_station_name || ''}으로 이동</span></div></div>`
+        urgent: isUrgent,
+        html: `<div class="sh-notif-item ${isUrgent ? 'urgent-notif' : ''}"><div class="title fw-bold d-flex align-items-start">${badge}<span class="text-break" style="line-height: 1.4;">${o.to_station_name || ''}으로 이동</span></div></div>`
       };
     });
   }

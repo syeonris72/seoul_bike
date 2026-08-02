@@ -113,6 +113,7 @@ class DispatchOut(BaseModel):
     is_emergency: bool
     order_type: str
     report_id: int | None
+    bike_ids: list[str] = []
 
 
 class FavoriteOut(BaseModel):

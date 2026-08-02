@@ -86,5 +86,10 @@ class DispatchStatusUpdateRequest(BaseModel):
     action: Literal["start", "complete"]
 
 
+class DispatchBatchStatusUpdateRequest(BaseModel):
+    order_ids: list[int] = Field(min_length=1)
+    action: Literal["start", "complete"]
+
+
 class ReportStatusUpdateRequest(BaseModel):
     status: Literal["수리대기", "해결완료"]

@@ -33,25 +33,50 @@ async function refreshOrders() {
 
 // dispatch를 작업 목록으로 정규화 (고장 신고는 이용자만 접수 가능하며, 관리자가
 // "고장 자전거 수거" 지시서(order_type === '고장수거')로 변환해 기사에게 배정한다)
+//
+// 같은 대여소에 고장 수거 지시서가 여러 건 겹치면(신고가 여러 건 접수돼 지시서가 나뉜 경우)
+// 대기/진행중인 동안에는 한 카드로 묶어서 보여준다(완료된 건은 이력이라 굳이 묶지 않는다).
+// key에 묶인 지시서 id를 모두 담아두고, 시작/완료도 이 id 목록으로 한 번에 처리한다
+// (routers/driver.py의 PATCH /driver/orders/batch 참고).
 function getMyTasks() {
-    var tasks = [];
+    var singles = [];
+    var mergeGroups = {}; // '상태|대여소id' -> Dispatch[]
 
     allOrders.forEach(function (o) {
-        tasks.push({
-            key: 'dispatch-' + o.id,
-            type: 'dispatch',
-            raw: o,
-            status: o.status,
-            // "긴급" 여부는 관리자가 지시서 작성 시 켠 긴급 토글(is_emergency)만을 기준으로 한다.
-            urgent: o.status !== '완료' && !!o.is_emergency,
-            // 관리자가 지시서 작성 시 "고장 자전거 수거"로 지정한 지시서(order_type)는 고장 수거 취급한다.
-            brokenPickup: o.order_type === '고장수거',
-            qty: o.general_qty + o.sprout_qty,
-            time: o.ordered_at
-        });
+        var mergeable = o.order_type === '고장수거' && (o.status === '대기' || o.status === '진행중');
+        if (!mergeable) { singles.push(o); return; }
+        var groupKey = o.status + '|' + o.from_station_id;
+        (mergeGroups[groupKey] = mergeGroups[groupKey] || []).push(o);
     });
 
-    return tasks;
+    var groups = singles.map(function (o) { return [o]; });
+    Object.keys(mergeGroups).forEach(function (k) { groups.push(mergeGroups[k]); });
+
+    return groups.map(function (orders) {
+        orders.sort(function (a, b) { return new Date(a.ordered_at) - new Date(b.ordered_at); });
+        var first = orders[0];
+        var ids = orders.map(function (o) { return o.id; });
+        return {
+            key: 'dispatch-' + ids.join(','),
+            type: 'dispatch',
+            ids: ids,
+            raw: {
+                id: first.id,
+                from_station_id: first.from_station_id,
+                to_station_id: first.to_station_id,
+                general_qty: orders.reduce(function (s, o) { return s + o.general_qty; }, 0),
+                sprout_qty: orders.reduce(function (s, o) { return s + o.sprout_qty; }, 0),
+                bike_ids: orders.reduce(function (acc, o) { return acc.concat(o.bike_ids || []); }, [])
+            },
+            status: first.status,
+            // "긴급" 여부는 관리자가 지시서 작성 시 켠 긴급 토글(is_emergency)만을 기준으로 한다.
+            urgent: first.status !== '완료' && orders.some(function (o) { return !!o.is_emergency; }),
+            // 관리자가 지시서 작성 시 "고장 자전거 수거"로 지정한 지시서(order_type)는 고장 수거 취급한다.
+            brokenPickup: first.order_type === '고장수거',
+            qty: orders.reduce(function (s, o) { return s + o.general_qty + o.sprout_qty; }, 0),
+            time: first.ordered_at
+        };
+    });
 }
 
 function getFilteredTasks() {
@@ -110,13 +135,23 @@ function taskCardHtml(t) {
     var scannedCount = (scannedByOrder[t.key] || []).length;
 
     var from = getStation(t.raw.from_station_id), to = getStation(t.raw.to_station_id);
-    var orderLabel = 'ORD-' + new Date(t.time).getFullYear() + '-' + String(t.raw.id).padStart(3, '0');
+    // 같은 대여소로 겹쳐 하나로 묶인 고장 수거 지시서는 묶인 지시서 번호를 모두 보여준다.
+    var orderLabel = 'ORD-' + new Date(t.time).getFullYear() + '-' +
+        t.ids.map(function (id) { return String(id).padStart(3, '0'); }).join('/');
     // 고장 신고 관리 페이지에서 발송된 고장 수거 지시서는 출발지=도착지(수거 대상 대여소 1곳)이므로 화살표 없이 대여소명만 표시한다.
     var title = (from && t.raw.from_station_id === t.raw.to_station_id)
         ? from.name
         : (from ? from.name : '알 수 없음') + ' <i class="bi bi-arrow-right text-muted fs-6"></i> ' + (to ? to.name : '알 수 없음');
     var sub = '일반 ' + t.raw.general_qty + '대 · 새싹 ' + t.raw.sprout_qty + '대';
     var timeStr = t.time ? new Date(t.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+    // 고장 수거 지시서는 수거해야 할 자전거를 현장에서 바로 식별할 수 있도록 ID를 함께 보여준다.
+    var bikeIdsHtml = (t.brokenPickup && t.raw.bike_ids && t.raw.bike_ids.length)
+        ? '<div class="d-flex flex-wrap gap-1 mb-3">' +
+            t.raw.bike_ids.map(function (id) {
+                return '<span class="badge rounded-pill bg-light text-dark border">' + escapeHtml(id) + '</span>';
+            }).join('') +
+          '</div>'
+        : '';
 
     var footer = '';
     if (t.status === '대기') {
@@ -144,6 +179,7 @@ function taskCardHtml(t) {
                 '<span>' + sub + '</span>' +
                 '<span>' + timeStr + '</span>' +
             '</div>' +
+            bikeIdsHtml +
             footer +
         '</div>'
     );
@@ -173,16 +209,21 @@ function renderTasks() {
 // (서버도 동일하게 막아주지만, 클라이언트에서 먼저 막아 불필요한 요청/에러 알림을 줄인다).
 var _taskActionInFlight = false;
 
+// key는 'dispatch-6' 또는(같은 대여소 고장 수거 묶음일 때) 'dispatch-6,7' 형태.
+function taskIdsFromKey(key) {
+    return key.split('-')[1].split(',').map(function (s) { return parseInt(s, 10); });
+}
+
 async function startTask(key) {
     if (_taskActionInFlight) return;
-    var id = parseInt(key.split('-')[1], 10);
+    var ids = taskIdsFromKey(key);
     if (hasActiveDispatch()) {
         alert('현재 수행 중인 지시서가 있어 새로운 지시서를 시작할 수 없습니다. 수행 중인 지시서를 완료한 후 다시 시도해주세요.');
         return;
     }
     _taskActionInFlight = true;
     try {
-        await api.patch('/driver/orders/' + id, { action: 'start' });
+        await api.patch('/driver/orders/batch', { order_ids: ids, action: 'start' });
     } catch (e) {
         alert(e.message || '지시 시작에 실패했습니다.');
         return;
@@ -195,10 +236,10 @@ async function startTask(key) {
 
 async function completeTask(key) {
     if (_taskActionInFlight) return;
-    var id = parseInt(key.split('-')[1], 10);
+    var ids = taskIdsFromKey(key);
     _taskActionInFlight = true;
     try {
-        await api.patch('/driver/orders/' + id, { action: 'complete' });
+        await api.patch('/driver/orders/batch', { order_ids: ids, action: 'complete' });
     } catch (e) {
         alert(e.message || '지시 완료 처리에 실패했습니다.');
         return;
